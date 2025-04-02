@@ -16,6 +16,9 @@
 
 package org.cojen.boxtin;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.VarHandle;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
@@ -122,11 +125,35 @@ final class MemberFinder extends ImmutableLookupMap<MemberRef, MemberFinder.Key,
         }
 
         private Key(Method m) {
-            this(m.getName(), Utils.fullDescriptorFor(m.getReturnType(), m.getParameterTypes()));
+            this(m.getName(), methodDescriptor(m));
         }
 
         private Key(Field f) {
             this(f.getName(), f.getType().descriptorString());
+        }
+
+        private static String methodDescriptor(Method m) {
+            // Special handling is required for signature polymorphic methods in VarHandle and
+            // MethodHandle. Use an empty descriptor for those methods, and special handling is
+            // also required when finding these methods.
+
+            Class<?> clazz = m.getDeclaringClass();
+
+            if (clazz == VarHandle.class) {
+                if (onlyVarArgs(m)) {
+                    return "";
+                }
+            } else if (clazz == MethodHandle.class) {
+                if (onlyVarArgs(m) && !m.getName().equals("invokeWithArguments")) {
+                    return "";
+                }
+            }
+
+            return Utils.fullDescriptorFor(m.getReturnType(), m.getParameterTypes());
+        }
+
+        private static boolean onlyVarArgs(Method m) {
+            return m.isVarArgs() && m.getParameterTypes().length == 1;
         }
     }
 }

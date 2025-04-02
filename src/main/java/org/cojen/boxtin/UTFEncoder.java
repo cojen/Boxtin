@@ -44,16 +44,7 @@ final class UTFEncoder {
             return bytes;
         }
 
-        Reference<BasicEncoder> encoderRef = cLocalEncoder.get();
-        BasicEncoder encoder;
-
-        if (encoderRef == null || (encoder = encoderRef.get()) == null) {
-            encoder = new BasicEncoder(50);
-            encoderRef = new WeakReference<>(encoder);
-            cLocalEncoder.set(encoderRef);
-        }
-
-        encoder.reset();
+        BasicEncoder encoder = localEncoder();
 
         synchronized (cCache) {
             bytes = cCache.get(str);
@@ -76,6 +67,19 @@ final class UTFEncoder {
         }
         
         return bytes;
+    }
+
+    static BasicEncoder localEncoder() {
+        Reference<BasicEncoder> encoderRef = cLocalEncoder.get();
+        BasicEncoder encoder;
+        if (encoderRef == null || (encoder = encoderRef.get()) == null) {
+            encoder = new BasicEncoder(50);
+            encoderRef = new WeakReference<>(encoder);
+            cLocalEncoder.set(encoderRef);
+        } else {
+            encoder.reset();
+        }
+        return encoder;
     }
 
     private UTFEncoder() {

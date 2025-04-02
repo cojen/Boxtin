@@ -19,6 +19,9 @@ package org.cojen.boxtin;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.VarHandle;
+
 /**
  * Checks if access to a class member is allowed or denied, and caches the result.
  *
@@ -220,8 +223,15 @@ public abstract class CachedChecker implements Checker {
 
         // Find where the method is declared and check against that.
 
-        if (MemberFinder.forClass(clazz).get(methodRef) == Boolean.TRUE) {
+        MemberFinder finder = MemberFinder.forClass(clazz);
+        if (finder.get(methodRef) == Boolean.TRUE ||
+            (virtual && findSignaturePolymorphic(methodRef, clazz, finder)))
+        {
             boolean allowed = checkMethodAccess(methodRef);
+
+            // For virtual methods, being denied where it's declared isn't sufficient. The
+            // method can still be allowed by inheritence.
+
             if (allowed || !virtual) {
                 return allowed;
             }
@@ -241,6 +251,25 @@ public abstract class CachedChecker implements Checker {
             dstRef = withClass(dstRef, iface.getName(), methodRef);
             if (isMethodAllowed(dstRef)) {
                 return true;
+            }
+        }
+
+        return false;
+    }
+
+     private boolean findSignaturePolymorphic(MemberRef methodRef,
+                                              Class<?> clazz, MemberFinder finder)
+     {
+        // Special handling for signature polymorphic methods in VarHandle and MethodHandle.
+        // They will have been stored in the finder with an empty descriptor.
+
+        if (clazz == VarHandle.class || clazz == MethodHandle.class) {
+            final int originalLength = methodRef.descriptorLength();
+            try {
+                methodRef.descriptorLength(0);
+                return finder.get(methodRef) == Boolean.TRUE;
+            } finally {
+                methodRef.descriptorLength(originalLength);
             }
         }
 
@@ -294,11 +323,9 @@ public abstract class CachedChecker implements Checker {
      * @return new or updated destination ref
      */
     private static MemberRef withClass(MemberRef dstRef, String className, MemberRef ref) {
-        BasicEncoder classEncoder;
+        BasicEncoder classEncoder = UTFEncoder.localEncoder();
         try {
-            className = className.replace('.', '/');
-            classEncoder = new BasicEncoder(className.length() + 10);
-            classEncoder.writeUTF(className);
+            classEncoder.writeUTF(className.replace('.', '/'));
         } catch (IOException e) {
             // Not expected.
             throw new UncheckedIOException(e);
