@@ -134,11 +134,13 @@ final class ImmutableRules implements Rules {
          */
         static ClassScope build(MemberRefNameMap<MethodScope> methods,
                                 boolean allowMethodsByDefault,
+                                boolean allowConstructorsByDefault,
                                 MemberRefNameMap<Boolean> fields,
                                 boolean allowFieldsByDefault)
         {
             // TODO: use a shared instance if isEmpty(methods) && isEmpty(fields)
-            return new ClassScope(methods, allowMethodsByDefault, fields, allowFieldsByDefault);
+            return new ClassScope(methods, allowMethodsByDefault, allowConstructorsByDefault,
+                                  fields, allowFieldsByDefault);
         }
 
         // Can be null when empty.
@@ -147,17 +149,22 @@ final class ImmutableRules implements Rules {
         // Default is selected when no method map entry is found.
         private final boolean mAllowMethodsByDefault;
 
+        // Default is selected when no constructor method map entry is found.
+        private final boolean mAllowConstructorsByDefault;
+
         // Can be null when empty.
         private final MemberRefNameMap<Boolean> mFields;
 
         // Default is selected when no field map entry is found.
         private final boolean mAllowFieldsByDefault;
 
-        private ClassScope(MemberRefNameMap<MethodScope> methods, boolean allowMethodsByDefault,
+        private ClassScope(MemberRefNameMap<MethodScope> methods,
+                           boolean allowMethodsByDefault, boolean allowConstructorsByDefault,
                            MemberRefNameMap<Boolean> fields, boolean allowFieldsByDefault)
         {
             mMethods = methods;
             mAllowMethodsByDefault = allowMethodsByDefault;
+            mAllowConstructorsByDefault = allowConstructorsByDefault;
             mFields = fields;
             mAllowFieldsByDefault = allowFieldsByDefault;
         }
@@ -165,7 +172,8 @@ final class ImmutableRules implements Rules {
         boolean checkMethodAccess(MemberRef methodRef) {
             MethodScope scope;
             if (mMethods == null || (scope = mMethods.get(methodRef)) == null) {
-                return mAllowMethodsByDefault;
+                return methodRef.isConstructor()
+                    ? mAllowConstructorsByDefault : mAllowMethodsByDefault;
             }
             return scope.checkMethodAccess(methodRef);
         }

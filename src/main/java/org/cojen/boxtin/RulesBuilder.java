@@ -23,6 +23,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 
@@ -404,6 +405,7 @@ public final class RulesBuilder {
                      ClassScope scope = e.getValue();
                      return Map.entry(e.getKey(), ImmutableRules.ClassScope.build
                                       (scope.buildMethodMap(), scope.mAllowMethodsByDefault,
+                                       scope.mAllowConstructorsByDefault,
                                        scope.buildFieldMap(), scope.mAllowFieldsByDefault));
                  }));
         }
@@ -418,6 +420,9 @@ public final class RulesBuilder {
 
         // Default is selected when no method map entry is found.
         private boolean mAllowMethodsByDefault;
+
+        // Default is selected when no constructor method map entry is found.
+        private boolean mAllowConstructorsByDefault;
 
         // Can be null when empty.
         private Map<String, Boolean> mFields;
@@ -440,6 +445,7 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope denyAll() {
+            mAllowConstructorsByDefault = false;
             return denyAllMethods().denyAllFields();
         }
 
@@ -449,7 +455,9 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope denyAllConstructors() {
-            return doDenyMethod("<init>");
+            mVariantScope = forConstructor().denyAll();
+            mAllowConstructorsByDefault = false;
+            return this;
         }
 
         /**
@@ -458,8 +466,7 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope denyAllMethods() {
-            variantOff();
-            mMethods = null;
+            removeAllMethodScopes();
             mAllowMethodsByDefault = false;
             return this;
         }
@@ -472,13 +479,6 @@ public final class RulesBuilder {
          */
         public ClassScope denyMethod(String name) {
             checkMethodName(name);
-            return doDenyMethod(name);
-        }
-
-        /**
-         * @param name must not be null
-         */
-        private ClassScope doDenyMethod(String name) {
             mVariantScope = forMethod(name).denyAll();
             return this;
         }
@@ -544,6 +544,7 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope allowAll() {
+            mAllowConstructorsByDefault = true;
             return allowAllMethods().allowAllFields();
         }
 
@@ -553,7 +554,9 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope allowAllConstructors() {
-            return doAllowMethod("<init>");
+            mVariantScope = forConstructor().allowAll();
+            mAllowConstructorsByDefault = true;
+            return this;
         }
 
         /**
@@ -562,8 +565,7 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope allowAllMethods() {
-            variantOff();
-            mMethods = null;
+            removeAllMethodScopes();
             mAllowMethodsByDefault = true;
             return this;
         }
@@ -576,13 +578,6 @@ public final class RulesBuilder {
          */
         public ClassScope allowMethod(String name) {
             checkMethodName(name);
-            return doAllowMethod(name);
-        }
-
-        /**
-         * @param name must not be null
-         */
-        private ClassScope doAllowMethod(String name) {
             mVariantScope = forMethod(name).allowAll();
             return this;
         }
@@ -694,10 +689,7 @@ public final class RulesBuilder {
             }
         }
 
-        /**
-         * @param name pass <init> for constructor
-         */
-        MethodScope forMethod(String name) {
+        private MethodScope forMethod(String name) {
             Map<String, MethodScope> methods = mMethods;
             if (methods == null) {
                 mMethods = methods = new HashMap<>();
@@ -706,6 +698,34 @@ public final class RulesBuilder {
                 var scope = new MethodScope();
                 return mAllowMethodsByDefault ? scope.allowAll() : scope.denyAll();
             });
+        }
+
+        private MethodScope forConstructor() {
+            Map<String, MethodScope> methods = mMethods;
+            if (methods == null) {
+                mMethods = methods = new HashMap<>();
+            }
+            return methods.computeIfAbsent("<init>", k -> {
+                var scope = new MethodScope();
+                return mAllowConstructorsByDefault ? scope.allowAll() : scope.denyAll();
+            });
+        }
+
+        /**
+         * Removes all method scopes not named <init>.
+         */
+        private void removeAllMethodScopes() {
+            variantOff();
+
+            if (mMethods != null && !mMethods.isEmpty()) {
+                Iterator<String> it = mMethods.keySet().iterator();
+                while (it.hasNext()) {
+                    String name = it.next();
+                    if (!"<init>".equals(name)) {
+                        it.remove();
+                    }
+                }
+            }
         }
 
         private ClassScope fieldAction(String name, boolean allow) {
