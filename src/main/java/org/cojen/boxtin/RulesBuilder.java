@@ -22,10 +22,10 @@ import java.lang.reflect.Method;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 
 /**
  * 
@@ -33,10 +33,8 @@ import java.util.Objects;
  * @author Brian S. O'Neill
  */
 public final class RulesBuilder {
-    // FIXME: Note that when building the final rules, there might still be some redundancies.
-    // If denyAllMethods is followed by denyMethod(name), a MethodScope is still created. If a
-    // MethodScope has no variant rules and its allowByDefault rule is the same as the parent,
-    // then it's not needed.
+    // Note that TreeMap is used everywhere instead of HashMap, thus ensuring that the
+    // immutable maps are always built in a consistent order.
 
     // Can be null when empty.
     private Map<String, PackageScope> mPackages;
@@ -81,7 +79,7 @@ public final class RulesBuilder {
         final String vmName = name.replace('.', '/');
         Map<String, PackageScope> packages = mPackages;
         if (packages == null) {
-            mPackages = packages = new HashMap<>();
+            mPackages = packages = new TreeMap<>();
         }
         return packages.computeIfAbsent(vmName, k -> {
             var scope = new PackageScope(this, vmName);
@@ -119,7 +117,49 @@ public final class RulesBuilder {
      * Returns a immutable set of rules based on what's been defined so far.
      */
     public Rules build() {
-        return ImmutableRules.build(buildPackageMap(), mAllowByDefault);
+        RulesBuilder reduced = reduce();
+        return ImmutableRules.build(reduced.buildPackageMap(), reduced.mAllowByDefault);
+    }
+
+    /**
+     * If the RulesBuilder contains any redundancies, a new RulesBuilder is returned with the
+     * redundancies removed. Reduction cannot be performed against the original RulesBuilder
+     * because it would remove registered sub-scopes which can still be modified. The
+     * sub-scopes cannot be orphaned.
+     */
+    private RulesBuilder reduce() {
+        Map<String, PackageScope> packages = mPackages;
+
+        if (!isEmpty(packages)) {
+            // Reduce the packages.
+            Iterator<Map.Entry<String, PackageScope>> it = packages.entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry<String, PackageScope> e = it.next();
+                PackageScope scope = e.getValue();
+                PackageScope reduced = scope.reduce(mAllowByDefault);
+                if (reduced != scope) {
+                    if (packages == mPackages) {
+                        packages = new TreeMap<>(packages);
+                    }
+                    if (reduced == null) {
+                        packages.remove(e.getKey());
+                    } else {
+                        packages.put(e.getKey(), reduced);
+                    }
+                }
+            }
+        }
+
+        if (packages == mPackages) {
+            return this;
+        }
+
+        var reduced = new RulesBuilder();
+
+        reduced.mPackages = packages;
+        reduced.mAllowByDefault = mAllowByDefault;
+
+        return reduced;
     }
 
     private MemberRefPackageMap<ImmutableRules.PackageScope> buildPackageMap() {
@@ -344,7 +384,7 @@ public final class RulesBuilder {
             final String vmName = name.replace('.', '$');
             Map<String, ClassScope> classes = mClasses;
             if (classes == null) {
-                mClasses = classes = new HashMap<>();
+                mClasses = classes = new TreeMap<>();
             }
             return classes.computeIfAbsent(vmName, k -> {
                 var scope = new ClassScope(this, vmName);
@@ -396,6 +436,49 @@ public final class RulesBuilder {
                     cs.validate(loader);
                 }
             }
+        }
+
+        /**
+         * If the scope contains any redundancies, a new scope is returned with the
+         * redundancies removed. Null is returned if the scope can be removed.
+         */
+        private PackageScope reduce(boolean parentAllowByDefault) {
+            Map<String, ClassScope> classes = mClasses;
+
+            if (!isEmpty(classes)) {
+                // Reduce the classes.
+                Iterator<Map.Entry<String, ClassScope>> it = classes.entrySet().iterator();
+                while (it.hasNext()) {
+                    Map.Entry<String, ClassScope> e = it.next();
+                    ClassScope scope = e.getValue();
+                    ClassScope reduced = scope.reduce(mAllowByDefault);
+                    if (reduced != scope) {
+                        if (classes == mClasses) {
+                            classes = new TreeMap<>(classes);
+                        }
+                        if (reduced == null) {
+                            classes.remove(e.getKey());
+                        } else {
+                            classes.put(e.getKey(), reduced);
+                        }
+                    }
+                }
+            }
+
+            if (parentAllowByDefault == mAllowByDefault && isEmpty(classes)) {
+                return null;
+            }
+
+            if (classes == mClasses) {
+                return this;
+            }
+
+            var reduced = new PackageScope(mParent, mName);
+
+            reduced.mClasses = classes;
+            reduced.mAllowByDefault = mAllowByDefault;
+
+            return reduced;
         }
 
         private MemberRefPlainClassMap<ImmutableRules.ClassScope> buildClassMap() {
@@ -700,7 +783,7 @@ public final class RulesBuilder {
         private MethodScope forMethod(String name) {
             Map<String, MethodScope> methods = mMethods;
             if (methods == null) {
-                mMethods = methods = new HashMap<>();
+                mMethods = methods = new TreeMap<>();
             }
             return methods.computeIfAbsent(name, k -> {
                 var scope = new MethodScope();
@@ -711,7 +794,7 @@ public final class RulesBuilder {
         private MethodScope forConstructor() {
             Map<String, MethodScope> methods = mMethods;
             if (methods == null) {
-                mMethods = methods = new HashMap<>();
+                mMethods = methods = new TreeMap<>();
             }
             return methods.computeIfAbsent("<init>", k -> {
                 var scope = new MethodScope();
@@ -747,7 +830,7 @@ public final class RulesBuilder {
                 if (allow == mAllowFieldsByDefault) {
                     return this;
                 }
-                mFields = fields = new HashMap<>();
+                mFields = fields = new TreeMap<>();
             }
 
             if (allow == mAllowFieldsByDefault) {
@@ -761,6 +844,72 @@ public final class RulesBuilder {
 
         private void variantOff() {
             mVariantScope = null;
+        }
+
+        /**
+         * If the scope contains any redundancies, a new scope is returned with the
+         * redundancies removed. Null is returned if the scope can be removed.
+         */
+        private ClassScope reduce(boolean parentAllowByDefault) {
+            Map<String, MethodScope> methods = mMethods;
+
+            if (!isEmpty(methods)) {
+                // Reduce the methods.
+                Iterator<Map.Entry<String, MethodScope>> it = methods.entrySet().iterator();
+                while (it.hasNext()) {
+                    Map.Entry<String, MethodScope> e = it.next();
+                    MethodScope scope = e.getValue();
+                    MethodScope reduced = scope.reduce(mAllowMethodsByDefault);
+                    if (reduced != scope) {
+                        if (methods == mMethods) {
+                            methods = new TreeMap<>(methods);
+                        }
+                        if (reduced == null) {
+                            methods.remove(e.getKey());
+                        } else {
+                            methods.put(e.getKey(), reduced);
+                        }
+                    }
+                }
+            }
+
+            Map<String, Boolean> fields = mFields;
+
+            if (!isEmpty(fields)) {
+                // Reduce the fields.
+                Iterator<Map.Entry<String, Boolean>> it = fields.entrySet().iterator();
+                while (it.hasNext()) {
+                    Map.Entry<String, Boolean> e = it.next();
+                    if (e.getValue() == mAllowFieldsByDefault) {
+                        if (fields == mFields) {
+                            fields = new TreeMap<>(fields);
+                        }
+                        fields.remove(e.getKey());
+                    }
+                }
+            }
+
+            if (parentAllowByDefault == mAllowMethodsByDefault &&
+                parentAllowByDefault == mAllowConstructorsByDefault &&
+                parentAllowByDefault == mAllowFieldsByDefault &&
+                isEmpty(methods) && isEmpty(fields))
+            {
+                return null;
+            }
+
+            if (methods == mMethods && fields == mFields) {
+                return this;
+            }
+
+            var reduced = new ClassScope(mParent, mName);
+
+            reduced.mMethods = methods;
+            reduced.mAllowMethodsByDefault = mAllowMethodsByDefault;
+            reduced.mAllowConstructorsByDefault = mAllowConstructorsByDefault;
+            reduced.mFields = fields;
+            reduced.mAllowFieldsByDefault = mAllowFieldsByDefault;
+
+            return reduced;
         }
 
         private MemberRefNameMap<ImmutableRules.MethodScope> buildMethodMap() {
@@ -843,7 +992,7 @@ public final class RulesBuilder {
                 if (allow == mAllowByDefault) {
                     return this;
                 }
-                mVariants = variants = new HashMap<>();
+                mVariants = variants = new TreeMap<>();
             }
 
             if (allow == mAllowByDefault) {
@@ -895,6 +1044,17 @@ public final class RulesBuilder {
                     }
                 }
             }
+        }
+
+        /**
+         * If the scope contains any redundancies, a new scope is returned with the
+         * redundancies removed. Null is returned if the scope can be removed.
+         */
+        private MethodScope reduce(boolean parentAllowByDefault) {
+            if (parentAllowByDefault == mAllowByDefault && isEmpty(mVariants)) {
+                return null;
+            }
+            return this;
         }
 
         private MemberRefDescriptorMap<Boolean> buildVariantMap() {
