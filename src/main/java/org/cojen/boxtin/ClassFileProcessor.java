@@ -353,7 +353,7 @@ final class ClassFileProcessor {
         var transformer = new Transformer();
         ClassTransform ct = ClassTransform.transformingMethodBodies(transformer, transformer);
 
-		return cf.transformClass(model, ct);
+        return cf.transformClass(model, ct);
     }
 
     private void checkCode(final int name_index, final int descriptor_index,
