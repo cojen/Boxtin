@@ -44,7 +44,7 @@ final class ImmutableRules implements Rules {
     }
 
     @Override
-    public Checker apply(Module module) {
+    public Checker checkerFor(Module module) {
         Checker checker = mCache.get(module);
 
         if (checker == null) {

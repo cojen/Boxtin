@@ -23,7 +23,7 @@ package org.cojen.boxtin;
  */
 public interface Rules {
     /**
-     * @param module the caller module
+     * @param module the caller's module
      */
-    public Checker apply(Module module);
+    public Checker checkerFor(Module module);
 }
