@@ -27,8 +27,8 @@ import java.util.stream.Stream;
  * @author Brian S. O'Neill
  */
 abstract class MemberRefLookupMap<V> extends ImmutableLookupMap<MemberRef, byte[], V> {
-    public MemberRefLookupMap(int size, Stream<Map.Entry<String, V>> populator) {
-        super(size,
+    public MemberRefLookupMap(int capacity, Stream<Map.Entry<String, V>> populator) {
+        super(capacity,
               populator.map((Map.Entry<String, V> e) -> {
                   return Map.entry(UTFEncoder.encode(e.getKey()), e.getValue());
               })

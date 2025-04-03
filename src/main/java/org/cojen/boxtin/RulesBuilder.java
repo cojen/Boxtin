@@ -123,7 +123,7 @@ public final class RulesBuilder {
     }
 
     private MemberRefPackageMap<ImmutableRules.PackageScope> buildPackageMap() {
-        if (mPackages == null || mPackages.isEmpty()) {
+        if (isEmpty(mPackages)) {
             return null;
         }
 
@@ -134,6 +134,10 @@ public final class RulesBuilder {
                  return Map.entry(e.getKey(), ImmutableRules.PackageScope.build
                                   (scope.buildClassMap(), scope.mAllowByDefault));
              }));
+    }
+
+    private static boolean isEmpty(Map<?, ?> map) {
+        return map == null || map.isEmpty();
     }
 
     private static String nameFor(Class<?> clazz) {
@@ -395,7 +399,7 @@ public final class RulesBuilder {
         }
 
         private MemberRefPlainClassMap<ImmutableRules.ClassScope> buildClassMap() {
-            if (mClasses == null || mClasses.isEmpty()) {
+            if (isEmpty(mClasses)) {
                 return null;
             }
 
@@ -455,8 +459,10 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope denyAllConstructors() {
-            mVariantScope = forConstructor().denyAll();
-            mAllowConstructorsByDefault = false;
+            if (mAllowConstructorsByDefault) {
+                mVariantScope = forConstructor().denyAll();
+                mAllowConstructorsByDefault = false;
+            }
             return this;
         }
 
@@ -554,8 +560,10 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope allowAllConstructors() {
-            mVariantScope = forConstructor().allowAll();
-            mAllowConstructorsByDefault = true;
+            if (!mAllowConstructorsByDefault) {
+                mVariantScope = forConstructor().allowAll();
+                mAllowConstructorsByDefault = true;
+            }
             return this;
         }
 
@@ -717,7 +725,7 @@ public final class RulesBuilder {
         private void removeAllMethodScopes() {
             variantOff();
 
-            if (mMethods != null && !mMethods.isEmpty()) {
+            if (!isEmpty(mMethods)) {
                 Iterator<String> it = mMethods.keySet().iterator();
                 while (it.hasNext()) {
                     String name = it.next();
@@ -756,7 +764,7 @@ public final class RulesBuilder {
         }
 
         private MemberRefNameMap<ImmutableRules.MethodScope> buildMethodMap() {
-            if (mMethods == null || mMethods.isEmpty()) {
+            if (isEmpty(mMethods)) {
                 return null;
             }
 
@@ -770,7 +778,7 @@ public final class RulesBuilder {
         }
 
         private MemberRefNameMap<Boolean> buildFieldMap() {
-            if (mFields == null || mFields.isEmpty()) {
+            if (isEmpty(mFields)) {
                 return null;
             }
 
@@ -789,7 +797,7 @@ public final class RulesBuilder {
         }
 
         public boolean isAllDenied() {
-            return !mAllowByDefault && hasNoVariants();
+            return !mAllowByDefault && isEmpty(mVariants);
         }
 
         /**
@@ -808,7 +816,7 @@ public final class RulesBuilder {
         }
 
         public boolean isAllAllowed() {
-            return mAllowByDefault && hasNoVariants();
+            return mAllowByDefault && isEmpty(mVariants);
         }
 
         /**
@@ -850,7 +858,7 @@ public final class RulesBuilder {
         void validateConstuctor(ClassLoader loader, Class<?> clazz)
             throws ClassNotFoundException, NoSuchMethodException
         {
-            if (hasNoVariants()) {
+            if (isEmpty(mVariants)) {
                 // Assume that a constructor exists.
                 return;
             }
@@ -870,7 +878,7 @@ public final class RulesBuilder {
         void validateMethod(ClassLoader loader, Class<?> clazz, String name)
             throws ClassNotFoundException, NoSuchMethodException
         {
-            if (hasNoVariants()) {
+            if (isEmpty(mVariants)) {
                 if (tryFindAnyMethod(clazz, name) != null) {
                     return;
                 }
@@ -889,12 +897,8 @@ public final class RulesBuilder {
             }
         }
 
-        private boolean hasNoVariants() {
-            return mVariants == null || mVariants.isEmpty();
-        }
-
         private MemberRefDescriptorMap<Boolean> buildVariantMap() {
-            if (mVariants == null || mVariants.isEmpty()) {
+            if (isEmpty(mVariants)) {
                 return null;
             }
 

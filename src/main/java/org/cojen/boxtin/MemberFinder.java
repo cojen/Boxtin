@@ -77,11 +77,11 @@ final class MemberFinder extends ImmutableLookupMap<MemberRef, MemberFinder.Key,
     }
 
     /**
-     * @param size fixed amount of entries to hold
+     * @param capacity fixed amount of entries to hold
      * @param populator provides the map entries; must not have any duplicate keys
      */
-    private MemberFinder(int size, Stream<Map.Entry<Key, Boolean>> populator) {
-        super(size, populator);
+    private MemberFinder(int capacity, Stream<Map.Entry<Key, Boolean>> populator) {
+        super(capacity, populator);
     }
 
     @Override

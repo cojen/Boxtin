@@ -703,6 +703,7 @@ final class ClassFileProcessor {
       For this reason, a ClassNotFoundException results in a denial, and thus a
       SecurityException is thrown instead. This might be confusing, and so at some point it
       might make sense to include additional information in the SecurityException message.
+      Throwing a NoClassDefFoundError probably makes the most sense.
      */
 
     private static boolean isConstructorAllowed(Checker checker, MemberRef ctorRef) {

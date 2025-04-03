@@ -28,8 +28,8 @@ import java.util.stream.Stream;
  * @author Brian S. O'Neill
  */
 class MemberRefDescriptorMap<V> extends MemberRefLookupMap<V> {
-    public MemberRefDescriptorMap(int size, Stream<Map.Entry<String, V>> populator) {
-        super(size, populator);
+    public MemberRefDescriptorMap(int capacity, Stream<Map.Entry<String, V>> populator) {
+        super(capacity, populator);
     }
 
     @Override

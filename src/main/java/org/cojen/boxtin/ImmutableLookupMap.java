@@ -32,21 +32,21 @@ abstract class ImmutableLookupMap<LK, SK, V> {
     private final Entry<SK, V>[] mEntries;
 
     /**
-     * @param size fixed amount of entries to hold
+     * @param capacity fixed amount of entries to hold
      * @param populator provides the map entries; must not have any duplicate keys
      */
     @SuppressWarnings({"unchecked"})
-    public ImmutableLookupMap(int size, Stream<Map.Entry<SK, V>> populator) {
-        if (size == 0) {
+    public ImmutableLookupMap(int capacity, Stream<Map.Entry<SK, V>> populator) {
+        if (capacity == 0) {
             mEntries = null;
         } else {
-            mEntries = new Entry[Utils.roundUpPower2(size)];
+            mEntries = new Entry[Utils.roundUpPower2(capacity)];
 
-            populator.forEach((Map.Entry<SK, V> pEntry) -> {
-                SK storedKey = pEntry.getKey();
+            populator.forEach((Map.Entry<SK, V> e) -> {
+                SK storedKey = e.getKey();
                 int hash = storedHash(storedKey);
                 int index = hash & (mEntries.length - 1);
-                mEntries[index] = new Entry(storedKey, hash, pEntry.getValue(), mEntries[index]);
+                mEntries[index] = new Entry(storedKey, hash, e.getValue(), mEntries[index]);
             });
         }
     }
