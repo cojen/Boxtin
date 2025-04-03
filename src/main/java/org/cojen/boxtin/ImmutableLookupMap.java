@@ -16,7 +16,9 @@
 
 package org.cojen.boxtin;
 
+import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
 
 import java.util.stream.Stream;
 
@@ -69,6 +71,15 @@ abstract class ImmutableLookupMap<LK, SK, V> {
     }
 
     /**
+     * Note: Only truly works when the populators provided entries in the same order.
+     */
+    @Override
+    public boolean equals(Object obj) {
+        return this == obj || obj instanceof ImmutableLookupMap other
+            && Arrays.equals(mEntries, other.mEntries);
+    }
+
+    /**
      * Computes the hash code for a lookup key, which must be the same as for the corresponding
      * stored key.
      */
@@ -96,6 +107,30 @@ abstract class ImmutableLookupMap<LK, SK, V> {
             mHash = hash;
             mValue = value;
             mNext = next;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return this == obj || obj instanceof Entry other && chainEquals(this, other);
+        }
+
+        private static boolean chainEquals(Entry<?, ?> entry, Entry<?, ?> other) {
+            while (true) {
+                if (entry.mHash == other.mHash
+                    && Objects.deepEquals(entry.mValue, other.mValue)
+                    && Objects.deepEquals(entry.mStoredKey, other.mStoredKey))
+                {
+                    entry = entry.mNext;
+                    other = other.mNext;
+                    if (entry == null) {
+                        return other == null;
+                    } else if (other == null) {
+                        return false;
+                    }
+                } else {
+                    return false;
+                }
+            }
         }
     }
 }

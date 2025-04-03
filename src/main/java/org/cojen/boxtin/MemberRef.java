@@ -32,7 +32,7 @@ import static java.lang.invoke.MethodHandleInfo.*;
  *
  * @author Brian S. O'Neill
  */
-final class MemberRef {
+final class MemberRef implements Comparable<MemberRef> {
     private final byte[] mBuffer;
 
     private int mClassOffset, mClassLength;
@@ -408,6 +408,34 @@ final class MemberRef {
                 return Arrays.copyOfRange(mBuffer, mDescOffset, mDescOffset + mDescLength);
             }
         }
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return this == obj || obj instanceof MemberRef other && compareTo(other) == 0;
+    }
+
+    @Override
+    public int compareTo(MemberRef other) {
+        int cmp = Arrays.compare
+            (mBuffer, mClassOffset, mClassOffset + mClassLength,
+             other.mBuffer, other.mClassLength, other.mClassOffset + other.mClassLength);
+
+        if (cmp != 0) {
+            return cmp;
+        }
+
+        cmp = Arrays.compare
+            (mBuffer, mNameOffset, mNameOffset + mNameLength,
+             other.mBuffer, other.mNameLength, other.mNameOffset + other.mNameLength);
+
+        if (cmp != 0) {
+            return cmp;
+        }
+
+        return Arrays.compare
+            (mBuffer, mDescOffset, mDescOffset + mDescLength,
+             other.mBuffer, other.mDescLength, other.mDescOffset + other.mDescLength);
     }
 
     @Override

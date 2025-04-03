@@ -16,6 +16,8 @@
 
 package org.cojen.boxtin;
 
+import java.util.Objects;
+
 /**
  * 
  *
@@ -41,6 +43,13 @@ final class ImmutableRules implements Rules {
     private ImmutableRules(MemberRefPackageMap<PackageScope> packages, boolean allowByDefault) {
         mPackages = packages;
         mAllowByDefault = allowByDefault;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return this == obj || obj instanceof ImmutableRules other
+            && mAllowByDefault == other.mAllowByDefault
+            && Objects.equals(mPackages, other.mPackages);
     }
 
     @Override
@@ -126,6 +135,13 @@ final class ImmutableRules implements Rules {
             mAllowByDefault = allowByDefault;
         }
 
+        @Override
+        public boolean equals(Object obj) {
+            return this == obj || obj instanceof PackageScope other
+                && mAllowByDefault == other.mAllowByDefault
+                && Objects.equals(mClasses, other.mClasses);
+        }
+
         boolean checkMethodAccess(MemberRef methodRef) {
             ClassScope scope;
             if (mClasses == null || (scope = mClasses.get(methodRef)) == null) {
@@ -185,6 +201,16 @@ final class ImmutableRules implements Rules {
             mAllowFieldsByDefault = allowFieldsByDefault;
         }
 
+        @Override
+        public boolean equals(Object obj) {
+            return this == obj || obj instanceof ClassScope other
+                && mAllowMethodsByDefault == other.mAllowMethodsByDefault
+                && mAllowConstructorsByDefault == other.mAllowConstructorsByDefault
+                && mAllowFieldsByDefault == other.mAllowFieldsByDefault
+                && Objects.equals(mMethods, other.mMethods)
+                && Objects.equals(mFields, other.mFields);
+        }
+
         boolean checkMethodAccess(MemberRef methodRef) {
             MethodScope scope;
             if (mMethods == null || (scope = mMethods.get(methodRef)) == null) {
@@ -240,6 +266,13 @@ final class ImmutableRules implements Rules {
         private MethodScope(MemberRefDescriptorMap<Boolean> variants, boolean allowByDefault) {
             mVariants = variants;
             mAllowByDefault = allowByDefault;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return this == obj || obj instanceof MethodScope other
+                && mAllowByDefault == other.mAllowByDefault
+                && Objects.equals(mVariants, other.mVariants);
         }
 
         boolean checkMethodAccess(MemberRef methodRef) {
