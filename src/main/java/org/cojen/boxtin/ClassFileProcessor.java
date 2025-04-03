@@ -615,7 +615,6 @@ final class ClassFileProcessor {
             case 166: // IF_ACMPNE
             case 167: // GOTO
             case 168: // JSR
-            case 186: // INVOKEDYNAMIC
             case 187: // NEW
             case 189: // ANEWARRAY
             case 192: // CHECKCAST
@@ -633,6 +632,7 @@ final class ClassFileProcessor {
 
                 // Unchecked operations with four operand bytes...
 
+            case 186: // INVOKEDYNAMIC
             case 200: // GOTO_W
             case 201: // JSR_W
                 offset += 4;
