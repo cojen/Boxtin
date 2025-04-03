@@ -29,7 +29,6 @@ import java.lang.invoke.VarHandle;
  */
 public abstract class CachedChecker implements Checker {
     protected final Module module;
-    protected final ClassLoader loader;
 
     private final MemberRefClassCache<Class<?>, ClassNotFoundException> mClassCache =
         new MemberRefClassCache<>()
@@ -45,7 +44,7 @@ public abstract class CachedChecker implements Checker {
                 throw new ClassNotFoundException(e.toString());
             }
 
-            return Class.forName(name.replace('/', '.'), false, loader);
+            return Class.forName(name.replace('/', '.'), false, module.getClassLoader());
         }
     };
 
@@ -91,12 +90,9 @@ public abstract class CachedChecker implements Checker {
 
     /**
      * @param module the caller module
-     * @param loader the caller class loader; is used to check for inherited members; can be
-     * null for the bootstrap loader
      */
-    public CachedChecker(Module module, ClassLoader loader) {
+    public CachedChecker(Module module) {
         this.module = module;
-        this.loader = loader;
     }
 
     /*

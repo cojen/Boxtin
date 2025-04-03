@@ -42,8 +42,8 @@ final class ImmutableRules implements Rules {
     }
 
     @Override
-    public Checker apply(Module module, ClassLoader loader) {
-        return new CachedChecker(module, loader) {
+    public Checker apply(Module module) {
+        return new CachedChecker(module) {
             @Override
             protected boolean checkConstructorAccess(MemberRef ctorRef) {
                 return ImmutableRules.this.checkConstructorAccess(ctorRef);

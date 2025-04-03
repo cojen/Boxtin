@@ -24,8 +24,6 @@ package org.cojen.boxtin;
 public interface Rules {
     /**
      * @param module the caller module
-     * @param loader the caller class loader; is used to check for inherited members; can be
-     * null for the bootstrap loader
      */
-    public Checker apply(Module module, ClassLoader loader);
+    public Checker apply(Module module);
 }
