@@ -18,6 +18,7 @@ package org.cojen.boxtin;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.io.UTFDataFormatException;
 
 import java.lang.instrument.IllegalClassFormatException;
@@ -31,7 +32,7 @@ import static java.lang.invoke.MethodHandleInfo.*;
  *
  * @author Brian S. O'Neill
  */
-public final class MemberRef {
+final class MemberRef {
     private final byte[] mBuffer;
 
     private int mClassOffset, mClassLength;
@@ -42,6 +43,32 @@ public final class MemberRef {
 
     MemberRef(byte[] buffer) {
         mBuffer = buffer;
+    }
+
+    MemberRef(String className, String name, String descriptor) {
+        BasicEncoder encoder = UTFEncoder.localEncoder();
+
+        try {
+            encoder.writeUTF(className.replace('.', '/'));
+            mClassOffset = 2;
+            int pos = encoder.length();
+            mClassLength = pos - mClassOffset;
+
+            encoder.writeUTF(name);
+            mNameOffset = pos + 2;
+            pos = encoder.length();
+            mNameLength = pos - mNameOffset;
+
+            encoder.writeUTF(descriptor);
+            mDescOffset = pos + 2;
+            pos = encoder.length();
+            mDescLength = pos - mDescOffset;
+
+            mBuffer = encoder.toByteArray();
+        } catch (IOException e) {
+            // Not expected.
+            throw new UncheckedIOException(e);
+        }
     }
 
     /**

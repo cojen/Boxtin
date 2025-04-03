@@ -21,7 +21,10 @@ package org.cojen.boxtin;
  *
  * @author Brian S. O'Neill
  */
-public class JavaBaseRules {
+public final class JavaBaseRules {
+    private JavaBaseRules() {
+    }
+
     public static void applyRules(RulesBuilder b) {
         b.forPackage("java.io")
             .allowAll()

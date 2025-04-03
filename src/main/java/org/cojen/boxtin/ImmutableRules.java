@@ -28,6 +28,8 @@ final class ImmutableRules implements Rules {
     // Default is selected when no map entry is found.
     private final boolean mAllowByDefault;
 
+    private final SoftCache<Module, Checker> mCache = new SoftCache<>();
+
     /**
      * @param packages can be null when empty
      */
@@ -43,22 +45,36 @@ final class ImmutableRules implements Rules {
 
     @Override
     public Checker apply(Module module) {
-        return new CachedChecker(module) {
-            @Override
-            protected boolean checkConstructorAccess(MemberRef ctorRef) {
-                return ImmutableRules.this.checkConstructorAccess(ctorRef);
-            }
+        Checker checker = mCache.get(module);
 
-            @Override
-            protected boolean checkMethodAccess(MemberRef methodRef) {
-                return ImmutableRules.this.checkMethodAccess(methodRef);
-            }
+        if (checker == null) {
+            synchronized (mCache) {
+                checker = mCache.get(module);
 
-            @Override
-            protected boolean checkFieldAccess(MemberRef fieldRef) {
-                return ImmutableRules.this.checkFieldAccess(fieldRef);
+                if (checker == null) {
+                    checker = new Checker(module) {
+                        @Override
+                        boolean checkConstructorAccess(MemberRef ctorRef) {
+                            return ImmutableRules.this.checkConstructorAccess(ctorRef);
+                        }
+
+                        @Override
+                        boolean checkMethodAccess(MemberRef methodRef) {
+                            return ImmutableRules.this.checkMethodAccess(methodRef);
+                        }
+
+                        @Override
+                        boolean checkFieldAccess(MemberRef fieldRef) {
+                            return ImmutableRules.this.checkFieldAccess(fieldRef);
+                        }
+                    };
+                }
+
+                mCache.put(module, checker);
             }
-        };
+        }
+
+        return checker;
     }
 
     boolean checkConstructorAccess(MemberRef ctorRef) {

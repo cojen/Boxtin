@@ -206,25 +206,25 @@ final class ClassFileProcessor {
                 default -> throw new IllegalClassFormatException();
 
                 case REF_newInvokeSpecial -> {
-                    if (checker.isConstructorAllowed(memberRef)) {
+                    if (isConstructorAllowed(checker, memberRef)) {
                         return;
                     }
                 }
 
                 case REF_invokeStatic, REF_invokeSpecial -> {
-                    if (checker.isMethodAllowed(memberRef)) {
+                    if (isMethodAllowed(checker, memberRef)) {
                         return;
                     }
                 }
 
                 case REF_invokeVirtual, REF_invokeInterface -> {
-                    if (checker.isVirtualMethodAllowed(memberRef)) {
+                    if (isVirtualMethodAllowed(checker, memberRef)) {
                         return;
                     }
                 }
 
                 case REF_getField, REF_getStatic, REF_putField, REF_putStatic -> {
-                    if (checker.isFieldAllowed(memberRef)) {
+                    if (isFieldAllowed(checker, memberRef)) {
                         return;
                     }
                 }
@@ -389,7 +389,7 @@ final class ClassFileProcessor {
             case 181: // PUTFIELD
                 mConstantPool.decodeFieldRef(decodeUnsignedShortBE(buffer, offset), memberRef);
                 offset += 2;
-                if (!checker.isFieldAllowed(memberRef)) {
+                if (!isFieldAllowed(checker, memberRef)) {
                     break;
                 }
                 continue;
@@ -400,15 +400,15 @@ final class ClassFileProcessor {
                 mConstantPool.decodeMethodRef(decodeUnsignedShortBE(buffer, offset), memberRef);
                 offset += 2;
                 if (memberRef.isConstructor()) {
-                    if (!checker.isConstructorAllowed(memberRef)) {
+                    if (!isConstructorAllowed(checker, memberRef)) {
                         break;
                     }
                 } else if (op != 182) { // !INVOKEVIRTUAL
-                    if (!checker.isMethodAllowed(memberRef)) {
+                    if (!isMethodAllowed(checker, memberRef)) {
                         break;
                     }
                 } else {
-                    if (!checker.isVirtualMethodAllowed(memberRef)) {
+                    if (!isVirtualMethodAllowed(checker, memberRef)) {
                         break;
                     }
                 }
@@ -417,7 +417,7 @@ final class ClassFileProcessor {
             case 185: // INVOKEINTERFACE
                 mConstantPool.decodeMethodRef(decodeUnsignedShortBE(buffer, offset), memberRef);
                 offset += 4;
-                if (!checker.isVirtualMethodAllowed(memberRef)) {
+                if (!isVirtualMethodAllowed(checker, memberRef)) {
                     break;
                 }
                 continue;
@@ -689,6 +689,51 @@ final class ClassFileProcessor {
                 .computeIfAbsent(methodName, k -> new HashMap<>())
                 .computeIfAbsent(descriptor, k -> new HashSet<>())
                 .add(opOffset - startOffset);
+        }
+    }
+
+    /*
+      Note regarding the ClassNotFoundException behavor:
+
+      If a dependent class isn't found, then it might be assumed that upon being loaded the
+      class being checked will throw a NoClassDefFoundError. By allowing access, the correct
+      error will be thrown. This is risky, because the ClassLoader implementation might not
+      consistently throw a ClassNotFoundException for a given class name.
+
+      For this reason, a ClassNotFoundException results in a denial, and thus a
+      SecurityException is thrown instead. This might be confusing, and so at some point it
+      might make sense to include additional information in the SecurityException message.
+     */
+
+    private static boolean isConstructorAllowed(Checker checker, MemberRef ctorRef) {
+        try {
+            return checker.isConstructorAllowed(ctorRef);
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
+
+    private static boolean isMethodAllowed(Checker checker, MemberRef ctorRef) {
+        try {
+            return checker.isMethodAllowed(ctorRef);
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
+
+    private static boolean isVirtualMethodAllowed(Checker checker, MemberRef ctorRef) {
+        try {
+            return checker.isVirtualMethodAllowed(ctorRef);
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
+
+    private static boolean isFieldAllowed(Checker checker, MemberRef ctorRef) {
+        try {
+            return checker.isFieldAllowed(ctorRef);
+        } catch (ClassNotFoundException e) {
+            return false;
         }
     }
 
