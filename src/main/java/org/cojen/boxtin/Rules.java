@@ -25,12 +25,7 @@ import java.io.PrintWriter;
  *
  * @author Brian S. O'Neill
  */
-public interface Rules {
-    /**
-     * @param module the caller's module
-     */
-    public Checker checkerFor(Module module);
-
+public interface Rules extends Controller {
     /**
      * Print a description of the rules to the given Appendable object.
      *
