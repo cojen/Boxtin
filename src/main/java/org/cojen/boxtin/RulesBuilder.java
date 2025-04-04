@@ -49,6 +49,16 @@ public final class RulesBuilder {
     }
 
     /**
+     * Applies a set of rules to this builder.
+     *
+     * @return this
+     */
+    public RulesBuilder applyRules(RulesApplier applier) {
+        applier.applyRulesTo(this);
+        return this;
+    }
+
+    /**
      * Deny access to all packages, superseding all previous rules. This action is
      * recursive, denying access to all packages, classes, constructors, etc.
      *
