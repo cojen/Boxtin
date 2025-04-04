@@ -52,7 +52,7 @@ final class BasicDecoder extends DataInputStream {
         ((Buffer) in).offset(offset);
     }
 
-    private static class Buffer extends ByteArrayInputStream {
+    private static final class Buffer extends ByteArrayInputStream {
         Buffer(byte[] buffer) {
             super(buffer);
         }

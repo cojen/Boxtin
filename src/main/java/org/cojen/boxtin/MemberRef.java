@@ -240,13 +240,7 @@ final class MemberRef implements Comparable<MemberRef> {
      * Returns true if the name is <init>.
      */
     public boolean isConstructor() {
-        if (mNameLength != 6) {
-            return false;
-        }
-        byte[] buffer = mBuffer;
-        int offset = mNameOffset;
-        return Utils.decodeIntBE(buffer, offset) == 0x3c696e69 // <ini
-            && Utils.decodeUnsignedShortBE(buffer, offset + 4) == 0x743e; // t>
+        return Utils.isConstructor(mBuffer, mNameOffset, mNameLength);
     }
 
     /**

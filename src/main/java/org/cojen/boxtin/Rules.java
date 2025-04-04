@@ -16,6 +16,10 @@
 
 package org.cojen.boxtin;
 
+import java.io.IOException;
+import java.io.PrintStream;
+import java.io.PrintWriter;
+
 /**
  * 
  *
@@ -26,4 +30,34 @@ public interface Rules {
      * @param module the caller's module
      */
     public Checker checkerFor(Module module);
+
+    /**
+     * Print a description of the rules to the given Appendable object.
+     *
+     * @param indent minimum indent for each line; pass an empty string for no indent
+     * @param plusIndent additional indent when entering a scope
+     */
+    public void printTo(Appendable a, String indent, String plusIndent) throws IOException;
+
+    /**
+     * Print a description of the rules to the given PrintStream.
+     */
+    public default void printTo(PrintStream ps) {
+        try {
+            printTo(ps, "", "  ");
+        } catch (IOException e) {
+            // Not expected.
+        }
+    }
+
+    /**
+     * Print a description of the rules to the given PrintStream.
+     */
+    public default void printTo(PrintWriter pw) {
+        try {
+            printTo(pw, "", "  ");
+        } catch (IOException e) {
+            // Not expected.
+        }
+    }
 }

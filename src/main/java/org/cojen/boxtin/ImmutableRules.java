@@ -16,7 +16,14 @@
 
 package org.cojen.boxtin;
 
+import java.io.IOException;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+
+import static org.cojen.boxtin.Utils.isEmpty;
 
 /**
  * 
@@ -86,6 +93,43 @@ final class ImmutableRules implements Rules {
         return checker;
     }
 
+    @Override
+    public void printTo(Appendable a, String indent, String plusIndent) throws IOException {
+        a.append(indent).append("rules").append(" {").append('\n');
+
+        String scopeIndent = indent + plusIndent;
+
+        printAllowOrDenyAll(a, scopeIndent, mAllowByDefault).append(';').append('\n');
+
+        var decoder = new UTFDecoder();
+
+        if (!isEmpty(mPackages)) {
+            String subScopeIndent = scopeIndent + plusIndent;
+
+            for (Map.Entry<byte[], PackageScope> e : mPackages.sortEntries()) {
+                a.append('\n').append(scopeIndent).append("for ").append("package").append(' ');
+                a.append(decoder.decode(e.getKey()).replace('/', '.'));
+                a.append(" {").append('\n');
+
+                e.getValue().printTo(a, subScopeIndent, plusIndent, decoder);
+
+                a.append(scopeIndent).append('}').append('\n');
+            }
+        }
+
+        a.append(indent).append('}').append('\n');
+    }
+
+    private static String allowOrDeny(boolean allow) {
+        return allow ? "allow" : "deny";
+    }
+
+    private static Appendable printAllowOrDenyAll(Appendable a, String indent, boolean allow)
+        throws IOException
+    {
+        return a.append(indent).append(allowOrDeny(allow)).append(" all");
+    }
+ 
     boolean checkConstructorAccess(MemberRef ctorRef) {
         return checkMethodAccess(ctorRef);
     }
@@ -140,6 +184,25 @@ final class ImmutableRules implements Rules {
             return this == obj || obj instanceof PackageScope other
                 && mAllowByDefault == other.mAllowByDefault
                 && Objects.equals(mClasses, other.mClasses);
+        }
+
+        void printTo(Appendable a, String indent, String plusIndent, UTFDecoder decoder)
+            throws IOException
+        {
+            printAllowOrDenyAll(a, indent, mAllowByDefault).append(';').append('\n');
+
+            if (!isEmpty(mClasses)) {
+                String scopeIndent = indent + plusIndent;
+
+                for (Map.Entry<byte[], ClassScope> e : mClasses.sortEntries()) {
+                    a.append('\n').append(indent).append("for ").append("class").append(' ');
+                    a.append(decoder.decode(e.getKey())).append(" {").append('\n');
+
+                    e.getValue().printTo(a, scopeIndent, plusIndent, decoder);
+
+                    a.append(indent).append('}').append('\n');
+                }
+            }
         }
 
         boolean checkMethodAccess(MemberRef methodRef) {
@@ -211,6 +274,83 @@ final class ImmutableRules implements Rules {
                 && Objects.equals(mFields, other.mFields);
         }
 
+        void printTo(Appendable a, String indent, String plusIndent, UTFDecoder decoder)
+            throws IOException
+        {
+            if ((mAllowConstructorsByDefault == mAllowMethodsByDefault)
+                && (mAllowMethodsByDefault == mAllowFieldsByDefault))
+            {
+                printAllowOrDenyAll(a, indent, mAllowConstructorsByDefault)
+                    .append(';').append('\n');
+            } else {
+                printAllowOrDenyAll(a, indent, mAllowConstructorsByDefault)
+                    .append(" constructors").append(';').append('\n');
+                printAllowOrDenyAll(a, indent, mAllowMethodsByDefault)
+                    .append(" methods").append(';').append('\n');
+                printAllowOrDenyAll(a, indent, mAllowFieldsByDefault)
+                    .append(" fields").append(';').append('\n');
+            }
+
+            if (!isEmpty(mMethods)) {
+                String scopeIndent = indent + plusIndent;
+
+                List<Map.Entry<byte[], MethodScope>> entries = mMethods.sortEntries();
+
+                for (Map.Entry<byte[], MethodScope> e : entries) {
+                    if (Utils.isConstructor(e.getKey())) {
+                        printMethod(a, indent, plusIndent, decoder, scopeIndent, e, true);
+                    }
+                }
+
+                for (Map.Entry<byte[], MethodScope> e : entries) {
+                    if (!Utils.isConstructor(e.getKey())) {
+                        printMethod(a, indent, plusIndent, decoder, scopeIndent, e, false);
+                    }
+                }
+            }
+
+            if (!isEmpty(mFields)) {
+                String scopeIndent = indent + plusIndent;
+
+                for (Map.Entry<byte[], Boolean> e : mFields) {
+                    a.append('\n').append(indent).append(allowOrDeny(e.getValue()));
+                    a.append(" field ").append(decoder.decode(e.getKey())).append(';').append('\n');
+                }
+            }
+        }
+
+        private void printMethod(Appendable a, String indent, String plusIndent,
+                                 UTFDecoder decoder, String scopeIndent,
+                                 Map.Entry<byte[], MethodScope> entry, boolean forCtor)
+            throws IOException
+        {
+            String type;
+            if (forCtor) {
+                type = "constructor";
+            } else {
+                type = "method";
+            }
+
+            MethodScope scope = entry.getValue();
+
+            if (isEmpty(scope.mVariants)) {
+                if (!forCtor) {
+                    a.append('\n').append(indent);
+                    a.append(allowOrDeny(scope.mAllowByDefault)).append(' ').append(type);
+                    a.append(' ').append(decoder.decode(entry.getKey()));
+                    a.append(';').append('\n');
+                }
+            } else {
+                a.append('\n').append(indent).append("for ").append(type);
+                if (!forCtor) {
+                    a.append(' ').append(decoder.decode(entry.getKey()));
+                }
+                a.append(" {").append('\n');
+                scope.printTo(a, scopeIndent, plusIndent, decoder);
+                a.append(indent).append('}').append('\n');
+            }
+        }
+
         boolean checkMethodAccess(MemberRef methodRef) {
             MethodScope scope;
             if (mMethods == null || (scope = mMethods.get(methodRef)) == null) {
@@ -273,6 +413,104 @@ final class ImmutableRules implements Rules {
             return this == obj || obj instanceof MethodScope other
                 && mAllowByDefault == other.mAllowByDefault
                 && Objects.equals(mVariants, other.mVariants);
+        }
+
+        void printTo(Appendable a, String indent, String plusIndent, UTFDecoder decoder)
+            throws IOException
+        {
+            printAllowOrDenyAll(a, indent, mAllowByDefault).append(';').append('\n');
+
+            if (!isEmpty(mVariants)) {
+                for (Map.Entry<byte[], Boolean> e : mVariants.sortEntries()) {
+                    a.append('\n').append(indent).append(allowOrDeny(e.getValue()));
+                    a.append(" variant (");
+
+                    String descriptor = decoder.decode(e.getKey());
+                    List<String> paramTypes = tryParseDescriptor(descriptor);
+                    if (paramTypes == null) {
+                        a.append(descriptor);
+                    } else {
+                        int num = 0;
+                        for (String type : paramTypes) {
+                            if (num++ > 0) {
+                                a.append(", ");
+                            }
+                            a.append(type);
+                        }
+                    }
+
+                    a.append(')').append('\n');
+                }
+            }
+        }
+
+        private List<String> tryParseDescriptor(String descriptor) {
+            var paramTypes = new ArrayList<String>(4);
+
+            for (int pos = 0; pos < descriptor.length(); ) {
+                pos = addParamType(paramTypes, descriptor, pos);
+                if (pos <= 0) {
+                    return null;
+                }
+            }
+
+            return paramTypes;
+        }
+
+        /**
+         * @return updated pos; is 0 if parse failed
+         */
+        private static int addParamType(ArrayList<String> paramTypes,
+                                        String descriptor, int pos)
+        {
+            char first = descriptor.charAt(pos);
+
+            Class<?> type = null;
+            String typeName = null;
+
+            switch (first) {
+                default -> {
+                    return 0;
+                }
+                    
+                case 'Z' -> type = boolean.class;
+                case 'B' -> type = byte.class;
+                case 'S' -> type = short.class;
+                case 'C' -> type = char.class;
+                case 'I' -> type = int.class;
+                case 'F' -> type = float.class;
+                case 'D' -> type = double.class;
+                case 'J' -> type = long.class;
+                case 'V' -> type = void.class;
+
+                case '[' -> {
+                    pos = addParamType(paramTypes, descriptor, pos + 1);
+                    if (pos > 0) {
+                        int ix = paramTypes.size() - 1;
+                        paramTypes.set(ix, paramTypes.get(ix) + "[]");
+                    }
+                    return pos;
+                }
+
+                case 'L' -> {
+                    pos++;
+                    int end  = descriptor.indexOf(';', pos);
+                    if (end < 0) {
+                        return 0;
+                    }
+                    typeName = descriptor.substring(pos, end).replace('/', '.');
+                    pos = end;
+                }
+            }
+
+            if (type != null) {
+                assert typeName == null;
+                typeName = type.getName();
+            }
+
+            paramTypes.add(typeName);
+
+            return pos + 1;
         }
 
         boolean checkMethodAccess(MemberRef methodRef) {

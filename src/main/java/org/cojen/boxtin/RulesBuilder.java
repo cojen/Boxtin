@@ -27,6 +27,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 
+import static org.cojen.boxtin.Utils.*;
+
 /**
  * 
  *
@@ -176,10 +178,6 @@ public final class RulesBuilder {
              }));
     }
 
-    private static boolean isEmpty(Map<?, ?> map) {
-        return map == null || map.isEmpty();
-    }
-
     private static String nameFor(Class<?> clazz) {
         String name = clazz.getSimpleName();
         Class<?> enclosing = clazz.getEnclosingClass();
@@ -199,7 +197,7 @@ public final class RulesBuilder {
             return new Class<?>[0];
         }
 
-        var paramTypes = new ArrayList<Class<?>>();
+        var paramTypes = new ArrayList<Class<?>>(4);
 
         for (int pos = 0; pos < descriptor.length(); ) {
             pos = addParamType(paramTypes, loader, descriptor, pos);
@@ -209,7 +207,7 @@ public final class RulesBuilder {
     }
 
     /**
-     * @return update pos
+     * @return updated pos
      */
     private static int addParamType(ArrayList<Class<?>> paramTypes,
                                     ClassLoader loader, String descriptor, int pos)
@@ -265,7 +263,7 @@ public final class RulesBuilder {
                                                   final Class<?>... paramTypes)
     {
         for (Constructor c : clazz.getDeclaredConstructors()) {
-            if (Utils.isAccessible(c) && Arrays.equals(c.getParameterTypes(), paramTypes)) {
+            if (isAccessible(c) && Arrays.equals(c.getParameterTypes(), paramTypes)) {
                 return c;
             }
         }
@@ -284,7 +282,7 @@ public final class RulesBuilder {
                                         final Class<?>... paramTypes)
     {
         for (Method m : clazz.getDeclaredMethods()) {
-            if (Utils.isAccessible(m) && m.getName().equals(name)) {
+            if (isAccessible(m) && m.getName().equals(name)) {
                 if (paramTypes == null || Arrays.equals(m.getParameterTypes(), paramTypes)) {
                     return m;
                 }
@@ -311,7 +309,7 @@ public final class RulesBuilder {
 
     private static Field tryFindField(final Class<?> clazz, final String name) {
         for (Field f : clazz.getDeclaredFields()) {
-            if (Utils.isAccessible(f) && f.getName().equals(name)) {
+            if (isAccessible(f) && f.getName().equals(name)) {
                 return f;
             }
         }
@@ -602,7 +600,7 @@ public final class RulesBuilder {
          * variants are explicitly allowed
          */
         public ClassScope allowVariant(Class<?>... paramTypes) {
-            return allowVariant(Utils.partialDescriptorFor(paramTypes));
+            return allowVariant(partialDescriptorFor(paramTypes));
         }
 
         /**
@@ -703,7 +701,7 @@ public final class RulesBuilder {
          * variants are explicitly denied
          */
         public ClassScope denyVariant(Class<?>... paramTypes) {
-            return denyVariant(Utils.partialDescriptorFor(paramTypes));
+            return denyVariant(partialDescriptorFor(paramTypes));
         }
 
         /**

@@ -16,8 +16,14 @@
 
 package org.cojen.boxtin;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 
 import java.util.stream.Stream;
@@ -30,7 +36,7 @@ import java.util.stream.Stream;
  * @param <SK> stored key type
  * @param <V> value type
  */
-abstract class ImmutableLookupMap<LK, SK, V> {
+abstract class ImmutableLookupMap<LK, SK, V> implements Iterable<Map.Entry<SK, V>> {
     private final Entry<SK, V>[] mEntries;
 
     /**
@@ -70,6 +76,71 @@ abstract class ImmutableLookupMap<LK, SK, V> {
         return mEntries == null;
     }
 
+    @Override
+    public Iterator<Map.Entry<SK, V>> iterator() {
+        if (mEntries == null) {
+            return Collections.emptyIterator();
+        }
+
+        return new Iterator<>() {
+            private int mSlot;
+            private Entry<SK, V> mNext;
+
+            @Override
+            public boolean hasNext() {
+                if (mNext != null) {
+                    return true;
+                }
+                return prepareNext();
+            }
+
+            @Override
+            public Map.Entry<SK, V> next() {
+                Entry<SK, V> next = mNext;
+                if (next == null) {
+                    if (!prepareNext()) {
+                        throw new NoSuchElementException();
+                    }
+                    next = mNext;
+                }
+                if ((mNext = next.mNext) == null) {
+                    mSlot++;
+                }
+                return next;
+            }
+
+            private boolean prepareNext() {
+                while (true) {
+                    if (mSlot >= mEntries.length) {
+                        return false;
+                    }
+                    Entry<SK, V> next = mEntries[mSlot];
+                    if (next != null) {
+                        mNext = next;
+                        return true;
+                    }
+                    mSlot++;
+                }
+            }
+        };
+    }
+
+    public List<Map.Entry<SK, V>> sortEntries(Comparator<SK> comparator) {
+        if (mEntries == null) {
+            return List.of();
+        }
+
+        var list = new ArrayList<Map.Entry<SK, V>>(mEntries.length);
+
+        for (Map.Entry<SK, V> e : this) {
+            list.add(e);
+        }
+
+        Collections.sort(list, (a, b) -> comparator.compare(a.getKey(), b.getKey()));
+
+        return list;
+    }
+
     /**
      * Note: Only truly works when the populators provided entries in the same order.
      */
@@ -96,7 +167,7 @@ abstract class ImmutableLookupMap<LK, SK, V> {
      */
     protected abstract boolean matches(LK lookupKey, SK existingKey);
 
-    private static class Entry<SK, V> {
+    private static class Entry<SK, V> implements Map.Entry<SK, V> {
         final SK mStoredKey;
         final int mHash;
         final V mValue;
@@ -107,6 +178,26 @@ abstract class ImmutableLookupMap<LK, SK, V> {
             mHash = hash;
             mValue = value;
             mNext = next;
+        }
+
+        @Override
+        public SK getKey() {
+            return mStoredKey;
+        }
+
+        @Override
+        public V getValue() {
+            return mValue;
+        }
+
+        @Override
+        public V setValue(V value) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int hashCode() {
+            return mHash;
         }
 
         @Override

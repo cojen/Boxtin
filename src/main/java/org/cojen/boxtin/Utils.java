@@ -25,6 +25,7 @@ import java.lang.reflect.Modifier;
 import java.nio.ByteOrder;
 
 import java.util.Arrays;
+import java.util.Map;
 
 /**
  * 
@@ -74,6 +75,24 @@ final class Utils {
         return (int) cIntArrayBEHandle.get(b, offset);
     }
 
+    /**
+     * Returns true if the array value is <init>.
+     */
+    static boolean isConstructor(byte[] b) {
+        return isConstructor(b, 0, b.length);
+    }
+
+    /**
+     * Returns true if the array slice value is <init>.
+     */
+    static boolean isConstructor(byte[] b, int offset, int length) {
+        if (length != 6) {
+            return false;
+        }
+        return decodeIntBE(b, offset) == 0x3c696e69 // <ini
+            && decodeUnsignedShortBE(b, offset + 4) == 0x743e; // t>
+    }
+
     static int roundUpPower2(int i) {
         // Hacker's Delight figure 3-3.
         i--;
@@ -117,5 +136,9 @@ final class Utils {
             b.append(c.descriptorString());
         }
         return b.append(')').append(returnType.descriptorString()).toString();
+    }
+
+    static boolean isEmpty(Map<?, ?> map) {
+        return map == null || map.isEmpty();
     }
 }

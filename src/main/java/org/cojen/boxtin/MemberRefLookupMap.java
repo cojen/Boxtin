@@ -16,6 +16,8 @@
 
 package org.cojen.boxtin;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import java.util.stream.Stream;
@@ -33,6 +35,10 @@ abstract class MemberRefLookupMap<V> extends ImmutableLookupMap<MemberRef, byte[
                   return Map.entry(UTFEncoder.encode(e.getKey()), e.getValue());
               })
         );
+    }
+
+    public List<Map.Entry<byte[], V>> sortEntries() {
+        return sortEntries(Arrays::compareUnsigned);
     }
 
     @Override
