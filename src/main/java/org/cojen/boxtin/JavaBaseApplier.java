@@ -251,7 +251,13 @@ final class JavaBaseApplier implements RulesApplier {
             .end()
             ;
 
-        b.forPackage("java.lang.annotation").allowAll();
+        b.forPackage("java.lang.annotation")
+            .allowAll()
+
+            .forClass("AnnotationTypeMismatchException")
+            .denyMethod("element")
+            .end()
+            ;
 
         b.forPackage("java.lang.classfile").allowAll();
 
@@ -267,11 +273,6 @@ final class JavaBaseApplier implements RulesApplier {
 
         b.forPackage("java.lang.invoke")
             .allowAll()
-
-            .forClass("LambdaMetafactory")
-            // FIXME: LambdaMetafactory has special checks. The implementation MethodHandle
-            // might reside in a different package. Are module checks sufficient?
-            .end()
 
             .forClass("MethodHandles")
             .denyMethod("privateLookupIn")
@@ -335,6 +336,10 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forClass("Method")
             .denyMethod("setAccessible")
+            .end()
+
+            .forClass("RecordComponent")
+            .denyMethod("getAccessor")
             .end()
 
             .forClass("Proxy")
