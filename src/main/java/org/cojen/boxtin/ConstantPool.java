@@ -362,15 +362,16 @@ final class ConstantPool {
      * Adds a constant name and descriptor for a method, with a generated name. The extend
      * method must have already been called.
      *
+     * @param prefix name prefix
      * @param classIndex valid index into the constant pool which refers to a CONSTANT_Class.
      * @param descriptor UTF-8 encoded method descriptor
      * @param nameRef optional; is set to the generated name
      */
-    C_MemberRef addUniqueMethod(int classIndex, byte[] descriptor, String[] nameRef) {
+    C_MemberRef addUniqueMethod(byte prefix, int classIndex, byte[] descriptor, String[] nameRef) {
         var classConstant = (C_Class) mIndexedConstants[classIndex - 1];
  
         var name = new byte[1 + 9]; // one prefix byte plus up to nine digits
-        name[0] = '_'; // name prefix
+        name[0] = prefix;
         int nameLength = 2; // start with one random digit
 
         var rnd = ThreadLocalRandom.current();
@@ -411,24 +412,48 @@ final class ConstantPool {
     }
 
     /**
-     * Returns the index to the CONSTANT_Class representation of SecurityException, adding it
+     * Returns the index to the CONSTANT_String representation of the given string, adding it
      * if necessary. The extend method must have already been called.
      */
-    C_Class securityException() {
-        String name = SecurityException.class.getName().replace('.', '/');
-        return addConstant(new C_Class(addConstant(new C_UTF8(name))));
+    int strIndex(String str) {
+        C_UTF8 utf = addConstant(new C_UTF8(UTFEncoder.encode(str)));
+        // CONSTANT_String tag is 8.
+        return addConstant(new C_String(8, utf)).mIndex;
     }
 
     /**
-     * Returns the index to the CONSTANT_Methodref representation of the no-op constructor init
-     * method, adding it if necessary. The extend method must have already been called.
+     * Returns the index to the CONSTANT_Class representation of the given class, adding it if
+     * necessary. The extend method must have already been called.
      */
-    C_MemberRef ctorInitStr(C_Class securityException) {
+    C_Class addClass(Class clazz) {
+        return addClass(clazz.getName());
+    }
+
+    C_Class addClass(String name) {
+        return addConstant(new C_Class(addConstant(new C_UTF8(name.replace('.', '/')))));
+    }
+
+    /**
+     * Returns the index to the CONSTANT_Methodref representation of the constructor init
+     * method, adding it if necessary. The extend method must have already been called.
+     *
+     * @param desc can pass null if no args
+     */
+    C_MemberRef ctorInitStr(C_Class ex, String desc) {
         C_UTF8 nameConstant = addConstant(new C_UTF8(new byte[] {'<', 'i', 'n', 'i', 't', '>'}));
-        C_UTF8 descConstant = addConstant(new C_UTF8(new byte[] {'(', ')', 'V'}));
+
+        byte[] descBytes;
+        if (desc == null) {
+            descBytes = new byte[] {'(', ')', 'V'};
+        } else {
+            descBytes = UTFEncoder.encode(desc);
+        }
+
+        C_UTF8 descConstant = addConstant(new C_UTF8(descBytes));
+
         C_NameAndType natConstant = addConstant(new C_NameAndType(nameConstant, descConstant));
         // CONSTANT_Methodref tag is 10.
-        return addConstant(new C_MemberRef(10, securityException, natConstant));
+        return addConstant(new C_MemberRef(10, ex, natConstant));
     }
 
     void writeTo(BasicEncoder encoder) throws IOException, IllegalClassFormatException {

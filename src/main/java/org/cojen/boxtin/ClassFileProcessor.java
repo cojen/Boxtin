@@ -40,9 +40,7 @@ import java.io.UncheckedIOException;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 
 import java.util.function.Predicate;
@@ -122,8 +120,8 @@ final class ClassFileProcessor {
     private BasicEncoder mMethodsEncoder;
 
     // Is set as a side-effect of calling the check method.
-    // Maps method names to descriptors to sets of byte code indexes.
-    private Map<String, Map<String, Set<Integer>>> mMethodsToRedefine;
+    // Maps method names to descriptors to byte code indexes to transform operations.
+    private Map<String, Map<String, Map<Integer, Transform>>> mMethodsToTransform;
 
     // Is set as a side-effect of calling the check method. It's the offset immediately after
     // the methods.
@@ -193,55 +191,47 @@ final class ClassFileProcessor {
         // Stash the location of where the class attributes are defined.
         mAttributesOffset = decoder.offset();
 
-        if (mMethodsToRedefine != null) {
+        if (mMethodsToTransform != null) {
             // Define a trampoline method to throw an exception, as a bug workaround.
             prepareTransformation();
-            mRethrowMethodName = addRethrowMethod();
+            addRethrowMethod();
         }
 
         // Now check the constant MethodHandles.
 
         mConstantPool.decodeMethodHandleRefs(mMemberRef, (kind, offset, memberRef) -> {
-            switch (kind) {
+            Transform transform = switch (kind) {
                 default -> throw new IllegalClassFormatException();
 
-                case REF_newInvokeSpecial -> {
-                    if (isConstructorAllowed(checker, memberRef)) {
-                        return;
-                    }
-                }
+                case REF_newInvokeSpecial ->
+                    checkConstructor(checker, memberRef);
 
-                case REF_invokeStatic, REF_invokeSpecial -> {
-                    if (isMethodAllowed(checker, memberRef)) {
-                        return;
-                    }
-                }
+                case REF_invokeStatic, REF_invokeSpecial ->
+                    checkMethod(checker, memberRef);
 
-                case REF_invokeVirtual, REF_invokeInterface -> {
-                    if (isVirtualMethodAllowed(checker, memberRef)) {
-                        return;
-                    }
-                }
+                case REF_invokeVirtual, REF_invokeInterface ->
+                    checkVirtualMethod(checker, memberRef);
 
-                case REF_getField, REF_getStatic, REF_putField, REF_putStatic -> {
-                    if (isFieldAllowed(checker, memberRef)) {
-                        return;
-                    }
-                }
+                case REF_getField, REF_getStatic, REF_putField, REF_putStatic ->
+                    checkField(checker, memberRef);
+            };
+
+            if (transform == null) {
+                return;
             }
 
-            // This point is reached if the MethodHandle reference is denied.
+            // This point is reached if a transform is required.
 
             byte[] mutableBuffer = prepareTransformation();
             byte[] descriptor = memberRef.compatibleMethodDescriptor(kind);
-            int referenceIndex = addDenyHookMethod(descriptor);
+            int referenceIndex = addDenyHookMethod(transform, descriptor);
 
             // Change the reference_kind and reference_index.
             mutableBuffer[offset - 1] = REF_invokeStatic;
             encodeShortBE(mutableBuffer, offset, referenceIndex);
         });
 
-        return mMethodsToRedefine == null && !mConstantPool.hasBeenExtended();
+        return mMethodsToTransform == null && !mConstantPool.hasBeenExtended();
     }
 
     /**
@@ -296,7 +286,7 @@ final class ClassFileProcessor {
             throw new UncheckedIOException(e);
         }
 
-        if (mMethodsToRedefine == null) {
+        if (mMethodsToTransform == null) {
             return buffer;
         }
 
@@ -305,14 +295,14 @@ final class ClassFileProcessor {
 
         class Transformer implements Predicate<MethodModel>, CodeTransform {
             private int mByteCodeIndex;
-            private Set<Integer> mToDeny;
+            private Map<Integer, Transform> mTransforms;
 
             @Override
             public boolean test(MethodModel mm) {
-                Map<String, Set<Integer>> descMap =
-                    mMethodsToRedefine.get(mm.methodName().stringValue());
+                Map<String, Map<Integer, Transform>> descMap =
+                    mMethodsToTransform.get(mm.methodName().stringValue());
                 return descMap != null &&
-                    (mToDeny = descMap.get(mm.methodType().stringValue())) != null;
+                    (mTransforms = descMap.get(mm.methodType().stringValue())) != null;
             }
 
             @Override
@@ -327,24 +317,11 @@ final class ClassFileProcessor {
                     return;
                 }
 
-                if (mToDeny.contains(mByteCodeIndex)) {
-                    var exDesc = ClassDesc.of("java.lang.SecurityException");
-                    cb.new_(exDesc);
-                    cb.dup();
-                    cb.invokespecial(exDesc, "<init>", MethodTypeDesc.of(ConstantDescs.CD_void));
+                Transform transform = mTransforms.get(mByteCodeIndex);
 
-                    // Ideally I'd just throw the exception at this point, but the classfile
-                    // API has a bug. When using the PATCH_DEAD_CODE option, the
-                    // LocalVariableTable isn't patched, and so it might have illegal entries.
-                    // When using the KEEP_DEAD_CODE option, the stack map table cannot be
-                    // generated. This workaround throws the exception using a trampoline
-                    // method, and so it doesn't interfere with flow analysis.
-                    cb.invokestatic(model.thisClass().asSymbol(), mRethrowMethodName,
-                                    MethodTypeDesc.of(ConstantDescs.CD_void,
-                                                      Throwable.class.describeConstable().get()));
+                if (transform == null || transform.apply(model, cb)) {
+                    cb.with(ce);
                 }
-
-                cb.with(ce);
 
                 mByteCodeIndex += i.sizeInBytes();
             }
@@ -354,6 +331,69 @@ final class ClassFileProcessor {
         ClassTransform ct = ClassTransform.transformingMethodBodies(transformer, transformer);
 
         return cf.transformClass(model, ct);
+    }
+
+
+    private abstract sealed class Transform {
+        /**
+         * @return true if the original CodeElement should be kept
+         */
+        abstract boolean apply(ClassModel model, CodeBuilder cb);
+
+        /**
+         * Generates code to throw an exception which is on the stack.
+         */
+        void throwException(ClassModel model, CodeBuilder cb) {
+            // Ideally I'd just directly throw the exception at this point, but the classfile
+            // API has a bug. When using the PATCH_DEAD_CODE option, the LocalVariableTable
+            // isn't patched, and so it might have illegal entries. When using the
+            // KEEP_DEAD_CODE option, the stack map table cannot be generated. This workaround
+            // throws the exception using a trampoline method, and so it doesn't interfere with
+            // code flow analysis.
+            cb.invokestatic(model.thisClass().asSymbol(), mRethrowMethodName,
+                            MethodTypeDesc.of(ConstantDescs.CD_void,
+                                              Throwable.class.describeConstable().get()));
+        }
+    }
+
+    private final class Deny extends Transform {
+        @Override
+        boolean apply(ClassModel model, CodeBuilder cb) {
+            var exDesc = ClassDesc.of("java.lang.SecurityException");
+            cb.new_(exDesc);
+            cb.dup();
+            cb.invokespecial(exDesc, "<init>", MethodTypeDesc.of(ConstantDescs.CD_void));
+            throwException(model, cb);
+            return false;
+        }
+    }
+
+    private final class ClassNotFound extends Transform {
+        private final String mName;
+
+        ClassNotFound(String name) {
+            if (name != null && name.isEmpty()) {
+                name = null;
+            }
+            mName = name;
+        }
+
+        @Override
+        boolean apply(ClassModel model, CodeBuilder cb) {
+            var exDesc = ClassDesc.of("java.lang.NoClassDefFoundError");
+            cb.new_(exDesc);
+            cb.dup();
+            MethodTypeDesc mtd;
+            if (mName == null) {
+                mtd = MethodTypeDesc.of(ConstantDescs.CD_void);
+            } else {
+                mtd = MethodTypeDesc.of(ConstantDescs.CD_void, ConstantDescs.CD_String);
+                cb.ldc(mName);
+            }
+            cb.invokespecial(exDesc, "<init>", mtd);
+            throwException(model, cb);
+            return false;
+        }
     }
 
     private void checkCode(final int name_index, final int descriptor_index,
@@ -378,6 +418,8 @@ final class ClassFileProcessor {
             final int opOffset = offset;
             int op = buffer[offset++] & 0xff;
 
+            Transform transform;
+
             switch (op) {
             default: throw new IllegalClassFormatException();
 
@@ -389,10 +431,8 @@ final class ClassFileProcessor {
             case 181: // PUTFIELD
                 mConstantPool.decodeFieldRef(decodeUnsignedShortBE(buffer, offset), memberRef);
                 offset += 2;
-                if (!isFieldAllowed(checker, memberRef)) {
-                    break;
-                }
-                continue;
+                transform = checkField(checker, memberRef);
+                break;
 
             case 182: // INVOKEVIRTUAL
             case 183: // INVOKESPECIAL
@@ -400,27 +440,19 @@ final class ClassFileProcessor {
                 mConstantPool.decodeMethodRef(decodeUnsignedShortBE(buffer, offset), memberRef);
                 offset += 2;
                 if (memberRef.isConstructor()) {
-                    if (!isConstructorAllowed(checker, memberRef)) {
-                        break;
-                    }
+                    transform = checkConstructor(checker, memberRef);
                 } else if (op != 182) { // !INVOKEVIRTUAL
-                    if (!isMethodAllowed(checker, memberRef)) {
-                        break;
-                    }
+                    transform = checkMethod(checker, memberRef);
                 } else {
-                    if (!isVirtualMethodAllowed(checker, memberRef)) {
-                        break;
-                    }
+                    transform = checkVirtualMethod(checker, memberRef);
                 }
-                continue;
+                break;
 
             case 185: // INVOKEINTERFACE
                 mConstantPool.decodeMethodRef(decodeUnsignedShortBE(buffer, offset), memberRef);
                 offset += 4;
-                if (!isVirtualMethodAllowed(checker, memberRef)) {
-                    break;
-                }
-                continue;
+                transform = checkVirtualMethod(checker, memberRef);
+                break;
 
                 // Unchecked operations with no operands...
 
@@ -667,7 +699,11 @@ final class ClassFileProcessor {
                 continue;
             }
 
-            // This point is reached if the operation is denied.
+            if (transform == null) {
+                continue;
+            }
+
+            // This point is reached if a transform is required.
 
             String methodName, descriptor;
 
@@ -681,14 +717,14 @@ final class ClassFileProcessor {
                 mDecoder.offset(originalOffset);
             }
 
-            if (mMethodsToRedefine == null) {
-                mMethodsToRedefine = new HashMap<>();
+            if (mMethodsToTransform == null) {
+                mMethodsToTransform = new HashMap<>();
             }
 
-            mMethodsToRedefine
+            mMethodsToTransform
                 .computeIfAbsent(methodName, k -> new HashMap<>())
-                .computeIfAbsent(descriptor, k -> new HashSet<>())
-                .add(opOffset - startOffset);
+                .computeIfAbsent(descriptor, k -> new HashMap<>())
+                .put(opOffset - startOffset, transform);
         }
     }
 
@@ -696,46 +732,70 @@ final class ClassFileProcessor {
       Note regarding the ClassNotFoundException behavor:
 
       If a dependent class isn't found, then it might be assumed that upon being loaded the
-      class being checked will throw a NoClassDefFoundError. By allowing access, the correct
-      error will be thrown. This is risky, because the ClassLoader implementation might not
-      consistently throw a ClassNotFoundException for a given class name.
-
-      For this reason, a ClassNotFoundException results in a denial, and thus a
-      SecurityException is thrown instead. This might be confusing, and so at some point it
-      might make sense to include additional information in the SecurityException message.
-      Throwing a NoClassDefFoundError probably makes the most sense.
+      class being checked will throw a NoClassDefFoundError. This is risky, because the
+      ClassLoader implementation might not consistently throw a ClassNotFoundException for a
+      given class name. For this reason, a ClassNotFoundException during checking is treated as
+      a denial which throws a NoClassDefFoundError.
      */
 
-    private static boolean isConstructorAllowed(Checker checker, MemberRef ctorRef) {
+    /**
+     * @return null if allowed
+     */
+    private Transform checkConstructor(Checker checker, MemberRef ctorRef) {
         try {
-            return checker.isConstructorAllowed(ctorRef);
+            if (checker.isConstructorAllowed(ctorRef)) {
+                return null;
+            }
         } catch (ClassNotFoundException e) {
-            return false;
+            return new ClassNotFound(e.getMessage());
         }
+
+        return new Deny();
     }
 
-    private static boolean isMethodAllowed(Checker checker, MemberRef ctorRef) {
+    /**
+     * @return null if allowed
+     */
+    private Transform checkMethod(Checker checker, MemberRef methodRef) {
         try {
-            return checker.isMethodAllowed(ctorRef);
+            if (checker.isMethodAllowed(methodRef)) {
+                return null;
+            }
         } catch (ClassNotFoundException e) {
-            return false;
+            return new ClassNotFound(e.getMessage());
         }
+
+        return new Deny();
     }
 
-    private static boolean isVirtualMethodAllowed(Checker checker, MemberRef ctorRef) {
+    /**
+     * @return null if allowed
+     */
+    private Transform checkVirtualMethod(Checker checker, MemberRef methodRef) {
         try {
-            return checker.isVirtualMethodAllowed(ctorRef);
+            if (checker.isVirtualMethodAllowed(methodRef)) {
+                return null;
+            }
         } catch (ClassNotFoundException e) {
-            return false;
+            return new ClassNotFound(e.getMessage());
         }
+
+        return new Deny();
     }
 
-    private static boolean isFieldAllowed(Checker checker, MemberRef ctorRef) {
+    /**
+     * @return null if allowed
+     */
+    private Transform checkField(Checker checker, MemberRef fieldRef) {
         try {
-            return checker.isFieldAllowed(ctorRef);
+            if (checker.isFieldAllowed(fieldRef)) {
+                return null;
+            }
         } catch (ClassNotFoundException e) {
-            return false;
+            return new ClassNotFound(e.getMessage());
         }
+
+        return new Deny();
     }
 
     /**
@@ -753,11 +813,34 @@ final class ClassFileProcessor {
     /**
      * @return CONSTANT_Methodref index
      */
-    private int addDenyHookMethod(byte[] descriptor) {
-        return mDenyHooks.computeIfAbsent(descriptor, desc -> {
+    private int addDenyHookMethod(Transform transform, byte[] descriptor) {
+        byte prefix;
+        byte[] key;
+
+        switch (transform) {
+            case Deny _ -> {
+                prefix = (byte) 'd';
+                key = descriptor;
+            }
+
+            case ClassNotFound c -> {
+                prefix = (byte) 'c';
+                try {
+                    BasicEncoder encoder = UTFEncoder.localEncoder();
+                    encoder.writeUTF(c.mName == null ? "" : c.mName);
+                    encoder.write(descriptor);
+                    key = encoder.toByteArray();
+                } catch (IOException e) {
+                    // Not expected.
+                    throw new UncheckedIOException(e);
+                }
+            }
+        };
+
+        return mDenyHooks.computeIfAbsent(key, _ -> {
             try {
-                return doAddDenyHookMethod
-                    (mConstantPool.addUniqueMethod(mThisClassIndex, desc, null));
+                return doAddDenyHookMethod(transform, mConstantPool.addUniqueMethod
+                                           ((byte) prefix, mThisClassIndex, descriptor, null));
             } catch (IOException e) {
                 // Not expected.
                 throw new UncheckedIOException(e);
@@ -765,7 +848,9 @@ final class ClassFileProcessor {
         });
     }
 
-    private int doAddDenyHookMethod(ConstantPool.C_MemberRef ref) throws IOException {
+    private int doAddDenyHookMethod(Transform transform, ConstantPool.C_MemberRef ref)
+        throws IOException
+    {
         BasicEncoder encoder = mMethodsEncoder;
 
         // method_info
@@ -774,18 +859,39 @@ final class ClassFileProcessor {
         encoder.writeShort(ref.mNameAndType.mTypeDesc.mIndex);
         encoder.writeShort(1); // attributes_count
 
+        Class<?> exClass;
+        String desc, message;
+
+        switch (transform) {
+            case Deny _ -> {
+                exClass = SecurityException.class;
+                desc = null;
+                message = null;
+            }
+
+            case ClassNotFound c -> {
+                exClass = NoClassDefFoundError.class;
+                message = c.mName;
+                desc = message == null ? null : '(' + String.class.descriptorString() + ')' + 'V';
+            }
+        };
+
         // Code_attribute
         encoder.writeShort(mConstantPool.codeStrIndex());
-        encoder.writeInt(20);   // attribute_length
-        encoder.writeShort(2);  // max_stack
-        encoder.writeShort(ref.argCount()); // max_locals
-        encoder.writeInt(8);    // code_length
+        encoder.writeInt(message == null ? 20 : 23); // attribute_length
+        encoder.writeShort(message == null ? 2 : 3); // max_stack
+        encoder.writeShort(ref.argCount());          // max_locals
+        encoder.writeInt(message == null ? 8 : 11);  // code_length
         encoder.writeByte(187); // NEW
-        ConstantPool.C_Class securityException = mConstantPool.securityException();
-        encoder.writeShort(securityException.mIndex);
+        ConstantPool.C_Class exConstant = mConstantPool.addClass(exClass);
+        encoder.writeShort(exConstant.mIndex);
         encoder.writeByte(89);  // DUP
+        if (message != null) {
+            encoder.writeByte(19); // LDC_W
+            encoder.writeShort(mConstantPool.strIndex(message));
+        }
         encoder.writeByte(183); // INVOKESPECIAL
-        encoder.writeShort(mConstantPool.ctorInitStr(securityException).mIndex);
+        encoder.writeShort(mConstantPool.ctorInitStr(exConstant, desc).mIndex);
         encoder.writeByte(191); // ATHROW
         encoder.writeShort(0);  // exception_table_length
         encoder.writeShort(0);  // attributes_count
@@ -794,15 +900,20 @@ final class ClassFileProcessor {
     }
 
     /**
-     * @return the method name
+     * Note: does nothing if the method has already been added
      */
-    private String addRethrowMethod() {
+    private void addRethrowMethod() {
+        if (mRethrowMethodName != null) {
+            return;
+        }
+
         byte[] desc = UTFEncoder.encode("" + '(' + Throwable.class.descriptorString() + ')' + 'V');
 
         try {
             var nameRef = new String[1];
-            doAddRethrowMethod(mConstantPool.addUniqueMethod(mThisClassIndex, desc, nameRef));
-            return nameRef[0];
+            doAddRethrowMethod(mConstantPool.addUniqueMethod
+                               ((byte) 'x', mThisClassIndex, desc, nameRef));
+            mRethrowMethodName = nameRef[0];
         } catch (IOException e) {
             // Not expected.
             throw new UncheckedIOException(e);
