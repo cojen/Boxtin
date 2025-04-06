@@ -364,7 +364,7 @@ final class ClassFileProcessor {
             cb.dup();
             cb.invokespecial(exDesc, "<init>", MethodTypeDesc.of(ConstantDescs.CD_void));
             throwException(model, cb);
-            return false;
+            return true;
         }
     }
 
@@ -392,7 +392,7 @@ final class ClassFileProcessor {
             }
             cb.invokespecial(exDesc, "<init>", mtd);
             throwException(model, cb);
-            return false;
+            return true;
         }
     }
 
