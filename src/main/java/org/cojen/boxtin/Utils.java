@@ -24,7 +24,6 @@ import java.lang.reflect.Modifier;
 
 import java.nio.ByteOrder;
 
-import java.util.Arrays;
 import java.util.Map;
 
 /**
@@ -47,22 +46,6 @@ final class Utils {
         }
     }
 
-    static int hash(byte[] b) {
-        return Arrays.hashCode(b);
-    }
-
-    static int hash(byte[] b, int offset, int length) {
-        if (offset == 0 && length == b.length) {
-            return Arrays.hashCode(b);
-        } else {
-            int hash = 1;
-            for (int i=0; i<length; i++) {
-                hash = hash * 31 + b[i + offset];
-            }
-            return hash;
-        }
-    }
-
     static int decodeUnsignedShortBE(byte[] b, int offset) {
         return ((short) cShortArrayBEHandle.get(b, offset)) & 0xffff;
     }
@@ -75,22 +58,8 @@ final class Utils {
         return (int) cIntArrayBEHandle.get(b, offset);
     }
 
-    /**
-     * Returns true if the array value is <init>.
-     */
-    static boolean isConstructor(byte[] b) {
-        return isConstructor(b, 0, b.length);
-    }
-
-    /**
-     * Returns true if the array slice value is <init>.
-     */
-    static boolean isConstructor(byte[] b, int offset, int length) {
-        if (length != 6) {
-            return false;
-        }
-        return decodeIntBE(b, offset) == 0x3c696e69 // <ini
-            && decodeUnsignedShortBE(b, offset + 4) == 0x743e; // t>
+    static void encodeIntBE(byte[] b, int offset, int value) {
+        cIntArrayBEHandle.set(b, offset, value);
     }
 
     static int roundUpPower2(int i) {
@@ -101,6 +70,20 @@ final class Utils {
         i |= i >> 4;
         i |= i >> 8;
         return (i | (i >> 16)) + 1;
+    }
+
+    /**
+     * @return true if the given member is public or protected
+     */
+    static boolean isAccessible(int flags) {
+        return (flags & (Modifier.PUBLIC | Modifier.PROTECTED)) != 0;
+    }
+
+    /**
+     * @return true if the given member is public or protected
+     */
+    static boolean isAccessible(Class clazz) {
+        return (clazz.getModifiers() & (Modifier.PUBLIC | Modifier.PROTECTED)) != 0;
     }
 
     /**
@@ -136,6 +119,14 @@ final class Utils {
             b.append(c.descriptorString());
         }
         return b.append(')').append(returnType.descriptorString()).toString();
+    }
+
+    /**
+     * Returns the class name with the package name stripped off.
+     */
+    static String className(String packageName, Class clazz) {
+        String className = clazz.getName();
+        return packageName.isEmpty() ? className : className.substring(packageName.length() + 1);
     }
 
     static boolean isEmpty(Map<?, ?> map) {

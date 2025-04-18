@@ -25,7 +25,7 @@ import java.io.PrintWriter;
  *
  * @author Brian S. O'Neill
  */
-public interface Rules extends Controller {
+public interface Rules extends Checker {
     /**
      * Print a description of the rules to the given Appendable object.
      *

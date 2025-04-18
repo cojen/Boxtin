@@ -32,7 +32,7 @@ import java.util.Arrays;
 final class UTFEncoder {
     private static final SoftCache<String, byte[]> cCache = new SoftCache<>();
 
-    private static final ThreadLocal<Reference<BasicEncoder>> cLocalEncoder = new ThreadLocal<>();
+    private static final ThreadLocal<Reference<BufferEncoder>> cLocalEncoder = new ThreadLocal<>();
 
     /**
      * Note: the returned byte array is shared and so it shouldn't be modified
@@ -44,7 +44,7 @@ final class UTFEncoder {
             return bytes;
         }
 
-        BasicEncoder encoder = localEncoder();
+        BufferEncoder encoder = localEncoder();
 
         synchronized (cCache) {
             bytes = cCache.get(str);
@@ -69,11 +69,11 @@ final class UTFEncoder {
         return bytes;
     }
 
-    static BasicEncoder localEncoder() {
-        Reference<BasicEncoder> encoderRef = cLocalEncoder.get();
-        BasicEncoder encoder;
+    static BufferEncoder localEncoder() {
+        Reference<BufferEncoder> encoderRef = cLocalEncoder.get();
+        BufferEncoder encoder;
         if (encoderRef == null || (encoder = encoderRef.get()) == null) {
-            encoder = new BasicEncoder(50);
+            encoder = new BufferEncoder(50);
             encoderRef = new WeakReference<>(encoder);
             cLocalEncoder.set(encoderRef);
         } else {

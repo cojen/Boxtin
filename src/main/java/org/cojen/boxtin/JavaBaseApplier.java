@@ -94,6 +94,7 @@ final class JavaBaseApplier implements RulesApplier {
             .end()
 
             .forClass("Class")
+            .callerCheck()
             .denyMethod("forName")
             .allowVariant(String.class)
             .denyMethod("getClassLoader")
@@ -124,7 +125,17 @@ final class JavaBaseApplier implements RulesApplier {
             .end()
 
             .forClass("ClassLoader")
-            .denyAll()
+            .denyAllConstructors()
+            .denyMethod("getParent")
+            .denyMethod("getPlatformClassLoader")
+            .denyMethod("getSystemClassLoader")
+            .denyMethod("getSystemResource")
+            .denyMethod("getSystemResourceAsStream")
+            .denyMethod("getSystemResources")
+            .denyMethod("setClassAssertionStatus")
+            .denyMethod("setDefaultAssertionStatus")
+            .denyMethod("setPackageAssertionStatus")
+            .denyMethod("clearAssertionStatus")
             .end()
 
             .forClass("Integer")
@@ -136,6 +147,7 @@ final class JavaBaseApplier implements RulesApplier {
             .end()
 
             .forClass("Module")
+            .callerCheck()
             .denyMethod("getClassLoader")
             .end()
 
@@ -151,7 +163,8 @@ final class JavaBaseApplier implements RulesApplier {
             .end()
 
             .forClass("Package")
-            .denyMethod("getPackage") // deprecated
+            .callerCheck()
+            .denyMethod("getPackage")
             .end()
 
             .forClass("Process")
@@ -180,8 +193,6 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("exec")
             .denyMethod("exit")
             .denyMethod("halt")
-            .denyMethod("load")
-            .denyMethod("loadLibrary")
             .denyMethod("removeShutdownHook")
             .end()
 
@@ -195,6 +206,7 @@ final class JavaBaseApplier implements RulesApplier {
             .end()
 
             .forClass("System")
+            .callerCheck()
             .denyAll()
             .allowMethod("arraycopy")
             .allowMethod("currentTimeMillis")
@@ -204,8 +216,6 @@ final class JavaBaseApplier implements RulesApplier {
             .allowMethod("lineSeparator")
             .allowMethod("nanoTime")
             .allowMethod("runFinalization")
-            .allowField("out")
-            .allowField("err")
             .end()
 
             .forClass("System.LoggerFinder")
@@ -213,12 +223,6 @@ final class JavaBaseApplier implements RulesApplier {
             .end()
 
             .forClass("Thread")
-            .denyAllConstructors()
-            .allowVariant() // no args
-            .allowVariant(Runnable.class)
-            .allowVariant(Runnable.class, String.class)
-            .allowVariant(String.class)
-            .denyMethod("checkAccess")
             .denyMethod("enumerate")
             .denyMethod("getAllStackTraces")
             .denyMethod("getContextClassLoader")
@@ -234,13 +238,10 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forClass("Thread.Builder.OfPlatform")
             .denyMethod("daemon")
-            .denyMethod("group")
             .denyMethod("priority")
             .end()
 
             .forClass("ThreadGroup")
-            .denyAllConstructors()
-            .denyMethod("checkAccess")
             .denyMethod("enumerate")
             .denyMethod("getParent")
             .denyMethod("interrupt")
@@ -269,7 +270,11 @@ final class JavaBaseApplier implements RulesApplier {
 
         b.forPackage("java.lang.constant").allowAll();
 
-        b.forPackage("java.lang.foreign").denyAll();
+        // Can allow all because restricted operations are already checked.
+        // FIXME: Restricted operations should probably be checked anyhow, because it's likely
+        // that restricted operations were fully allowed on the command line for simplicity.
+        // Check the JDK for all @Restricted methods.
+        b.forPackage("java.lang.foreign").allowAll();
 
         b.forPackage("java.lang.invoke")
             .allowAll()
@@ -280,6 +285,7 @@ final class JavaBaseApplier implements RulesApplier {
             .end()
 
             .forClass("MethodHandles.Lookup")
+            .callerCheck()
             .denyAllMethods()
             .allowMethod("dropLookupMode")
             .allowMethod("hasFullPrivilegeAccess")
@@ -312,6 +318,7 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forClass("ModuleReference")
             .allowAll()
+            .callerCheck()
             .denyMethod("open")
             .end()
             ;
@@ -322,19 +329,23 @@ final class JavaBaseApplier implements RulesApplier {
             .allowAll()
 
             .forClass("AccessibleObject")
+            .callerCheck()
             .denyMethod("setAccessible")
             .denyMethod("trySetAccessible")
             .end()
 
             .forClass("Constructor")
+            .callerCheck()
             .denyMethod("setAccessible")
             .end()
 
             .forClass("Field")
+            .callerCheck()
             .denyMethod("setAccessible")
             .end()
 
             .forClass("Method")
+            .callerCheck()
             .denyMethod("setAccessible")
             .end()
 
@@ -441,6 +452,7 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forClass("URLClassLoader")
             .denyAllConstructors()
+            .denyMethod("close")
             .end()
 
             .forClass("URLConnection")
@@ -711,15 +723,15 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("setDefault")
             .end()
 
-            .forClass("ResourceBundle")
-            .allowMethod("getBundle")
-            .denyVariant("Ljava/lang.String;Ljava/lang.Module;")
-            .denyVariant("Ljava/lang.String;Ljava/util/Locale;Ljava/lang.Module;")
-            .end()
-
+            /* FIXME: testing: Cannot getCallerClass call from a @CallerSensitive method.
             .forClass("ResourceBundle")
             .denyMethod("getBundle")
+            .allowVariant("Ljava/lang.String;")
+            .allowVariant("Ljava/lang.String;Ljava/util/Locale;")
+            .allowVariant("Ljava/lang.String;Ljava/util/ResourceBundle$Control;")
+            .allowVariant("Ljava/lang.String;Ljava/util/Locale;Ljava/util/ResourceBundle$Control;")
             .end()
+            */
 
             .forClass("TimeZone")
             .denyMethod("setDefault")
@@ -735,16 +747,19 @@ final class JavaBaseApplier implements RulesApplier {
             .end()
 
             .forClass("ForkJoinPool")
+            .denyMethod("close")
             .denyMethod("shutdown")
             .denyMethod("shutdownNow")
             .end()
 
             .forClass("ScheduledThreadPoolExecutor")
+            .denyMethod("close")
             .denyMethod("shutdown")
             .denyMethod("shutdownNow")
             .end()
 
             .forClass("ThreadPoolExecutor")
+            .denyMethod("close")
             .denyMethod("shutdown")
             .denyMethod("shutdownNow")
             .end()

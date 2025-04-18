@@ -16,9 +16,9 @@
 
 package org.cojen.boxtin;
 
-import java.lang.instrument.IllegalClassFormatException;
-
 import java.io.IOException;
+
+import java.lang.invoke.MethodHandleInfo;
 
 import java.nio.charset.StandardCharsets;
 
@@ -31,7 +31,7 @@ import java.util.Objects;
 
 import java.util.concurrent.ThreadLocalRandom;
 
-import static java.lang.invoke.MethodHandleInfo.*;
+import static org.cojen.boxtin.Opcodes.*;
 
 /**
  * Supports cheap decoding of a class file's constant pool.
@@ -39,8 +39,8 @@ import static java.lang.invoke.MethodHandleInfo.*;
  * @author Brian S. O'Neill
  */
 final class ConstantPool {
-    static ConstantPool decode(BasicDecoder decoder)
-        throws IOException, IllegalClassFormatException
+    static ConstantPool decode(BufferDecoder decoder)
+        throws IOException, ClassFormatException
     {
         var offsets = new int[decoder.readUnsignedShort() - 1];
 
@@ -51,7 +51,7 @@ final class ConstantPool {
             offsets[i] = decoder.offset();
 
             decoder.skipNBytes(switch (decoder.readUnsignedByte()) {
-                default -> throw new IllegalClassFormatException();
+                default -> throw new ClassFormatException();
 
                 // CONSTANT_Utf8
                 case 1 -> decoder.readUnsignedShort();
@@ -85,231 +85,91 @@ final class ConstantPool {
             });
         }
 
-        return new ConstantPool(decoder.buffer(), decoder.offset(), offsets, methodHandleOffsets);
+        return new ConstantPool(decoder, offsets, methodHandleOffsets);
     }
 
-    private byte[] mBuffer;
+    private final BufferDecoder mDecoder;
     private final int mEndOffset;
     private final int[] mOffsets, mMethodHandleOffsets;
 
-    private Constant[] mIndexedConstants;
+    private Constant[] mConstants;
     private Map<Constant, Constant> mMappedConstants;
     private List<Constant> mAddedConstants;
 
-    private ConstantPool(byte[] buffer, int endOffset, int[] offsets, int[] methodHandleOffsets) {
-        mBuffer = buffer;
-        mEndOffset = endOffset;
+    private ConstantPool(BufferDecoder decoder, int[] offsets, int[] methodHandleOffsets) {
+        mDecoder = decoder;
+        mEndOffset = decoder.offset();
         mOffsets = offsets;
         mMethodHandleOffsets = methodHandleOffsets;
     }
 
-    int size() {
-        int size = mOffsets.length;
-        if (mAddedConstants != null) {
-            size += mAddedConstants.size();
-        }
-        return size;
+    BufferDecoder decoder() {
+        return mDecoder;
     }
 
     byte[] buffer() {
-        return mBuffer;
+        return mDecoder.buffer();
     }
 
-    /**
-     * Returns the byte offset for the given constant index, which refers to the tag byte.
-     * Returns a negative offset or throws an IndexOutOfBoundsException if the given index is
-     * invalid.
-     */
-    int offsetOf(int constantIndex) {
-        return mOffsets[constantIndex - 1];
-    }
-
-    /**
-     * Returns the byte offset for the given constant index, immediately past the tag.
-     */
-    int offsetOf(int constantIndex, int expectTag) throws IllegalClassFormatException {
-        int offset = offsetOf(constantIndex);
-        expectTag(offset, expectTag);
-        return offset + 1;
-    }
-
-    /**
-     * @param ref is updated by this method
-     */
-    void decodeFieldRef(int constantIndex, MemberRef ref) throws IllegalClassFormatException {
-        int offset = offsetOf(constantIndex, 9); // CONSTANT_Fieldref
-        decodeClassRef(ref, offset); offset += 2;
-        decodeNameAndTypeRef(ref, offset);
-    }
-
-    /**
-     * @param ref is updated by this method
-     */
-    void decodeMethodRef(int constantIndex, MemberRef ref) throws IllegalClassFormatException {
-        int offset = offsetOf(constantIndex);
-        int tag = decodeTag(offset);
-        if (tag != 10 && tag != 11) { // CONSTANT_Methodref, CONSTANT_InterfaceMethodref
-            throw new IllegalClassFormatException();
-        }
-        offset++;
-        decodeClassRef(ref, offset); offset += 2;
-        decodeNameAndTypeRef(ref, offset);
-    }
-
-    @FunctionalInterface
-    static interface MethodHandleConsumer {
-        /**
-         * @param kind the kind of MethodHandle constant
-         * @param offset buffer offset which stores a constant field or method index
-         * @param ref refers to the current MethodHandle info
-         * @see MethodHandleInfo
-         */
-        void accept(int kind, int offset, MemberRef ref) throws IllegalClassFormatException;
-    }
-
-    /**
-     * @param ref is updated for each MethodHandle
-     * @param consumer is called for each MethodHandle
-     * @return the number of MethodHandles which were decoded
-     */
-    int decodeMethodHandleRefs(MemberRef ref, MethodHandleConsumer consumer)
-        throws IllegalClassFormatException
-    {
-        int num = 0;
-
-        if (mMethodHandleOffsets != null) for (int i=0; i<mMethodHandleOffsets.length; i++) {
-            int offset = mMethodHandleOffsets[i];
-
-            if (offset == 0) {
-                break;
-            }
-
-            num++;
-
-            int kind = mBuffer[offset++] & 0xff;
-            int constantIndex = decodeUnsignedShortBE(offset);
-
-            switch (kind) {
-                default -> throw new IllegalClassFormatException();
-
-                case REF_getField, REF_getStatic, REF_putField, REF_putStatic -> {
-                    decodeFieldRef(constantIndex, ref);
-                }
-
-                case REF_invokeVirtual, REF_invokeStatic, REF_invokeSpecial,
-                    REF_newInvokeSpecial, REF_invokeInterface ->
-                {
-                    decodeMethodRef(constantIndex, ref);
-                }
-            }
-
-            consumer.accept(kind, offset, ref);
-        }
-
-        return num;
-    }
-
-    private void decodeClassRef(MemberRef ref, int offset) throws IllegalClassFormatException {
-        offset = offsetOf(decodeUnsignedShortBE(offset), 7); // CONSTANT_Class
-        offset = offsetOf(decodeUnsignedShortBE(offset), 1); // CONSTANT_Utf8
-        ref.classOffset(offset + 2);
-        ref.classLength(decodeUnsignedShortBE(offset));
-    }
-
-    private void decodeNameAndTypeRef(MemberRef ref, int offset)
-        throws IllegalClassFormatException
-    {
-        offset = offsetOf(decodeUnsignedShortBE(offset), 12); // CONSTANT_NameAndType
-        int nameOffset = offsetOf(decodeUnsignedShortBE(offset), 1); // CONSTANT_Utf8
-        ref.nameOffset(nameOffset + 2);
-        ref.nameLength(decodeUnsignedShortBE(nameOffset));
-        int descOffset = offsetOf(decodeUnsignedShortBE(offset + 2), 1); // CONSTANT_Utf8
-        ref.descriptorOffset(descOffset + 2);
-        ref.descriptorLength(decodeUnsignedShortBE(descOffset));
-    }
-
-    private int decodeTag(int offset) throws IllegalClassFormatException {
+    int findConstantOffset(int index) throws ClassFormatException {
         try {
-            return mBuffer[offset];
-        } catch (IndexOutOfBoundsException e) {
-            throw new IllegalClassFormatException();
-        }
-    }
-
-    private void expectTag(int offset, int expect) throws IllegalClassFormatException {
-        int tag = decodeTag(offset);
-        if (tag != expect) {
-            throw new IllegalClassFormatException();
-        }
-    }
-
-    private int decodeUnsignedShortBE(int offset) {
-        return Utils.decodeUnsignedShortBE(mBuffer, offset);
-    }
-
-    /**
-     * Must be called before adding new constants.
-     *
-     * @return a mutable class file buffer
-     */
-    byte[] extend() throws IllegalClassFormatException {
-        try {
-            return doExtend();
-        } catch (Exception e) {
-            throw new IllegalClassFormatException(e.toString());
-        }
-    }
-
-    boolean hasBeenExtended() {
-        return mIndexedConstants != null;
-    }
-
-    private byte[] doExtend() throws IOException {
-        if (hasBeenExtended()) {
-            return mBuffer;
-        }
-
-        byte[] buffer = mBuffer.clone();
-        mBuffer = buffer;
-
-        // Resolve the existing constants, to reduce duplication. Only bother doing this for
-        // the types of constants which can be added.
-
-        mIndexedConstants = new Constant[mOffsets.length];
-        mMappedConstants = new LinkedHashMap<>(mOffsets.length << 1);
-        mAddedConstants = new ArrayList<>();
-
-        var decoder = new BasicDecoder(buffer);
-
-        for (int i=0; i<mOffsets.length; i++) {
-            findConstant(i + 1, decoder);
-        }
-
-        return buffer;
-    }
-
-    /**
-     * @param decoder offset can be modified as a side-effect
-     * @return null if the constant type is unsupported
-     */
-    private Constant findConstant(int constantIndex, BasicDecoder decoder) throws IOException {
-        Constant c = mIndexedConstants[constantIndex - 1];
-        return c != null ? c : resolveConstant(constantIndex, decoder);
-    }
-
-    /**
-     * @param decoder offset is modified as a side-effect
-     * @return null if the constant type is unsupported
-     */
-    private Constant resolveConstant(int constantIndex, BasicDecoder decoder) throws IOException {
-        {
-            int offset = offsetOf(constantIndex);
+            int offset = mOffsets[index - 1];
             if (offset < 0) {
-                // Requesting the second slot of a long or double constant.
-                return null;
+                throw new ClassFormatException("Accessing the second slot of a wide constant");
             }
-            decoder.offset(offset);
+            return offset;
+        } catch (IndexOutOfBoundsException e) {
+            throw new ClassFormatException("Invalid constant index");
         }
+    }
+
+    Constant findConstant(int index) throws ClassFormatException {
+        Constant[] constants = mConstants;
+
+        if (constants == null) {
+            mConstants = constants = new Constant[mOffsets.length];
+        } else {
+            Constant c = constants[index - 1];
+            if (c != null) {
+                return c;
+            }
+        }
+
+        final int originalOffset = mDecoder.offset();
+
+        try {
+            Constant c = resolveConstant(index);
+            constants[index - 1] = c;
+            return c;
+        } catch (Exception e) {
+            throw ClassFormatException.from(e);
+        } finally {
+            mDecoder.offset(originalOffset);
+        }
+    }
+
+    /**
+     * @throws ClassFormatException if cast fails
+     */
+    <C extends Constant> C findConstant(int index, Class<C> type) throws ClassFormatException {
+        try {
+            return type.cast(findConstant(index));
+        } catch (ClassCastException e) {
+            throw ClassFormatException.from(e);
+        }
+    }
+
+    /**
+     * @throws ClassFormatException if cast fails
+     */
+    C_UTF8 findConstantUTF8(int index) throws ClassFormatException {
+        return findConstant(index, C_UTF8.class);
+    }
+
+    private Constant resolveConstant(int index) throws IOException, ClassFormatException {
+        BufferDecoder decoder = mDecoder;
+
+        decoder.offset(findConstantOffset(index));
 
         int tag = decoder.readUnsignedByte();
 
@@ -317,6 +177,7 @@ final class ConstantPool {
 
         switch (tag) {
             default -> {
+                // Unsupported type.
                 return null;
             }
 
@@ -324,154 +185,231 @@ final class ConstantPool {
             case 1 -> {
                 int length = decoder.readUnsignedShort();
                 int offset = decoder.offset();
-                c = new C_UTF8(mBuffer, offset, length);
+                c = new C_UTF8(tag, decoder.buffer(), offset, length);
+            }
+
+            // CONSTANT_Long
+            case 5 -> {
+                c = new C_Long(tag, decoder.readLong());
+            }
+
+            // CONSTANT_Double
+            case 6 -> {
+                c = new C_Double(tag, Double.longBitsToDouble(decoder.readLong()));
             }
 
             // CONSTANT_Class
             case 7 -> {
                 int name_index = decoder.readUnsignedShort();
-                c = new C_Class((C_UTF8) findConstant(name_index, decoder));
+                c = new C_Class(tag, (C_UTF8) findConstant(name_index));
             }
 
             // CONSTANT_Fieldref, CONSTANT_Methodref, CONSTANT_InterfaceMethodref
             case 9, 10, 11 -> {
                 int class_index = decoder.readUnsignedShort();
                 int name_and_type_index = decoder.readUnsignedShort();
-                c = new C_MemberRef(tag, (C_Class) findConstant(class_index, decoder),
-                                    (C_NameAndType) findConstant(name_and_type_index, decoder));
+                c = new C_MemberRef(tag, (C_Class) findConstant(class_index),
+                                    (C_NameAndType) findConstant(name_and_type_index));
             }
 
             // CONSTANT_NameAndType
             case 12 -> {
                 int name_index = decoder.readUnsignedShort();
                 int descriptor_index = decoder.readUnsignedShort();
-                c = new C_NameAndType((C_UTF8) findConstant(name_index, decoder),
-                                      (C_UTF8) findConstant(descriptor_index, decoder));
+                c = new C_NameAndType(tag, (C_UTF8) findConstant(name_index),
+                                      (C_UTF8) findConstant(descriptor_index));
             }
         }
 
-        c.mIndex = constantIndex;
+        c.mIndex = index;
 
-        mIndexedConstants[constantIndex - 1] = c;
-        mMappedConstants.put(c, c);
+        if (mMappedConstants != null) {
+            mMappedConstants.put(c, c);
+        }
 
         return c;
     }
 
     /**
-     * Adds a constant name and descriptor for a method, with a generated name. The extend
-     * method must have already been called.
-     *
-     * @param prefix name prefix
-     * @param classIndex valid index into the constant pool which refers to a CONSTANT_Class.
-     * @param descriptor UTF-8 encoded method descriptor
-     * @param nameRef optional; is set to the generated name
+     * Must be called before adding new constants.
      */
-    C_MemberRef addUniqueMethod(byte prefix, int classIndex, byte[] descriptor, String[] nameRef) {
-        var classConstant = (C_Class) mIndexedConstants[classIndex - 1];
- 
-        var name = new byte[1 + 9]; // one prefix byte plus up to nine digits
-        name[0] = prefix;
+    void extend() throws ClassFormatException {
+        try {
+            doExtend();
+        } catch (Exception e) {
+            throw ClassFormatException.from(e);
+        }
+    }
+
+    boolean hasBeenExtended() {
+        return mAddedConstants != null;
+    }
+
+    private void doExtend() throws IOException {
+        if (hasBeenExtended()) {
+            return;
+        }
+
+        // Resolve the existing constants, to reduce duplication. Only bother doing this for
+        // the types of constants which can be added.
+
+        mMappedConstants = new LinkedHashMap<>(mOffsets.length << 1);
+        mAddedConstants = new ArrayList<>();
+
+        for (int i=0; i<mOffsets.length; i++) {
+            Constant c = findConstant(i + 1);
+            if (c != null && c.isWide()) {
+                // Occupies two slots.
+                i++;
+            }
+        }
+    }
+
+    /**
+     * Returns the original size of the constant pool, in bytes.
+     */
+    long originalSize() {
+        int startOffset = mOffsets[0];
+        return 2L + mEndOffset - startOffset;
+    }
+
+    /**
+     * Returns the extended length of the constant pool, in bytes.
+     */
+    long growth() {
+        long size = 0;
+
+        if (mAddedConstants != null) {
+            for (Constant c : mAddedConstants) {
+                if (c != null) {
+                    size += c.size();
+                }
+            }
+        }
+
+        return size;
+    }
+
+    /**
+     * Returns the size of the constant pool, in bytes.
+     */
+    long size() {
+        return originalSize() + growth();
+    }
+
+    void writeTo(BufferEncoder encoder) throws IOException, ClassFormatException {
+        int count = mOffsets.length + 1;
+        if (mAddedConstants != null) {
+            count += mAddedConstants.size();
+        }
+        if (count > 65535) {
+            throw new ClassFormatException("Constant pool is full");
+        }
+        encoder.writeShort(count);
+        int startOffset = mOffsets[0];
+        encoder.write(buffer(), startOffset, mEndOffset - startOffset);
+        for (Constant c : mAddedConstants) {
+            if (c != null) {
+                c.writeTo(encoder);
+            }
+        }
+    }
+
+    C_Long addLong(long value) {
+        return addConstant(new C_Long(5, value));
+    }
+
+    C_Class addClass(String className) {
+        return addConstant(new C_Class(7, addUTF8(className)));
+    }
+
+    C_MemberRef addFieldRef(String className, String name, String desc) {
+        return addMemberRef(9, className, name, desc);
+    }
+
+    C_MemberRef addMethodRef(String className, String name, String desc) {
+        return addMemberRef(10, className, name, desc);
+    }
+
+    private C_MemberRef addMemberRef(int tag, String className, String name, String desc) {
+        return addConstant(new C_MemberRef(tag, addClass(className), addNameAndType(name, desc)));
+    }
+
+    C_NameAndType addNameAndType(String name, String desc) {
+        return addConstant(new C_NameAndType(12, addUTF8(name), addUTF8(desc)));
+    }
+
+    C_UTF8 addUTF8(String str) {
+        return addConstant(new C_UTF8(str));
+    }
+
+    C_String addString(C_UTF8 value) {
+        return addConstant(new C_String(8, value));
+    }
+
+    /**
+     * Adds a type signature constant which has been adapted for static invocation, by
+     * prepending the class of the given methodRef as the first argument. The extend method
+     * must have already been called.
+     *
+     * @param op must be an invoke operation or a MethodHandle reference kind
+     * @return method type descriptor
+     */
+    C_UTF8 addWithStaticSignature(int op, C_MemberRef methodRef) {
+        C_UTF8 typeDesc = methodRef.mNameAndType.mTypeDesc;
+
+        if (op == INVOKESTATIC || op == MethodHandleInfo.REF_invokeStatic) {
+            return typeDesc;
+        }
+
+        C_UTF8 className = methodRef.mClass.mValue;
+
+        int classNameLen = className.mLength;
+        var newTypeBuf = new byte[2 + classNameLen + typeDesc.mLength];
+
+        newTypeBuf[0] = '(';
+        newTypeBuf[1] = 'L';
+        System.arraycopy(className.mBuffer, className.mOffset, newTypeBuf, 2, classNameLen);
+        int offset = 2 + classNameLen;
+        newTypeBuf[offset++] = ';';
+        System.arraycopy(typeDesc.mBuffer, typeDesc.mOffset + 1,
+                         newTypeBuf, offset, typeDesc.mLength - 1);
+
+        return addConstant(new C_UTF8(1, newTypeBuf, 0, newTypeBuf.length));
+    }
+
+    /**
+     * Adds a constant method reference, with an invented name. The extend method must have
+     * already been called.
+     */
+    C_MemberRef addUniqueMethod(C_Class clazz, C_UTF8 typeDesc) {
+        var nameBuf = new byte[1 + 9]; // one prefix byte plus up to nine digits
+        nameBuf[0] = '$';
         int nameLength = 2; // start with one random digit
 
         var rnd = ThreadLocalRandom.current();
-        C_UTF8 nameConstant;
+        C_UTF8 name;
 
         while (true) {
             for (int i=1; i<nameLength; i++) {
-                name[i] = (byte) ('0' + rnd.nextInt(10));
+                nameBuf[i] = (byte) ('0' + rnd.nextInt(10));
             }
-            nameConstant = new C_UTF8(name, 0, nameLength);
-            if (mMappedConstants.putIfAbsent(nameConstant, nameConstant) == null) {
-                registerNewConstant(nameConstant);
+            name = new C_UTF8(1, nameBuf, 0, nameLength);
+            if (mMappedConstants.putIfAbsent(name, name) == null) {
+                registerNewConstant(name);
                 break;
             }
-            if (nameLength < name.length) {
+            if (nameLength < nameBuf.length) {
                 nameLength++; // add another random digit
             }
         }
 
-        if (nameRef != null) {
-            nameRef[0] = new String(name, 0, nameLength, StandardCharsets.UTF_8);
-        }
-
-        C_UTF8 descConstant = addConstant(new C_UTF8(descriptor));
-
-        C_NameAndType natConstant = addConstant(new C_NameAndType(nameConstant, descConstant));
+        C_NameAndType nat = addConstant(new C_NameAndType(12, name, typeDesc));
 
         // CONSTANT_Methodref tag is 10.
-        return addConstant(new C_MemberRef(10, classConstant, natConstant));
+        return addConstant(new C_MemberRef(10, clazz, nat));
     }
 
-    /**
-     * Returns the index to the CONSTANT_Utf8 representation of "Code", adding it if necessary.
-     * The extend method must have already been called.
-     */
-    int codeStrIndex() {
-        return addConstant(new C_UTF8(new byte[] {'C', 'o', 'd', 'e'})).mIndex;
-    }
-
-    /**
-     * Returns the index to the CONSTANT_String representation of the given string, adding it
-     * if necessary. The extend method must have already been called.
-     */
-    int strIndex(String str) {
-        C_UTF8 utf = addConstant(new C_UTF8(UTFEncoder.encode(str)));
-        // CONSTANT_String tag is 8.
-        return addConstant(new C_String(8, utf)).mIndex;
-    }
-
-    /**
-     * Returns the index to the CONSTANT_Class representation of the given class, adding it if
-     * necessary. The extend method must have already been called.
-     */
-    C_Class addClass(Class clazz) {
-        return addClass(clazz.getName());
-    }
-
-    C_Class addClass(String name) {
-        return addConstant(new C_Class(addConstant(new C_UTF8(name.replace('.', '/')))));
-    }
-
-    /**
-     * Returns the index to the CONSTANT_Methodref representation of the constructor init
-     * method, adding it if necessary. The extend method must have already been called.
-     *
-     * @param desc can pass null if no args
-     */
-    C_MemberRef ctorInitStr(C_Class ex, String desc) {
-        C_UTF8 nameConstant = addConstant(new C_UTF8(new byte[] {'<', 'i', 'n', 'i', 't', '>'}));
-
-        byte[] descBytes;
-        if (desc == null) {
-            descBytes = new byte[] {'(', ')', 'V'};
-        } else {
-            descBytes = UTFEncoder.encode(desc);
-        }
-
-        C_UTF8 descConstant = addConstant(new C_UTF8(descBytes));
-
-        C_NameAndType natConstant = addConstant(new C_NameAndType(nameConstant, descConstant));
-        // CONSTANT_Methodref tag is 10.
-        return addConstant(new C_MemberRef(10, ex, natConstant));
-    }
-
-    void writeTo(BasicEncoder encoder) throws IOException, IllegalClassFormatException {
-        int count = size() + 1;
-        if (count > 65535) {
-            throw new IllegalClassFormatException("Constant pool is full");
-        }
-        encoder.writeShort(count);
-        int startOffset = mOffsets[0];
-        encoder.write(mBuffer, startOffset, mEndOffset - startOffset);
-        for (Constant c : mAddedConstants) {
-            c.writeTo(encoder);
-        }
-    }
-
-    /**
-     * @param constant must not be long or double
-     */
     @SuppressWarnings("unchecked")
     private <C extends Constant> C addConstant(C constant) {
         Constant existing = mMappedConstants.putIfAbsent(constant, constant);
@@ -483,12 +421,12 @@ final class ConstantPool {
         return constant;
     }
 
-    /**
-     * @param constant must not be long or double
-     */
     private void registerNewConstant(Constant constant) {
         mAddedConstants.add(constant);
-        constant.mIndex = mIndexedConstants.length + mAddedConstants.size();
+        constant.mIndex = mConstants.length + mAddedConstants.size();
+        if (constant.isWide()) {
+            mAddedConstants.add(null);
+        }
     }
 
     static abstract class Constant {
@@ -499,54 +437,301 @@ final class ConstantPool {
             mTag = tag;
         }
 
-        void writeTo(BasicEncoder encoder) throws IOException {
-            encoder.writeByte(mTag);
+        boolean isWide() {
+            return false;
         }
+
+        /**
+         * Returns the size of the constant, in bytes.
+         */
+        abstract long size();
+
+        abstract void writeTo(BufferEncoder encoder) throws IOException;
     }
 
-    static final class C_UTF8 extends Constant {
-        final byte[] mValue;
-        final int mOffset, mLength;
-        final int mHash;
+    final class C_UTF8 extends Constant implements CharSequence {
+        private byte[] mBuffer;
+        private int mOffset, mLength;
 
-        C_UTF8(byte[] value, int offset, int length) {
-            super(1);
-            mValue = Objects.requireNonNull(value);
+        // 0: initial, 1: ASCII string, 2: non-ASCII string
+        private int mState;
+        private int mHash;
+        private String mStr;
+
+        C_UTF8(int tag, byte[] buffer, int offset, int length) {
+            super(tag);
+            mBuffer = buffer;
             mOffset = offset;
             mLength = length;
-            mHash = Utils.hash(value, offset, length);
-        }
-
-        C_UTF8(byte[] value) {
-            this(value, 0, value.length);
         }
 
         C_UTF8(String value) {
-            this(UTFEncoder.encode(value));
+            super(1);
+            byte[] buffer = UTFEncoder.encode(value);
+            mBuffer = buffer;
+            mOffset = 0;
+            mLength = buffer.length;
+            mStr = value;
+        }
+
+        /**
+         * Create an empty instance, to be used for referencing slices of other instances.
+         */
+        C_UTF8() {
+            super(0); // illegal tag; indicates that decode works differently
+        }
+
+        /**
+         * Returns true if the value is <init>.
+         */
+        boolean isConstructor() {
+            int length = mLength;
+            if (length != 6) {
+                return false;
+            }
+            byte[] buffer = mBuffer;
+            int offset = mOffset;
+            return Utils.decodeIntBE(buffer, offset) == 0x3c696e69 // <ini
+                && Utils.decodeUnsignedShortBE(buffer, offset + 4) == 0x743e; // t>
+        }
+
+        String str() throws ClassFormatException {
+            String str = mStr;
+            return str != null ? str : decodeValue();
+        }
+
+        private String decodeValue() throws ClassFormatException {
+            String str;
+
+            try {
+                if (mTag == 0) {
+                    str = new UTFDecoder().decode(mBuffer, mOffset, mLength);
+                } else {
+                    int offset = mOffset;
+                    if (offset <= 0) {
+                        str = new UTFDecoder().decode(mBuffer, mOffset, mLength);
+                    } else {
+                        final BufferDecoder decoder = mDecoder;
+                        final int originalOffset = decoder.offset();
+                        try {
+                            decoder.offset(offset - 2);
+                            str = decoder.readUTF();
+                        } finally {
+                            decoder.offset(originalOffset);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                throw ClassFormatException.from(e);
+            }
+
+            return mStr = str;
+        }
+
+        @Override // CharSequence
+        public char charAt(int index) {
+            if (mState == 0) {
+                prepare();
+            }
+            return mState == 1 ? (char) (mBuffer[mOffset + index] & 0xff) : str().charAt(index);
+        }
+
+        @Override // CharSequence
+        public int length() {
+            if (mState == 0) {
+                prepare();
+            }
+            return mState == 1 ? mLength : str().length();
+        }
+
+        @Override // CharSequence
+        public CharSequence subSequence(int start, int end) {
+            return str().subSequence(start, end);
+        }
+
+        @Override // CharSequence
+        public String toString() {
+            return str();
         }
 
         @Override
         public int hashCode() {
+            if (mState == 0) {
+                prepare();
+            }
             return mHash;
         }
 
         @Override
         public boolean equals(Object obj) {
             return this == obj || obj instanceof C_UTF8 other
-                && Arrays.equals(mValue, mOffset, mOffset + mLength,
-                                 other.mValue, other.mOffset, other.mOffset + other.mLength);
+                &&  Arrays.equals(mBuffer, mOffset, mOffset + mLength,
+                                  other.mBuffer, other.mOffset, other.mOffset + other.mLength)
+                || obj instanceof CharSequence seq && contentEquals(seq);
+        }
+
+        private boolean contentEquals(CharSequence seq) {
+            hasStr: {
+                String str = mStr;
+                if (str == null) {
+                    prepare();
+                    if ((str = mStr) == null) {
+                        break hasStr;
+                    }
+                }
+                return str.contentEquals(seq);
+            }
+
+            assert mState == 1; // ASCII string
+
+            int length = mLength;
+
+            if (seq.length() != length) {
+                return false;
+            }
+
+            byte[] buffer = mBuffer;
+            int offset = mOffset;
+
+            for (int i=0; i<length; i++) {
+                if (seq.charAt(i) != ((char) buffer[offset + i])) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private void prepare() {
+            byte[] buffer = mBuffer;
+            int i = mOffset;
+            int end = i + mLength;
+
+            if (mStr != null) {
+                mHash = mStr.hashCode();
+                for (; i < end; i++) {
+                    int c = buffer[i];
+                    if (c < 0) {
+                        mState = 2; // non-ASCII string
+                        return;
+                    }
+                }
+                mState = 1; // ASCII string
+            } else {
+                int hash = 0;
+                for (; i < end; i++) {
+                    int c = buffer[i];
+                    if (c < 0) {
+                        mHash = str().hashCode();
+                        mState = 2; // non-ASCII string
+                        return;
+                    }
+                    hash = hash * 31 + c;
+                }
+                mHash = hash;
+                mState = 1; // ASCII string
+            }
+        }
+
+        /**
+         * Assume that the string refers to a method type descriptor, and generate operations
+         * to push all of the arguments to the operand stack.
+         *
+         * @return number of stack slots pushed
+         */
+        int pushArgs(BufferEncoder encoder) throws IOException {
+            int numPushed = 0;
+
+            byte[] buffer = mBuffer;
+            int offset = mOffset + 1; // skip the '('
+            int endOffset = offset + mLength;
+
+            loop: while (offset < endOffset) {
+                int c = buffer[offset++] & 0xff;
+
+                switch (c) {
+                    default -> {
+                        break loop;
+                    }
+                    case 'B', 'C', 'I', 'S', 'Z' -> {
+                        encoder.writeByte(ILOAD);
+                        encoder.writeByte(numPushed++);
+                    }
+                    case 'J' -> {
+                        encoder.writeByte(LLOAD);
+                        encoder.writeByte(numPushed); numPushed += 2;
+                    }
+                    case 'F' -> {
+                        encoder.writeByte(FLOAD);
+                        encoder.writeByte(numPushed++);
+                    }
+                    case 'D' -> {
+                        encoder.writeByte(DLOAD);
+                        encoder.writeByte(numPushed); numPushed += 2;
+                    }
+                    case 'L', '[' -> {
+                        encoder.writeByte(ALOAD);
+                        encoder.writeByte(numPushed++);
+                        // Find the ';' terminator.
+                        while (offset < endOffset && (buffer[offset++] & 0xff) != ';');
+                    }
+                }
+            }
+
+            return numPushed;
+        }
+
+        /**
+         * Assume that the string refers to a method type descriptor, and generate a return
+         * operation.
+         *
+         * @return number of stack slots popped
+         */
+        int returnValue(BufferEncoder encoder) throws IOException {
+            int c = mBuffer[mOffset + mLength - 1] & 0xff;
+            switch (c) {
+                default -> {
+                    encoder.writeByte(RETURN);
+                    return 0;
+                }
+                case 'B', 'C', 'I', 'S', 'Z' -> {
+                    encoder.writeByte(IRETURN);
+                    return 1;
+                }
+                case 'J' -> {
+                    encoder.writeByte(LRETURN);
+                    return 2;
+                }
+                case 'F' -> {
+                    encoder.writeByte(FRETURN);
+                    return 1;
+                }
+                case 'D' -> {
+                    encoder.writeByte(DRETURN);
+                    return 2;
+                }
+                case ';' -> {
+                    encoder.writeByte(ARETURN);
+                    return 1;
+                }
+            }
         }
 
         @Override
-        void writeTo(BasicEncoder encoder) throws IOException {
-            super.writeTo(encoder);
+        long size() {
+            return (1 + 2) + mLength;
+        }
+
+        @Override
+        void writeTo(BufferEncoder encoder) throws IOException {
+            encoder.writeByte(mTag);
             encoder.writeShort(mLength);
-            encoder.write(mValue, mOffset, mLength);
+            encoder.write(mBuffer, mOffset, mLength);
         }
     }
 
     static class C_String extends Constant {
-        C_UTF8 mValue;
+        final C_UTF8 mValue;
 
         C_String(int tag, C_UTF8 value) {
             super(tag);
@@ -565,15 +750,135 @@ final class ConstantPool {
         }
 
         @Override
-        void writeTo(BasicEncoder encoder) throws IOException {
-            super.writeTo(encoder);
+        long size() {
+            return 1 + 2;
+        }
+
+        @Override
+        void writeTo(BufferEncoder encoder) throws IOException {
+            encoder.writeByte(mTag);
             encoder.writeShort(mValue.mIndex);
         }
     }
 
+    static final class C_Long extends Constant {
+        final long mValue;
+
+        C_Long(int tag, long value) {
+            super(tag);
+            mValue = value;
+        }
+
+        @Override
+        public boolean isWide() {
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            return Long.hashCode(mValue) * 31 + mTag;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return this == obj || obj instanceof C_Long other
+                && mTag == other.mTag && mValue == other.mValue;
+        }
+
+        @Override
+        long size() {
+            return 1 + 8;
+        }
+
+        @Override
+        void writeTo(BufferEncoder encoder) throws IOException {
+            encoder.writeByte(mTag);
+            encoder.writeLong(mValue);
+        }
+    }
+
+    static final class C_Double extends Constant {
+        final double mValue;
+
+        C_Double(int tag, double value) {
+            super(tag);
+            mValue = value;
+        }
+
+        @Override
+        public boolean isWide() {
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            return Double.hashCode(mValue) * 31 + mTag;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return this == obj || obj instanceof C_Double other
+                && mTag == other.mTag && mValue == other.mValue;
+        }
+
+        @Override
+        long size() {
+            return 1 + 8;
+        }
+
+        @Override
+        void writeTo(BufferEncoder encoder) throws IOException {
+            encoder.writeByte(mTag);
+            encoder.writeLong(Double.doubleToRawLongBits(mValue));
+        }
+    }
+
     static final class C_Class extends C_String {
-        C_Class(C_UTF8 name) {
-            super(7, name);
+        private String mName;
+
+        C_Class(int tag, C_UTF8 name) {
+            super(tag, name);
+        }
+
+        /**
+         * Returns the name using '.' characters instead of '/' characters.
+         */
+        String name() {
+            String name = mName;
+            if (name == null) {
+                mName = name = mValue.str().replace('/', '.');
+            }
+            return name;
+        }
+
+        /**
+         * Split the class name into package name and plain class name, by updating the buffer
+         * reference in the given C_UTF8 instance. They should have been initially created as
+         * empty.
+         */
+        void split(C_UTF8 packageName, C_UTF8 className) {
+            packageName.mState = 0;
+            packageName.mStr = null;
+            className.mState = 0;
+            className.mStr = null;
+
+            final C_UTF8 full = mValue;
+
+            final byte[] buffer = full.mBuffer;
+            packageName.mBuffer = buffer;
+            className.mBuffer = buffer;
+
+            final int offset = full.mOffset;
+            packageName.mOffset = offset;
+
+            final int length = full.mLength;
+
+            int i = length;
+            while (--i >= 0 && buffer[offset + i] != '/');
+
+            packageName.mLength = i;
+            className.mOffset = offset + i + 1;
+            className.mLength = length - i - 1;
         }
     }
 
@@ -581,8 +886,8 @@ final class ConstantPool {
         final C_UTF8 mName;
         final C_UTF8 mTypeDesc;
 
-        C_NameAndType(C_UTF8 name, C_UTF8 typeDesc) {
-            super(12);
+        C_NameAndType(int tag, C_UTF8 name, C_UTF8 typeDesc) {
+            super(tag);
             mName = Objects.requireNonNull(name);
             mTypeDesc = Objects.requireNonNull(typeDesc);
         }
@@ -599,8 +904,13 @@ final class ConstantPool {
         }
 
         @Override
-        void writeTo(BasicEncoder encoder) throws IOException {
-            super.writeTo(encoder);
+        long size() {
+            return 1 + 4;
+        }
+
+        @Override
+        void writeTo(BufferEncoder encoder) throws IOException {
+            encoder.writeByte(mTag);
             encoder.writeShort(mName.mIndex);
             encoder.writeShort(mTypeDesc.mIndex);
         }
@@ -611,10 +921,10 @@ final class ConstantPool {
         final C_Class mClass;
         final C_NameAndType mNameAndType;
 
-        C_MemberRef(int tag, C_Class clazz, C_NameAndType nameAndType) {
+        C_MemberRef(int tag, C_Class clazz, C_NameAndType nat) {
             super(tag);
             mClass = Objects.requireNonNull(clazz);
-            mNameAndType = Objects.requireNonNull(nameAndType);
+            mNameAndType = Objects.requireNonNull(nat);
         }
 
         @Override
@@ -629,52 +939,14 @@ final class ConstantPool {
                 && mNameAndType.equals(other.mNameAndType);
         }
 
-        /**
-         * Should only be called for CONSTANT_Methodref or CONSTANT_InterfaceMethodref.
-         */
-        int argCount() {
-            C_UTF8 td = mNameAndType.mTypeDesc;
-            byte[] value = td.mValue;
-            int offset = td.mOffset;
-            int endOffset = offset + td.mLength;
-            offset++; // skip the '('
-
-            int count = 0;
-
-            loop: while (offset < endOffset) {
-                switch (value[offset++] & 0xff) {
-                    case ')' -> {
-                        break loop;
-                    }
-
-                    case 'Z', 'B', 'S', 'C', 'I', 'F' -> count++;
-                
-                    case 'J', 'D' -> count += 2;
-
-                    case 'L' -> {
-                        count++;
-                        while (offset < endOffset && value[offset++] != ';');
-                    }
-
-                    case '[' -> {
-                        count++;
-                        loop2: while (offset < endOffset) {
-                            switch (value[offset++] & 0xff) {
-                                case ')', 'Z', 'B', 'S', 'C', 'I', 'F', 'J', 'D', ';' -> {
-                                    break loop2;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            return count;
+        @Override
+        long size() {
+            return 1 + 4;
         }
 
         @Override
-        void writeTo(BasicEncoder encoder) throws IOException {
-            super.writeTo(encoder);
+        void writeTo(BufferEncoder encoder) throws IOException {
+            encoder.writeByte(mTag);
             encoder.writeShort(mClass.mIndex);
             encoder.writeShort(mNameAndType.mIndex);
         }

@@ -23,8 +23,20 @@ package org.cojen.boxtin;
  */
 public interface Controller {
     /**
+     * Returns a Checker which is used to determine if a calling module is allowed to perform
+     * an operation.
+     *
      * @param module the caller's module
      * @return a checker instance, which can be null if all operations are allowed
-    */
-    public Checker checkerFor(Module module);
+     */
+    public Checker checkerForCaller(Module module);
+
+    /**
+     * Returns a Checker which is used to apply changes to classes which have deniable
+     * operations.
+     *
+     * @return a checker instance, which can be null if all operations are allowed
+     */
+    // FIXME: This is supposed to be the "union" of all denials, of all rule sets.
+    public Checker checkerForTarget();
 }

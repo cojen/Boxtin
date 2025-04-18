@@ -18,15 +18,17 @@ package org.cojen.boxtin;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
+import java.io.EOFException;
 import java.io.IOException;
+import java.io.OutputStream;
 
 /**
  * Decodes the primitive data elements of a class file.
  *
  * @author Brian S. O'Neill
  */
-final class BasicDecoder extends DataInputStream {
-    BasicDecoder(byte[] buffer) {
+final class BufferDecoder extends DataInputStream {
+    BufferDecoder(byte[] buffer) {
         super(new Buffer(buffer));
     }
 
@@ -50,6 +52,19 @@ final class BasicDecoder extends DataInputStream {
      */
     void offset(int offset) {
         ((Buffer) in).offset(offset);
+    }
+
+    void transferTo(OutputStream out, long length) throws IOException {
+        Buffer b = ((Buffer) in);
+        byte[] bytes = b.buffer();
+        int offset = b.offset();
+        int remaining = bytes.length - offset;
+        if (length > remaining) {
+            throw new EOFException();
+        }
+        int len = (int) length;
+        out.write(bytes, offset, len);
+        b.offset(offset + len);
     }
 
     private static final class Buffer extends ByteArrayInputStream {

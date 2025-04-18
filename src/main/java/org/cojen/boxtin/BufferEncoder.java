@@ -26,8 +26,8 @@ import java.io.OutputStream;
  *
  * @author Brian S. O'Neill
  */
-class BasicEncoder extends DataOutputStream {
-    BasicEncoder(int capacity) {
+class BufferEncoder extends DataOutputStream {
+    BufferEncoder(int capacity) {
         super(new Buffer(capacity));
     }
 

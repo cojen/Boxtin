@@ -17,16 +17,16 @@
 package org.cojen.boxtin;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
-import java.util.TreeMap;
 
+import static org.cojen.boxtin.Rule.*;
 import static org.cojen.boxtin.Utils.*;
 
 /**
@@ -35,14 +35,11 @@ import static org.cojen.boxtin.Utils.*;
  * @author Brian S. O'Neill
  */
 public final class RulesBuilder {
-    // Note that TreeMap is used everywhere instead of HashMap, thus ensuring that the
-    // immutable maps are always built in a consistent order.
-
     // Can be null when empty.
     private Map<String, PackageScope> mPackages;
 
     // Default is selected when no map entry is found.
-    private boolean mAllowByDefault;
+    private Rule mDefaultRule;
 
     public RulesBuilder() {
         denyAll();
@@ -66,7 +63,7 @@ public final class RulesBuilder {
      */
     public RulesBuilder denyAll() {
         mPackages = null;
-        mAllowByDefault = false;
+        mDefaultRule = TARGET_DENY;
         return this;
     }
 
@@ -78,7 +75,7 @@ public final class RulesBuilder {
      */
     public RulesBuilder allowAll() {
         mPackages = null;
-        mAllowByDefault = true;
+        mDefaultRule = ALLOW;
         return this;
     }
 
@@ -88,14 +85,14 @@ public final class RulesBuilder {
      * @param name fully qualified package name
      */
     public PackageScope forPackage(String name) {
-        final String vmName = name.replace('.', '/');
+        final String dottedName = name.replace('/', '.');
         Map<String, PackageScope> packages = mPackages;
         if (packages == null) {
-            mPackages = packages = new TreeMap<>();
+            mPackages = packages = new HashMap<>();
         }
-        return packages.computeIfAbsent(vmName, k -> {
-            var scope = new PackageScope(this, vmName);
-            return mAllowByDefault ? scope.allowAll() : scope.denyAll();
+        return packages.computeIfAbsent(dottedName, k -> {
+            var scope = new PackageScope(this, dottedName);
+            return mDefaultRule == ALLOW ? scope.allowAll() : scope.denyAll(mDefaultRule);
         });
     }
 
@@ -114,8 +111,11 @@ public final class RulesBuilder {
      * @return this
      */
     public RulesBuilder validate(ClassLoader loader)
-        throws ClassNotFoundException, NoSuchMethodException, NoSuchFieldException
+        throws ClassNotFoundException, NoSuchMethodException
     {
+        // FIXME: Validate inheritence when using caller checks. Also check
+        // for @CallerSensitive methods, which must rely on caller checks.
+
         Objects.requireNonNull(loader);
         if (mPackages != null) {
             for (PackageScope ps : mPackages.values()) {
@@ -129,63 +129,21 @@ public final class RulesBuilder {
      * Returns a immutable set of rules based on what's been defined so far.
      */
     public Rules build() {
-        RulesBuilder reduced = reduce();
-        return ImmutableRules.build(reduced.buildPackageMap(), reduced.mAllowByDefault);
-    }
+        Map<String, ScopedRules.PackageScope> builtPackages;
 
-    /**
-     * If the RulesBuilder contains any redundancies, a new RulesBuilder is returned with the
-     * redundancies removed. Reduction cannot be performed against the original RulesBuilder
-     * because it would remove registered sub-scopes which can still be modified. The
-     * sub-scopes cannot be orphaned.
-     */
-    private RulesBuilder reduce() {
-        Map<String, PackageScope> packages = mPackages;
-
-        if (!isEmpty(packages)) {
-            // Reduce the packages.
-            Iterator<Map.Entry<String, PackageScope>> it = packages.entrySet().iterator();
-            while (it.hasNext()) {
-                Map.Entry<String, PackageScope> e = it.next();
-                PackageScope scope = e.getValue();
-                PackageScope reduced = scope.reduce(mAllowByDefault);
-                if (reduced != scope) {
-                    if (packages == mPackages) {
-                        packages = new TreeMap<>(packages);
-                    }
-                    if (reduced == null) {
-                        packages.remove(e.getKey());
-                    } else {
-                        packages.put(e.getKey(), reduced);
-                    }
+        if (isEmpty(mPackages)) {
+            builtPackages = null;
+        } else {
+            builtPackages = new HashMap<>();
+            for (Map.Entry<String, PackageScope> e : mPackages.entrySet()) {
+                ScopedRules.PackageScope scope = e.getValue().build(mDefaultRule);
+                if (scope != null) {
+                    builtPackages.put(e.getKey().replace('.', '/').intern(), scope);
                 }
             }
         }
 
-        if (packages == mPackages) {
-            return this;
-        }
-
-        var reduced = new RulesBuilder();
-
-        reduced.mPackages = packages;
-        reduced.mAllowByDefault = mAllowByDefault;
-
-        return reduced;
-    }
-
-    private MemberRefPackageMap<ImmutableRules.PackageScope> buildPackageMap() {
-        if (isEmpty(mPackages)) {
-            return null;
-        }
-
-        return new MemberRefPackageMap<>
-            (mPackages.size(),
-             mPackages.entrySet().stream().map((Map.Entry<String, PackageScope> e) -> {
-                 PackageScope scope = e.getValue();
-                 return Map.entry(e.getKey(), ImmutableRules.PackageScope.build
-                                  (scope.buildClassMap(), scope.mAllowByDefault));
-             }));
+        return new ScopedRules(builtPackages, mDefaultRule);
     }
 
     private static String nameFor(Class<?> clazz) {
@@ -317,31 +275,6 @@ public final class RulesBuilder {
         return null;
     }
 
-    private static Field tryFindField(final Class<?> clazz, final String name) {
-        for (Field f : clazz.getDeclaredFields()) {
-            if (isAccessible(f) && f.getName().equals(name)) {
-                return f;
-            }
-        }
-
-        Class<?> superclass = clazz.getSuperclass();
-        if (superclass != null) {
-            Field f = tryFindField(superclass, name);
-            if (f != null) {
-                return f;
-            }
-        }
-
-        for (Class<?> iface : clazz.getInterfaces()) {
-            Field f = tryFindField(iface, name);
-            if (f != null) {
-                return f;
-            }
-        }
-
-        return null;
-    }
-
     public static final class PackageScope {
         private final RulesBuilder mParent;
         private final String mName;
@@ -350,7 +283,7 @@ public final class RulesBuilder {
         private Map<String, ClassScope> mClasses;
 
         // Default is selected when no map entry is found.
-        private boolean mAllowByDefault;
+        private Rule mDefaultRule;
 
         private PackageScope(RulesBuilder parent, String name) {
             mParent = parent;
@@ -364,8 +297,16 @@ public final class RulesBuilder {
          * @return this
          */
         public PackageScope denyAll() {
+            return denyAll(TARGET_DENY);
+        }
+
+        /**
+         * @param rule must be CALLER_DENY or TARGET_DENY
+         * @return this
+         */
+        PackageScope denyAll(Rule rule) {
             mClasses = null;
-            mAllowByDefault = false;
+            mDefaultRule = rule;
             return this;
         }
 
@@ -377,7 +318,7 @@ public final class RulesBuilder {
          */
         public PackageScope allowAll() {
             mClasses = null;
-            mAllowByDefault = true;
+            mDefaultRule = ALLOW;
             return this;
         }
 
@@ -392,11 +333,11 @@ public final class RulesBuilder {
             final String vmName = name.replace('.', '$');
             Map<String, ClassScope> classes = mClasses;
             if (classes == null) {
-                mClasses = classes = new TreeMap<>();
+                mClasses = classes = new HashMap<>();
             }
             return classes.computeIfAbsent(vmName, k -> {
                 var scope = new ClassScope(this, vmName);
-                return mAllowByDefault ? scope.allowAll() : scope.denyAll();
+                return mDefaultRule == ALLOW ? scope.allowAll() : scope.denyAll(mDefaultRule);
             });
         }
 
@@ -436,7 +377,7 @@ public final class RulesBuilder {
          * @throws IllegalStateException if validation fails
          */
         public void validate(ClassLoader loader) 
-            throws ClassNotFoundException, NoSuchMethodException, NoSuchFieldException
+            throws ClassNotFoundException, NoSuchMethodException
         {
             Objects.requireNonNull(loader);
             if (mClasses != null) {
@@ -447,62 +388,28 @@ public final class RulesBuilder {
         }
 
         /**
-         * If the scope contains any redundancies, a new scope is returned with the
-         * redundancies removed. Null is returned if the scope can be removed.
+         * @return null if redundant
          */
-        private PackageScope reduce(boolean parentAllowByDefault) {
-            Map<String, ClassScope> classes = mClasses;
+        private ScopedRules.PackageScope build(Rule parentRule) {
+            if (isEmpty(mClasses) && parentRule == mDefaultRule) {
+                return null;
+            }
 
-            if (!isEmpty(classes)) {
-                // Reduce the classes.
-                Iterator<Map.Entry<String, ClassScope>> it = classes.entrySet().iterator();
-                while (it.hasNext()) {
-                    Map.Entry<String, ClassScope> e = it.next();
-                    ClassScope scope = e.getValue();
-                    ClassScope reduced = scope.reduce(mAllowByDefault);
-                    if (reduced != scope) {
-                        if (classes == mClasses) {
-                            classes = new TreeMap<>(classes);
-                        }
-                        if (reduced == null) {
-                            classes.remove(e.getKey());
-                        } else {
-                            classes.put(e.getKey(), reduced);
-                        }
+            Map<String, ScopedRules.ClassScope> builtClasses;
+
+            if (isEmpty(mClasses)) {
+                builtClasses = null;
+            } else {
+                builtClasses = new HashMap<>();
+                for (Map.Entry<String, ClassScope> e : mClasses.entrySet()) {
+                    ScopedRules.ClassScope scope = e.getValue().build(mDefaultRule);
+                    if (scope != null) {
+                        builtClasses.put(e.getKey().intern(), scope);
                     }
                 }
             }
 
-            if (parentAllowByDefault == mAllowByDefault && isEmpty(classes)) {
-                return null;
-            }
-
-            if (classes == mClasses) {
-                return this;
-            }
-
-            var reduced = new PackageScope(mParent, mName);
-
-            reduced.mClasses = classes;
-            reduced.mAllowByDefault = mAllowByDefault;
-
-            return reduced;
-        }
-
-        private MemberRefPlainClassMap<ImmutableRules.ClassScope> buildClassMap() {
-            if (isEmpty(mClasses)) {
-                return null;
-            }
-
-            return new MemberRefPlainClassMap<>
-                (mClasses.size(),
-                 mClasses.entrySet().stream().map((Map.Entry<String, ClassScope> e) -> {
-                     ClassScope scope = e.getValue();
-                     return Map.entry(e.getKey(), ImmutableRules.ClassScope.build
-                                      (scope.buildMethodMap(), scope.mAllowMethodsByDefault,
-                                       scope.mAllowConstructorsByDefault,
-                                       scope.buildFieldMap(), scope.mAllowFieldsByDefault));
-                 }));
+            return new ScopedRules.PackageScope(builtClasses, mDefaultRule);
         }
     }
 
@@ -510,20 +417,20 @@ public final class RulesBuilder {
         private final PackageScope mParent;
         private final String mName;
 
+        // The current deny rule.
+        private Rule mDenyRule;
+
+        // Can be null when empty.
+        private MethodScope mConstructors;
+
+        // Default is selected when constructors is empty.
+        private Rule mDefaultConstructorRule;
+
         // Can be null when empty.
         private Map<String, MethodScope> mMethods;
 
         // Default is selected when no method map entry is found.
-        private boolean mAllowMethodsByDefault;
-
-        // Default is selected when no constructor method map entry is found.
-        private boolean mAllowConstructorsByDefault;
-
-        // Can be null when empty.
-        private Map<String, Boolean> mFields;
-
-        // Default is selected when no field map entry is found.
-        private boolean mAllowFieldsByDefault;
+        private Rule mDefaultMethodRule;
 
         // Is set when a variant rule can be specified.
         private MethodScope mVariantScope;
@@ -531,17 +438,54 @@ public final class RulesBuilder {
         private ClassScope(PackageScope parent, String name) {
             mParent = parent;
             mName = name;
+            mDenyRule = TARGET_DENY;
         }
 
         /**
-         * Deny access to all constructors, methods, and fields, superseding all previous
-         * rules.
+         * Indicate that access checking code should be generated in the caller class. By
+         * default, access checks are performed in the target class. Checking in the caller is
+         * more efficient, but it doesn't work reliably against a method which is inherited or
+         * can be inherited.
+         *
+         * @return this
+         */
+        public ClassScope callerCheck() {
+            mDenyRule = CALLER_DENY;
+            return this;
+        }
+
+        /**
+         * Indicate that access checking code should be generated in the target class, which is
+         * the default behavior. Checking in the target is less efficient, but the check isn't
+         * affected by inheritence.
+         *
+         * @return this
+         */
+        public ClassScope targetCheck() {
+            mDenyRule = TARGET_DENY;
+            return this;
+        }
+
+        /**
+         * Deny access to all constructors, and methods, superseding all previous rules.
          *
          * @return this
          */
         public ClassScope denyAll() {
-            mAllowConstructorsByDefault = false;
-            return denyAllMethods().denyAllFields();
+            return denyAll(mDenyRule);
+        }
+
+        /**
+         * @param rule must be CALLER_DENY or TARGET_DENY
+         * @return this
+         */
+        ClassScope denyAll(Rule rule) {
+            mConstructors = null;
+            mDefaultConstructorRule = rule;
+            mMethods = null;
+            mDefaultMethodRule = rule;
+            mVariantScope = null;
+            return this;
         }
 
         /**
@@ -550,10 +494,9 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope denyAllConstructors() {
-            if (mAllowConstructorsByDefault) {
-                mVariantScope = forConstructor().denyAll();
-                mAllowConstructorsByDefault = false;
-            }
+            mConstructors = null;
+            mDefaultConstructorRule = mDenyRule;
+            mVariantScope = mConstructors = new MethodScope().denyAll(mDenyRule);
             return this;
         }
 
@@ -563,8 +506,9 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope denyAllMethods() {
-            removeAllMethodScopes();
-            mAllowMethodsByDefault = false;
+            mMethods = null;
+            mDefaultMethodRule = mDenyRule;
+            mVariantScope = null;
             return this;
         }
 
@@ -576,7 +520,7 @@ public final class RulesBuilder {
          */
         public ClassScope denyMethod(String name) {
             checkMethodName(name);
-            mVariantScope = forMethod(name).denyAll();
+            mVariantScope = forMethod(name).denyAll(mDenyRule);
             return this;
         }
 
@@ -597,7 +541,7 @@ public final class RulesBuilder {
             if (mVariantScope.isAllAllowed()) {
                 throw new IllegalStateException("All variants are explicitly allowed");
             }
-            mVariantScope.allowVariant(descriptor.replace('.', '/'));
+            mVariantScope.allowVariant(descriptor);
             return this;
         }
 
@@ -614,35 +558,17 @@ public final class RulesBuilder {
         }
 
         /**
-         * Deny access to all fields, superseding all previous rules.
-         *
-         * @return this
-         */
-        public ClassScope denyAllFields() {
-            variantOff();
-            mFields = null;
-            mAllowFieldsByDefault = false;
-            return this;
-        }
-
-        /**
-         * Deny access to the given field, superseding all previous rules.
-         *
-         * @return this
-         */
-        public ClassScope denyField(String name) {
-            return fieldAction(name, false);
-        }
-
-        /**
-         * Allow access to all constructors, methods, and fields, superseding all previous
-         * rules.
+         * Allow access to all constructors, and methods, superseding all previous rules.
          *
          * @return this
          */
         public ClassScope allowAll() {
-            mAllowConstructorsByDefault = true;
-            return allowAllMethods().allowAllFields();
+            mConstructors = null;
+            mDefaultConstructorRule = ALLOW;
+            mMethods = null;
+            mDefaultMethodRule = ALLOW;
+            mVariantScope = null;
+            return this;
         }
 
         /**
@@ -651,10 +577,9 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope allowAllConstructors() {
-            if (!mAllowConstructorsByDefault) {
-                mVariantScope = forConstructor().allowAll();
-                mAllowConstructorsByDefault = true;
-            }
+            mConstructors = null;
+            mDefaultConstructorRule = ALLOW;
+            mVariantScope = mConstructors = new MethodScope().allowAll();
             return this;
         }
 
@@ -664,8 +589,9 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope allowAllMethods() {
-            removeAllMethodScopes();
-            mAllowMethodsByDefault = true;
+            mMethods = null;
+            mDefaultMethodRule = ALLOW;
+            mVariantScope = null;
             return this;
         }
 
@@ -698,7 +624,7 @@ public final class RulesBuilder {
             if (mVariantScope.isAllDenied()) {
                 throw new IllegalStateException("All variants are explicitly denied");
             }
-            mVariantScope.denyVariant(descriptor.replace('.', '/'));
+            mVariantScope.denyVariant(mDenyRule, descriptor);
             return this;
         }
 
@@ -715,32 +641,11 @@ public final class RulesBuilder {
         }
 
         /**
-         * Allow access to all fields, superseding all previous rules.
-         *
-         * @return this
-         */
-        public ClassScope allowAllFields() {
-            variantOff();
-            mFields = null;
-            mAllowFieldsByDefault = true;
-            return this;
-        }
-
-        /**
-         * Allow access to the given field, superseding all previous rules.
-         *
-         * @return this
-         */
-        public ClassScope allowField(String name) {
-            return fieldAction(name, true);
-        }
-
-        /**
          * End the current rules for this class and return to the package scope. More rules can
          * be added to the scope later if desired.
          */
         public PackageScope end() {
-            variantOff();
+            mVariantScope = null;
             return mParent;
         }
 
@@ -751,7 +656,7 @@ public final class RulesBuilder {
          * @throws IllegalStateException if validation fails
          */
         public void validate(ClassLoader loader)
-            throws ClassNotFoundException, NoSuchMethodException, NoSuchFieldException
+            throws ClassNotFoundException, NoSuchMethodException
         {
             Objects.requireNonNull(loader);
 
@@ -763,217 +668,102 @@ public final class RulesBuilder {
 
             Class<?> clazz = loader.loadClass(className);
 
-            if (mMethods != null) {
-                for (Map.Entry<String, MethodScope> e : mMethods.entrySet()) {
-                    String name = e.getKey();
-                    MethodScope ms = e.getValue();
-                    if (name.equals("<init>")) {
-                        ms.validateConstuctor(loader, clazz);
-                    } else {
-                        ms.validateMethod(loader, clazz, name);
-                    }
-                }
+            if (mConstructors != null) {
+                mConstructors.validateConstuctor(loader, clazz);
             }
 
-            if (mFields != null) {
-                for (String name : mFields.keySet()) {
-                    try {
-                        clazz.getField(name);
-                    } catch (NoSuchFieldException e) {
-                        if (tryFindField(clazz, name) == null) {
-                            throw e;
-                        }
-                    }
+            if (mMethods != null) {
+                for (Map.Entry<String, MethodScope> e : mMethods.entrySet()) {
+                    e.getValue().validateMethod(loader, clazz, e.getKey());
                 }
             }
         }
 
+        /**
+         * Caller must call allowAll or denyAll on the returned MethodScope.
+         */
         private MethodScope forMethod(String name) {
             Map<String, MethodScope> methods = mMethods;
             if (methods == null) {
-                mMethods = methods = new TreeMap<>();
+                mMethods = methods = new HashMap<>();
             }
-            return methods.computeIfAbsent(name, k -> {
-                var scope = new MethodScope();
-                return mAllowMethodsByDefault ? scope.allowAll() : scope.denyAll();
-            });
-        }
-
-        private MethodScope forConstructor() {
-            Map<String, MethodScope> methods = mMethods;
-            if (methods == null) {
-                mMethods = methods = new TreeMap<>();
-            }
-            return methods.computeIfAbsent("<init>", k -> {
-                var scope = new MethodScope();
-                return mAllowConstructorsByDefault ? scope.allowAll() : scope.denyAll();
-            });
+            return methods.computeIfAbsent(name, _ -> new MethodScope());
         }
 
         /**
-         * Removes all method scopes not named <init>.
+         * @return null if redundant
          */
-        private void removeAllMethodScopes() {
-            variantOff();
-
-            if (!isEmpty(mMethods)) {
-                Iterator<String> it = mMethods.keySet().iterator();
-                while (it.hasNext()) {
-                    String name = it.next();
-                    if (!"<init>".equals(name)) {
-                        it.remove();
-                    }
-                }
-            }
-        }
-
-        private ClassScope fieldAction(String name, boolean allow) {
-            variantOff();
-
-            Objects.requireNonNull(name);
-
-            Map<String, Boolean> fields = mFields;
-
-            if (fields == null) {
-                if (allow == mAllowFieldsByDefault) {
-                    return this;
-                }
-                mFields = fields = new TreeMap<>();
-            }
-
-            if (allow == mAllowFieldsByDefault) {
-                fields.remove(name);
-            } else {
-                fields.put(name, allow);
-            }
-
-            return this;
-        }
-
-        private void variantOff() {
-            mVariantScope = null;
-        }
-
-        /**
-         * If the scope contains any redundancies, a new scope is returned with the
-         * redundancies removed. Null is returned if the scope can be removed.
-         */
-        private ClassScope reduce(boolean parentAllowByDefault) {
-            Map<String, MethodScope> methods = mMethods;
-
-            if (!isEmpty(methods)) {
-                // Reduce the methods.
-                Iterator<Map.Entry<String, MethodScope>> it = methods.entrySet().iterator();
-                while (it.hasNext()) {
-                    Map.Entry<String, MethodScope> e = it.next();
-                    MethodScope scope = e.getValue();
-                    MethodScope reduced = scope.reduce(mAllowMethodsByDefault);
-                    if (reduced != scope) {
-                        if (methods == mMethods) {
-                            methods = new TreeMap<>(methods);
-                        }
-                        if (reduced == null) {
-                            methods.remove(e.getKey());
-                        } else {
-                            methods.put(e.getKey(), reduced);
-                        }
-                    }
-                }
-            }
-
-            Map<String, Boolean> fields = mFields;
-
-            if (!isEmpty(fields)) {
-                // Reduce the fields.
-                Iterator<Map.Entry<String, Boolean>> it = fields.entrySet().iterator();
-                while (it.hasNext()) {
-                    Map.Entry<String, Boolean> e = it.next();
-                    if (e.getValue() == mAllowFieldsByDefault) {
-                        if (fields == mFields) {
-                            fields = new TreeMap<>(fields);
-                        }
-                        fields.remove(e.getKey());
-                    }
-                }
-            }
-
-            if (parentAllowByDefault == mAllowMethodsByDefault &&
-                parentAllowByDefault == mAllowConstructorsByDefault &&
-                parentAllowByDefault == mAllowFieldsByDefault &&
-                isEmpty(methods) && isEmpty(fields))
+        private ScopedRules.ClassScope build(Rule parentRule) {
+            if (mConstructors == null && isEmpty(mMethods) &&
+                parentRule == mDefaultConstructorRule && parentRule == mDefaultMethodRule)
             {
                 return null;
             }
 
-            if (methods == mMethods && fields == mFields) {
-                return this;
+            ScopedRules.MethodScope builtConstructors;
+
+            if (mConstructors == null) {
+                builtConstructors = null;
+            } else {
+                builtConstructors = mConstructors.build(mDefaultConstructorRule);
             }
 
-            var reduced = new ClassScope(mParent, mName);
+            Map<String, ScopedRules.MethodScope> builtMethods;
 
-            reduced.mMethods = methods;
-            reduced.mAllowMethodsByDefault = mAllowMethodsByDefault;
-            reduced.mAllowConstructorsByDefault = mAllowConstructorsByDefault;
-            reduced.mFields = fields;
-            reduced.mAllowFieldsByDefault = mAllowFieldsByDefault;
-
-            return reduced;
-        }
-
-        private MemberRefNameMap<ImmutableRules.MethodScope> buildMethodMap() {
             if (isEmpty(mMethods)) {
-                return null;
+                builtMethods = null;
+            } else {
+                builtMethods = new HashMap<>();
+                for (Map.Entry<String, MethodScope> e : mMethods.entrySet()) {
+                    ScopedRules.MethodScope scope = e.getValue().build(mDefaultMethodRule);
+                    if (scope != null) {
+                        builtMethods.put(e.getKey().intern(), scope);
+                    }
+                }
             }
 
-            return new MemberRefNameMap<>
-                (mMethods.size(),
-                 mMethods.entrySet().stream().map((Map.Entry<String, MethodScope> e) -> {
-                     MethodScope scope = e.getValue();
-                     return Map.entry(e.getKey(), ImmutableRules.MethodScope.build
-                                      (scope.buildVariantMap(), scope.mAllowByDefault));
-                 }));
-        }
-
-        private MemberRefNameMap<Boolean> buildFieldMap() {
-            if (isEmpty(mFields)) {
-                return null;
-            }
-
-            return new MemberRefNameMap<>(mFields.size(), mFields.entrySet().stream());
+            return new ScopedRules.ClassScope(builtConstructors, mDefaultConstructorRule,
+                                              builtMethods, mDefaultMethodRule); 
         }
     }
 
     private static final class MethodScope {
         // Can be null when empty.
-        Map<String, Boolean> mVariants;
+        Map<String, Rule> mVariants;
 
         // Default is selected when no map entry is found.
-        boolean mAllowByDefault;
+        Rule mDefaultRule;
 
         private MethodScope() {
         }
 
-        public boolean isAllDenied() {
-            return !mAllowByDefault && isEmpty(mVariants);
+        boolean isAllDenied() {
+            return isEmpty(mVariants)
+                && (mDefaultRule == CALLER_DENY || mDefaultRule == TARGET_DENY);
         }
 
         /**
          * Deny access to all variants, superseding all previous rules.
          *
+         * @param rule must be CALLER_DENY or TARGET_DENY
          * @return this
          */
-        public MethodScope denyAll() {
+        MethodScope denyAll(Rule rule) {
             mVariants = null;
-            mAllowByDefault = false;
+            mDefaultRule = rule;
             return this;
         }
 
-        public MethodScope denyVariant(String descriptor) {
-            return variantAction(descriptor, false);
+        /**
+         * @param rule must be CALLER_DENY or TARGET_DENY
+         * @return this
+         */
+         MethodScope denyVariant(Rule rule, String descriptor) {
+            return variantAction(descriptor, rule);
         }
 
-        public boolean isAllAllowed() {
-            return mAllowByDefault && isEmpty(mVariants);
+        boolean isAllAllowed() {
+            return isEmpty(mVariants) && mDefaultRule == ALLOW;
         }
 
         /**
@@ -981,32 +771,32 @@ public final class RulesBuilder {
          *
          * @return this
          */
-        public MethodScope allowAll() {
+        MethodScope allowAll() {
             mVariants = null;
-            mAllowByDefault = true;
+            mDefaultRule = ALLOW;
             return this;
         }
 
-        public MethodScope allowVariant(String descriptor) {
-            return variantAction(descriptor, true);
+        MethodScope allowVariant(String descriptor) {
+            return variantAction(descriptor, ALLOW);
         }
 
-        private MethodScope variantAction(String descriptor, boolean allow) {
-            Objects.requireNonNull(descriptor);
+        private MethodScope variantAction(String descriptor, Rule rule) {
+            descriptor = descriptor.replace('.', '/');
 
-            Map<String, Boolean> variants = mVariants;
+            Map<String, Rule> variants = mVariants;
 
             if (variants == null) {
-                if (allow == mAllowByDefault) {
+                if (rule == mDefaultRule) {
                     return this;
                 }
-                mVariants = variants = new TreeMap<>();
+                mVariants = variants = new HashMap<>();
             }
 
-            if (allow == mAllowByDefault) {
+            if (rule == mDefaultRule) {
                 variants.remove(descriptor);
             } else {
-                variants.put(descriptor, allow);
+                variants.put(descriptor.intern(), rule);
             }
 
             return this;
@@ -1055,22 +845,13 @@ public final class RulesBuilder {
         }
 
         /**
-         * If the scope contains any redundancies, a new scope is returned with the
-         * redundancies removed. Null is returned if the scope can be removed.
+         * @return null if redundant
          */
-        private MethodScope reduce(boolean parentAllowByDefault) {
-            if (parentAllowByDefault == mAllowByDefault && isEmpty(mVariants)) {
+        private ScopedRules.MethodScope build(Rule parentRule) {
+            if (isEmpty(mVariants) && mDefaultRule == parentRule) {
                 return null;
             }
-            return this;
-        }
-
-        private MemberRefDescriptorMap<Boolean> buildVariantMap() {
-            if (isEmpty(mVariants)) {
-                return null;
-            }
-
-            return new MemberRefDescriptorMap<>(mVariants.size(), mVariants.entrySet().stream());
+            return new ScopedRules.MethodScope(mVariants, mDefaultRule);
         }
     }
 }
