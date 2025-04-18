@@ -65,4 +65,5 @@ Although the caller transform is much more efficient, it doesn't support checks 
 
 - Native methods: TBD
 - MethodHandle constants: TBD
+- Reflection: TBD
 
