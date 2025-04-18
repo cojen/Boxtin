@@ -64,6 +64,6 @@ Although it might seem silly to include a module check which will obviously yiel
 Although the caller transform is much more efficient, it doesn't support checks against inherited methods. Target transforms are preferred except in cases where they won't work (cyclic dependencies in the JDK) or where it's known that the rule doesn't apply to a method which is inherited or can be inherited. Care must be taken to not assume that a private constructor prevents inheritance. The JVM permits sub classing without a constructor, allowing access to inherited static methods.
 
 - Native methods: TBD
-- MethodHandle constants: TBD
+- MethodHandle constants: TBD (only prototyped so far)
 - Reflection: TBD
 
