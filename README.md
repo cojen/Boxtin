@@ -29,7 +29,8 @@ For a given rule, Boxtin transforms a caller class or a target class. In general
 
 ```java
     public FileInputStream(String Path) {
-        SecurityAgent.check(SecurityAgent.WALKER.getCallerClass(), FileInputStream.class, null, "(Ljava/lang/String;)V");
+        SecurityAgent.check(SecurityAgent.WALKER.getCallerClass(),
+                            FileInputStream.class, null, "(Ljava/lang/String;)V");
         ...
     }
 ```
