@@ -31,6 +31,8 @@ import java.util.Objects;
 
 import java.util.concurrent.ThreadLocalRandom;
 
+import static java.lang.invoke.MethodHandleInfo.*;
+
 import static org.cojen.boxtin.Opcodes.*;
 
 /**
@@ -230,6 +232,59 @@ final class ConstantPool {
         return c;
     }
 
+    @FunctionalInterface
+    static interface MethodHandleConsumer {
+        /**
+         * @param kind the kind of MethodHandle constant
+         * @param offset buffer offset which stores a constant field or method index
+         * @param ref refers to the current MethodHandle info
+         * @see MethodHandleInfo
+         */
+        void accept(int kind, int offset, C_MemberRef memberRef) throws IOException;
+    }
+
+    /**
+     * @param methodsOnly when true, skip over MethodHandles which refer to fields
+     */
+    void visitMethodHandleRefs(boolean methodsOnly, MethodHandleConsumer consumer)
+        throws IOException, ClassFormatException
+    {
+        if (mMethodHandleOffsets == null) {
+            return;
+        }
+
+        byte[] buffer = buffer();
+
+        for (int i=0; i<mMethodHandleOffsets.length; i++) {
+            int offset = mMethodHandleOffsets[i];
+
+            if (offset == 0) {
+                break;
+            }
+
+            int kind = buffer[offset++] & 0xff;
+            int index = Utils.decodeUnsignedShortBE(buffer, offset);
+
+            switch (kind) {
+                default -> throw new ClassFormatException();
+
+                case REF_getField, REF_getStatic, REF_putField, REF_putStatic -> {
+                    if (methodsOnly) {
+                        continue;
+                    }
+                }
+
+                case REF_invokeVirtual, REF_invokeStatic, REF_invokeSpecial,
+                    REF_newInvokeSpecial, REF_invokeInterface ->
+                {
+                    // Okay.
+                }
+            }
+
+            consumer.accept(kind, offset, findConstant(index, C_MemberRef.class));
+        }
+    }
+
     /**
      * Must be called before adding new constants.
      */
@@ -348,32 +403,47 @@ final class ConstantPool {
     }
 
     /**
-     * Adds a type signature constant which has been adapted for static invocation, by
-     * prepending the class of the given methodRef as the first argument. The extend method
-     * must have already been called.
+     * If necessary, adds a type signature constant which has been adapted such that the first
+     * argument is an instance type from the given methodRef. If the op is NEW, then a return
+     * type is defined. The extend method must have already been called.
      *
-     * @param op must be an invoke operation or a MethodHandle reference kind
+     * @param op must be an INVOKE* or NEW operation
      * @return method type descriptor
      */
-    C_UTF8 addWithStaticSignature(int op, C_MemberRef methodRef) {
+    C_UTF8 addWithFullSignature(int op, C_MemberRef methodRef) {
         C_UTF8 typeDesc = methodRef.mNameAndType.mTypeDesc;
 
-        if (op == INVOKESTATIC || op == MethodHandleInfo.REF_invokeStatic) {
+        if (op == INVOKESTATIC) {
             return typeDesc;
         }
 
         C_UTF8 className = methodRef.mClass.mValue;
-
         int classNameLen = className.mLength;
-        var newTypeBuf = new byte[2 + classNameLen + typeDesc.mLength];
 
-        newTypeBuf[0] = '(';
-        newTypeBuf[1] = 'L';
-        System.arraycopy(className.mBuffer, className.mOffset, newTypeBuf, 2, classNameLen);
-        int offset = 2 + classNameLen;
-        newTypeBuf[offset++] = ';';
-        System.arraycopy(typeDesc.mBuffer, typeDesc.mOffset + 1,
-                         newTypeBuf, offset, typeDesc.mLength - 1);
+        byte[] newTypeBuf;
+
+        if (op == NEW) {
+            if (typeDesc.mBuffer[typeDesc.mOffset + typeDesc.mLength - 1] != 'V') {
+                throw new ClassFormatException();
+            }
+            newTypeBuf = new byte[typeDesc.mLength + classNameLen + 1];
+            int offset = typeDesc.mLength - 1;
+            System.arraycopy(typeDesc.mBuffer, typeDesc.mOffset, newTypeBuf, 0, offset);
+            newTypeBuf[offset++] = 'L';
+            System.arraycopy(className.mBuffer, className.mOffset,
+                             newTypeBuf, offset, classNameLen);
+            newTypeBuf[newTypeBuf.length - 1] = ';';
+        } else {
+            newTypeBuf = new byte[2 + classNameLen + typeDesc.mLength];
+
+            newTypeBuf[0] = '(';
+            newTypeBuf[1] = 'L';
+            System.arraycopy(className.mBuffer, className.mOffset, newTypeBuf, 2, classNameLen);
+            int offset = 2 + classNameLen;
+            newTypeBuf[offset++] = ';';
+            System.arraycopy(typeDesc.mBuffer, typeDesc.mOffset + 1,
+                             newTypeBuf, offset, typeDesc.mLength - 1);
+        }
 
         return addConstant(new C_UTF8(1, newTypeBuf, 0, newTypeBuf.length));
     }

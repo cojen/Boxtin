@@ -25,6 +25,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
 
+import static java.lang.invoke.MethodHandleInfo.*;
+
 import static org.cojen.boxtin.ConstantPool.*;
 import static org.cojen.boxtin.Opcodes.*;
 import static org.cojen.boxtin.Utils.*;
@@ -105,7 +107,9 @@ final class ClassFileProcessor {
 
     private Replacement mNewMethodsBuffer;
 
-    // Work objects used by the insertCallerChecks method.
+    private Map<Integer, C_MemberRef> mReplacedMethodHandles;
+
+    // Work objects used by the local forClass method.
     private ConstantPool.C_UTF8 mPackageName, mClassName;
 
     private ClassFileProcessor(ConstantPool cp, int accessFlags,
@@ -138,6 +142,56 @@ final class ClassFileProcessor {
             // No need to modify inaccessible classes, or those that aren't checked.
             return false;
         }
+
+        // Check the MethodHandle constants.
+
+        mConstantPool.visitMethodHandleRefs(true, (kind, offset, methodRef) -> {
+            Checker.ForClass forClass = forClass(forCaller, methodRef);
+
+            if (!forClass.isCallerChecked() && !forClass.isTargetChecked()) {
+                return;
+            }
+
+            C_NameAndType nat = methodRef.mNameAndType;
+
+            byte op;
+            byte proxyType;
+
+            if (kind == REF_newInvokeSpecial) {
+                if (!forClass.isConstructorAllowed(nat.mTypeDesc)) {
+                    op = NEW;
+                    // Constructor check is always in the target.
+                    proxyType = 0;
+                } else {
+                    return;
+                }
+            } else {
+                if (forClass.isTargetMethodChecked(nat.mName, nat.mTypeDesc)) {
+                    proxyType = 0;
+                } else if (forClass.isCallerMethodChecked(nat.mName, nat.mTypeDesc)) {
+                    proxyType = 1;
+                } else {
+                    return;
+                }
+                op = switch (kind) {
+                    default -> throw new ClassFormatException();
+                    case REF_invokeVirtual   -> INVOKEVIRTUAL;
+                    case REF_invokeStatic    -> INVOKESTATIC;
+                    case REF_invokeSpecial   -> INVOKESPECIAL;
+                    case REF_invokeInterface -> INVOKEINTERFACE;
+                };
+            }
+
+            C_MemberRef proxyMethod = proxyMethodFor(op, proxyType, methodRef);
+
+            if (mReplacedMethodHandles == null) {
+                mReplacedMethodHandles = new HashMap<>();
+            }
+
+            mReplacedMethodHandles.put(offset, proxyMethod);
+        });
+
+        // Check the methods.
 
         final byte[] cpBuffer = mConstantPool.buffer();
         final BufferDecoder decoder = mDecoder;
@@ -318,6 +372,15 @@ final class ClassFileProcessor {
             int numNewMethods = mNewMethods.size();
             int methodsStartOffset = mMethodsStartOffset + (int) cpGrowth;
             encodeShortBE(buffer, methodsStartOffset, mMethodsCount + numNewMethods);
+        }
+
+        if (mReplacedMethodHandles != null) {
+            // Update the MethodHandle constants, changing reference_kind and reference_index.
+            for (Map.Entry<Integer, C_MemberRef> e : mReplacedMethodHandles.entrySet()) {
+                int offset = e.getKey();
+                buffer[offset - 1] = REF_invokeStatic;
+                encodeShortBE(buffer, offset, e.getValue().mIndex);
+            }
         }
 
         return buffer;
@@ -596,22 +659,7 @@ final class ClassFileProcessor {
                     methodRef = mConstantPool.findConstant(methodRefIndex, C_MemberRef.class);
                     offset += op != INVOKEINTERFACE ? 2 : 4;
 
-                    if (methodRef.mClass.mIndex == mThisClassIndex) {
-                        // Calling into the same class, which is always allowed.
-                        continue;
-                    }
-
-                    ConstantPool.C_UTF8 packageName = mPackageName;
-                    ConstantPool.C_UTF8 className = mClassName;
-
-                    if (packageName == null) {
-                        mPackageName = packageName = mConstantPool.new C_UTF8();
-                        mClassName = className = mConstantPool.new C_UTF8();
-                    }
-
-                    methodRef.mClass.split(packageName, className);
-
-                    Checker.ForClass forClass = forCaller.forClass(packageName, className);
+                    Checker.ForClass forClass = forClass(forCaller, methodRef);
 
                     if (!forClass.isCallerChecked()) {
                         continue;
@@ -719,12 +767,7 @@ final class ClassFileProcessor {
 
             // This point is reached if the code needs to be modified.
 
-            if (mNewMethods == null) {
-                mNewMethods = new HashMap<>();
-                mConstantPool.extend();
-            }
-
-            C_MemberRef proxyMethod = proxyMethodFor(op, methodRef);
+            C_MemberRef proxyMethod = proxyMethodFor(op, (byte) 1, methodRef);
 
             // Length of the attribute_length, max_stack, max_locals, and code_length fields.
             // They all appear immediately before the first bytecode operation.
@@ -774,10 +817,55 @@ final class ClassFileProcessor {
     }
 
     /**
-     * @param op must be an invoke operation
+     * Returns a ForClass checker from the calling side, to a target.
      */
-    private C_MemberRef proxyMethodFor(byte op, C_MemberRef methodRef) throws IOException {
-        Integer key = (op << 16) | methodRef.mIndex;
+    private Checker.ForClass forClass(Checker forCaller, C_MemberRef methodRef) {
+        if (methodRef.mClass.mIndex == mThisClassIndex) {
+            // Calling into the same class, which is always allowed.
+            return Rule.ALLOW;
+        }
+
+        ConstantPool.C_UTF8 packageName = mPackageName;
+        ConstantPool.C_UTF8 className = mClassName;
+
+        if (packageName == null) {
+            mPackageName = packageName = mConstantPool.new C_UTF8();
+            mClassName = className = mConstantPool.new C_UTF8();
+        }
+
+        methodRef.mClass.split(packageName, className);
+
+        return forCaller.forClass(packageName, className);
+    }
+
+    /**
+     * Proxy type 0: Used by MethodHandle constants with a target-side check, which ensures
+     *               that the correct caller frame is available.
+     *
+     * private static File $3(String path) {
+     *     return File.open(path);
+     * }
+     *
+     * Proxy type 1: Basic caller-side check.
+     *
+     * private static File $3(String path) {
+     *     if (thisClass.getModule() != File.class.getModule()) {
+     *         throw new SecurityException();
+     *     }
+     *     return File.open(path);
+     * }
+     *
+     * @param op must be an INVOKE* or NEW operation
+     */
+    private C_MemberRef proxyMethodFor(byte op, byte type, C_MemberRef methodRef)
+        throws IOException
+    {
+        if (mNewMethods == null) {
+            mNewMethods = new HashMap<>();
+            mConstantPool.extend();
+        }
+
+        Integer key = (op << 24) | (type << 16) | methodRef.mIndex;
         C_MemberRef proxyMethod = mNewMethods.get(key);
 
         if (proxyMethod != null) {
@@ -786,7 +874,7 @@ final class ClassFileProcessor {
 
         ConstantPool cp = mConstantPool;
 
-        ConstantPool.C_UTF8 typeDesc = cp.addWithStaticSignature(op, methodRef);
+        ConstantPool.C_UTF8 typeDesc = cp.addWithFullSignature(op, methodRef);
 
         C_Class thisClass = cp.findConstant(mThisClassIndex, C_Class.class);
         proxyMethod = cp.addUniqueMethod(thisClass, typeDesc);
@@ -814,26 +902,50 @@ final class ClassFileProcessor {
         int exClassIndex = cp.addClass(exClassName).mIndex;
         int exInitIndex = cp.addMethodRef(exClassName, "<init>", "()V").mIndex;
 
-        int maxStack = 1 + 1;
+        final int codeStartPos = encoder.length();
 
-        int codeStartPos = encoder.length();
-        encoder.writeByte(LDC_W);
-        encoder.writeShort(mThisClassIndex);
-        encoder.writeByte(INVOKEVIRTUAL);
-        encoder.writeShort(getModuleIndex);
-        encoder.writeByte(LDC_W);
-        encoder.writeShort(methodRef.mClass.mIndex);
-        encoder.writeByte(INVOKEVIRTUAL);
-        encoder.writeShort(getModuleIndex);
-        encoder.writeByte(IF_ACMPEQ);
-        encoder.writeShort(11); // offset to pushArg below
-        encoder.writeByte(NEW);
-        encoder.writeShort(exClassIndex);
-        encoder.writeByte(DUP);
-        encoder.writeByte(INVOKESPECIAL);
-        encoder.writeShort(exInitIndex);
-        encoder.writeByte(ATHROW);
-        int labelOffset = encoder.length() - codeStartPos;
+        int maxStack, labelOffset;
+
+        switch (type) {
+            default -> throw new AssertionError();
+
+            case 0 -> {
+                maxStack = 0;
+                labelOffset = -1;
+            }
+
+            case 1 -> {
+                maxStack = 1 + 1;
+
+                encoder.writeByte(LDC_W);
+                encoder.writeShort(mThisClassIndex);
+                encoder.writeByte(INVOKEVIRTUAL);
+                encoder.writeShort(getModuleIndex);
+                encoder.writeByte(LDC_W);
+                encoder.writeShort(methodRef.mClass.mIndex);
+                encoder.writeByte(INVOKEVIRTUAL);
+                encoder.writeShort(getModuleIndex);
+                encoder.writeByte(IF_ACMPEQ);
+                encoder.writeShort(11); // offset past the ATHROW operation
+                encoder.writeByte(NEW);
+                encoder.writeShort(exClassIndex);
+                encoder.writeByte(DUP);
+                encoder.writeByte(INVOKESPECIAL);
+                encoder.writeShort(exInitIndex);
+                encoder.writeByte(ATHROW);
+
+                labelOffset = encoder.length() - codeStartPos;
+            }
+        }
+
+        if (op == NEW) {
+            maxStack = Math.max(maxStack, 2);
+            encoder.writeByte(NEW);
+            encoder.writeShort(methodRef.mClass.mIndex);
+            encoder.writeByte(DUP);
+            op = INVOKESPECIAL;
+        }
+
         int pushed = typeDesc.pushArgs(encoder);
         encoder.writeByte(op);
         encoder.writeShort(methodRef.mIndex);
@@ -846,13 +958,18 @@ final class ClassFileProcessor {
         encodeIntBE(buffer, startPos + 8, encoder.length() - codeStartPos);
 
         encoder.writeShort(0); // exception_table_length
-        encoder.writeShort(1); // attributes_count
 
-        // Encode the StackMapTable attribute.
-        encoder.writeShort(cp.addUTF8("StackMapTable").mIndex);
-        encoder.writeInt(3);   // attribute_length
-        encoder.writeShort(1); // number_of_entries
-        encoder.writeByte(labelOffset); // same_frame
+        if (labelOffset < 0) {
+            encoder.writeShort(0); // attributes_count
+        } else {
+            encoder.writeShort(1); // attributes_count
+
+            // Encode the StackMapTable attribute.
+            encoder.writeShort(cp.addUTF8("StackMapTable").mIndex);
+            encoder.writeInt(3);   // attribute_length
+            encoder.writeShort(1); // number_of_entries
+            encoder.writeByte(labelOffset); // same_frame
+        }
 
         // Update attribute_length.
         encodeIntBE(buffer, startPos, encoder.length() - startPos - 4);
