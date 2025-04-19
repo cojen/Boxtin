@@ -87,7 +87,7 @@ The Java classfile format supports defining [`MethodHandle`](https://docs.oracle
     }
 ```
 
-If the check is intended to be performed in the target class, then module check is omitted. The target method will observe the correct caller class, because the proxy method invocation will be in the call trace. Tf will throw an exception if access is denied.
+If the check is intended to be performed in the target class, then module check is omitted. The target method will observe the correct caller class, because the proxy method invocation will be in the call trace. It will throw an exception if access is denied.
 
 - Native methods: TBD
 - Reflection: TBD
