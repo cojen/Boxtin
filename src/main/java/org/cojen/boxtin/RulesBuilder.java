@@ -18,6 +18,7 @@ package org.cojen.boxtin;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -826,21 +827,33 @@ public final class RulesBuilder {
             throws ClassNotFoundException, NoSuchMethodException
         {
             if (isEmpty(mVariants)) {
-                if (tryFindAnyMethod(clazz, name) != null) {
+                Method method = tryFindAnyMethod(clazz, name);
+                if (method != null) {
+                    validateMethod(method, mDefaultRule);
                     return;
                 }
                 throw new NoSuchMethodException(clazz + "." + name);
             }
 
-            for (String descriptor : mVariants.keySet()) {
-                Class<?>[] paramTypes = paramTypesFor(loader, descriptor);
+            for (Map.Entry<String, Rule> e : mVariants.entrySet()) {
+                Class<?>[] paramTypes = paramTypesFor(loader, e.getKey());
+
                 try {
-                    clazz.getMethod(name, paramTypes);
-                } catch (NoSuchMethodException e) {
-                    if (tryFindMethod(clazz, name, paramTypes) == null) {
-                        throw e;
+                    Method method = clazz.getMethod(name, paramTypes);
+                    validateMethod(method, e.getValue());
+                } catch (NoSuchMethodException ex) {
+                    Method method = tryFindMethod(clazz, name, paramTypes);
+                    if (method == null) {
+                        throw ex;
                     }
+                    validateMethod(method, e.getValue());
                 }
+            }
+        }
+
+        private static void validateMethod(Method method, Rule rule) {
+            if (rule == TARGET_DENY && Modifier.isAbstract(method.getModifiers())) {
+                throw new IllegalArgumentException("Target method is abstract: " + method);
             }
         }
 

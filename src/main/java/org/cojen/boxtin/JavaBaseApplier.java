@@ -183,10 +183,11 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forClass("ProcessHandle")
             .denyMethod("allProcesses")
-            .denyMethod("children")
             .denyMethod("current")
-            .denyMethod("descendants")
             .denyMethod("of")
+            .callerCheck()
+            .denyMethod("children")
+            .denyMethod("descendants")
             .denyMethod("parent")
             .end()
 
@@ -244,6 +245,7 @@ final class JavaBaseApplier implements RulesApplier {
             .end()
 
             .forClass("Thread.Builder.OfPlatform")
+            .callerCheck()
             .denyMethod("daemon")
             .denyMethod("priority")
             .end()
@@ -339,6 +341,7 @@ final class JavaBaseApplier implements RulesApplier {
             .end()
 
             .forClass("ModuleFinder")
+            .callerCheck()
             .denyMethod("find")
             .denyMethod("findAll")
             .denyMethod("ofSystem")
@@ -513,11 +516,15 @@ final class JavaBaseApplier implements RulesApplier {
             .end()
 
             .forClass("AsynchronousSocketChannel")
+            .denyAllConstructors()
+            .callerCheck()
             .denyMethod("bind")
             .denyMethod("connect")
             .end()
 
             .forClass("DatagramChannel")
+            .denyAllConstructors()
+            .callerCheck()
             .denyMethod("bind")
             .denyMethod("connect")
             .denyMethod("receive")
@@ -529,22 +536,28 @@ final class JavaBaseApplier implements RulesApplier {
             .end()
 
             .forClass("MulticastChannel")
+            .callerCheck()
             .denyMethod("join")
             .end()
 
             .forClass("NetworkChannel")
+            .callerCheck()
             .denyMethod("bind")
             .end()
 
             .forClass("ServerSocketChannel")
+            .denyAllConstructors()
+            .callerCheck()
             .denyMethod("accept")
             .denyMethod("bind")
             .end()
 
             .forClass("SocketChannel")
+            .denyAllConstructors()
+            .denyMethod("open")
+            .callerCheck()
             .denyMethod("bind")
             .denyMethod("connect")
-            .denyMethod("open")
             .end()
             ;
 
@@ -567,6 +580,7 @@ final class JavaBaseApplier implements RulesApplier {
             .end()
 
             .forClass("Path")
+            .callerCheck()
             .denyMethod("of")
             .denyMethod("register")
             .denyMethod("toAbsolutePath")
@@ -579,6 +593,7 @@ final class JavaBaseApplier implements RulesApplier {
             .end()
 
             .forClass("SecureDirectoryStream")
+            .callerCheck()
             .denyMethod("deleteDirectory")
             .denyMethod("deleteFile")
             .denyMethod("move")
@@ -587,6 +602,7 @@ final class JavaBaseApplier implements RulesApplier {
             .end()
 
             .forClass("Watchable")
+            .callerCheck()
             .denyMethod("register")
             .end()
             ;
@@ -595,35 +611,47 @@ final class JavaBaseApplier implements RulesApplier {
             .allowAll()
 
             .forClass("AclFileAttributeView")
+            .callerCheck()
             .denyMethod("getAcl")
+            .denyMethod("getOwner")
             .denyMethod("setAcl")
+            .denyMethod("setOwner")
             .end()
 
             .forClass("BasicFileAttributeView")
+            .callerCheck()
             .denyMethod("readAttributes")
             .denyMethod("setTimes")
             .end()
 
             .forClass("DosFileAttributeView")
+            .callerCheck()
             .denyMethod("readAttributes")
             .denyMethod("setArchive")
             .denyMethod("setHidden")
             .denyMethod("setReadOnly")
             .denyMethod("setSystem")
+            .denyMethod("setTimes")
             .end()
 
             .forClass("FileOwnerAttributeView")
+            .callerCheck()
             .denyMethod("getOwner")
             .denyMethod("setOwner")
             .end()
 
             .forClass("PosixFileAttributeView")
+            .callerCheck()
+            .denyMethod("getOwner")
             .denyMethod("readAttributes")
             .denyMethod("setGroup")
+            .denyMethod("setOwner")
             .denyMethod("setPermissions")
+            .denyMethod("setTimes")
             .end()
 
             .forClass("UserDefinedFileAttributeView")
+            .callerCheck()
             .denyMethod("delete")
             .denyMethod("list")
             .denyMethod("read")
@@ -632,8 +660,7 @@ final class JavaBaseApplier implements RulesApplier {
             .end()
 
             .forClass("UserPrincipalLookupService")
-            .denyMethod("lookupPrincipalByName")
-            .denyMethod("lookupPrincipalByGroupName")
+            .denyAll()
             .end()
             ;
 
@@ -647,12 +674,14 @@ final class JavaBaseApplier implements RulesApplier {
             .end()
 
             .forClass("AuthProvider")
+            .callerCheck()
             .denyMethod("login")
             .denyMethod("logout")
             .denyMethod("setCallbackHandler")
             .end()
 
             .forClass("Guard")
+            .callerCheck()
             .denyMethod("checkGuard")
             .end()
 
@@ -832,16 +861,25 @@ final class JavaBaseApplier implements RulesApplier {
             .allowAll()
 
             .forClass("ServerSocketFactory")
+            .denyAllConstructors()
+            .callerCheck()
             .denyMethod("createServerSocket")
             .end()
 
             .forClass("SocketFactory")
+            .denyAllConstructors()
+            .callerCheck()
             .denyMethod("createSocket")
             .end()
             ;
 
         b.forPackage("javax.net.ssl")
             .allowAll()
+
+            .forClass("ExtendedSSLSession")
+            .callerCheck()
+            .denyMethod("getSessionContext")
+            .end()
 
             .forClass("HttpsURLConnection")
             .denyMethod("setDefaultHostnameVerifier")
@@ -858,6 +896,7 @@ final class JavaBaseApplier implements RulesApplier {
             .end()
 
             .forClass("SSLSession")
+            .callerCheck()
             .denyMethod("getSessionContext")
             .end()
 
