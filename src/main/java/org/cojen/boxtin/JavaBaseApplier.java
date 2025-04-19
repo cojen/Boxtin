@@ -159,7 +159,9 @@ final class JavaBaseApplier implements RulesApplier {
             .end()
 
             .forClass("ModuleLayer.Controller")
-            .denyMethod("enableNativeAccess") // possibly redundant
+            // Is @CallerSensitive and @Restricted, and so this check might be redundant.
+            .callerCheck()
+            .denyMethod("enableNativeAccess")
             .end()
 
             .forClass("Package")
@@ -189,11 +191,16 @@ final class JavaBaseApplier implements RulesApplier {
             .end()
 
             .forClass("Runtime")
-            .denyMethod("addShutdownHook")
-            .denyMethod("exec")
-            .denyMethod("exit")
-            .denyMethod("halt")
-            .denyMethod("removeShutdownHook")
+            .callerCheck()
+            .denyAll()
+            .allowMethod("availableProcessors")
+            .allowMethod("freeMemory")
+            .allowMethod("gc")
+            .allowMethod("getRuntime")
+            .allowMethod("maxMemory")
+            .allowMethod("runFinalization")
+            .allowMethod("totalMemory")
+            .allowMethod("version")
             .end()
 
             .forClass("SecurityManager")
@@ -270,11 +277,36 @@ final class JavaBaseApplier implements RulesApplier {
 
         b.forPackage("java.lang.constant").allowAll();
 
-        // Can allow all because restricted operations are already checked.
-        // FIXME: Restricted operations should probably be checked anyhow, because it's likely
-        // that restricted operations were fully allowed on the command line for simplicity.
-        // Check the JDK for all @Restricted methods.
-        b.forPackage("java.lang.foreign").allowAll();
+        b.forPackage("java.lang.foreign")
+            .allowAll()
+
+            .forClass("AddressLayout")
+            // Is @CallerSensitive and @Restricted, and so this check might be redundant.
+            .callerCheck()
+            .denyMethod("withTargetLayout")
+            .end()
+
+            .forClass("Linker")
+            // Is @CallerSensitive and @Restricted, and so these checks might be redundant.
+            .callerCheck()
+            .denyMethod("downcallHandle")
+            .denyMethod("upcallStub")
+            .end()
+
+            .forClass("MemorySegment")
+            // Is @CallerSensitive and @Restricted, and so this check might be redundant.
+            .callerCheck()
+            .denyMethod("reinterpret")
+            .end()
+
+            .forClass("SymbolLookup")
+            // Is @CallerSensitive, but is also defined in a non-sealed interface, and so this
+            // check isn't really effective. The method is @Restricted, so assume that the
+            // checks for restricted methods are sufficient.
+            .callerCheck()
+            .denyMethod("libraryLookup")
+            .end()
+            ;
 
         b.forPackage("java.lang.invoke")
             .allowAll()
@@ -723,7 +755,11 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("setDefault")
             .end()
 
-            /* FIXME: testing: Cannot getCallerClass call from a @CallerSensitive method.
+            /* FIXME: Cannot call getCallerClass() from a @CallerSensitive method. Tagging these
+                      methods using callerCheck() doesn't work because ResourceBundle can be
+                      subclassed, providing access to the inherited static methods. Determine
+                      if the existing checks are sufficient to deny access to resources from
+                      other Modules or ClassLoaders.
             .forClass("ResourceBundle")
             .denyMethod("getBundle")
             .allowVariant("Ljava/lang.String;")
@@ -741,24 +777,9 @@ final class JavaBaseApplier implements RulesApplier {
         b.forPackage("java.util.concurrent")
             .allowAll()
 
-            .forClass("ExecutorService")
-            .denyMethod("shutdown")
-            .denyMethod("shutdownNow")
-            .end()
-
             .forClass("ForkJoinPool")
-            .denyMethod("close")
-            .denyMethod("shutdown")
-            .denyMethod("shutdownNow")
-            .end()
-
-            .forClass("ScheduledThreadPoolExecutor")
-            .denyMethod("close")
-            .denyMethod("shutdown")
-            .denyMethod("shutdownNow")
-            .end()
-
-            .forClass("ThreadPoolExecutor")
+            // These methods are denied because shared instances are provided by public static
+            // methods: ForkJoinPool.commonPool() and ForkJoinTask.getPool().
             .denyMethod("close")
             .denyMethod("shutdown")
             .denyMethod("shutdownNow")
