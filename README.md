@@ -37,7 +37,7 @@ For a given rule, Boxtin transforms a caller class or a target class. In general
 
 The `check` method will call into the controller for determining if access is allowed or denied, caching the result. If denied, a `SecurityException` is thrown.
 
-Here's an example transform applied to a caller method:
+Here's an example transform applied to a caller method, which calls a synthetic proxy method:
 
 ```java
     // original
@@ -50,7 +50,7 @@ Here's an example transform applied to a caller method:
         $3(1);
     }
 
-    // synthetic method
+    // synthetic proxy method
     private static void $3(int param) {
         if (Caller.class.getModule() != System.class.getModule()) {
             throw new SecurityException();
@@ -63,7 +63,32 @@ Although it might seem silly to include a module check which will obviously yiel
 
 Although the caller transform is much more efficient, it doesn't support checks against inherited methods. Target transforms are preferred except in cases where they won't work (cyclic dependencies in the JDK) or where it's known that the rule doesn't apply to a method which is inherited or can be inherited. Care must be taken to not assume that a private constructor prevents inheritance. The JVM permits sub classing without a constructor, allowing access to inherited static methods.
 
+### MethodHandle constants
+
+The Java classfile format supports defining [`MethodHandle`](https://docs.oracle.com/javase/specs/jvms/se24/html/jvms-4.html#jvms-4.4.8) constants, which are primarily used by Java lambdas. When necessary, Boxtin transforms these constants such that a security check is put in place. It does this by replacing the original constant with one that calls a synthetic proxy method.
+
+```java
+    // original
+    public void fail() {
+        OptionalInt.of(1).ifPresent(System::exit);
+    }
+
+    // transformed
+    public void fail() {
+        OptionalInt.of(1).ifPresent(param -> $5(param));
+    }
+
+    // synthetic proxy method
+    private static void $5(int param) {
+        if (Caller.class.getModule() != System.class.getModule()) {
+            throw new SecurityException();
+        }
+        System.exit(param);
+    }
+```
+
+If the check is intended to be performed in the target class, then module check is omitted. The target method will observe the correct caller class, because the proxy method invocation will be in the call trace. If will throw an exception if access is denied.
+
 - Native methods: TBD
-- MethodHandle constants: TBD (only prototyped so far)
 - Reflection: TBD
 
