@@ -107,9 +107,12 @@ public final class SecurityAgent implements ClassFileTransformer {
         if (INSTANCE != null) {
             throw new SecurityException();
         }
+        return INSTANCE = new SecurityAgent(initController(agentArgs));
+    }
 
+    private static Controller initController(String agentArgs) throws Exception {
         if (agentArgs == null || agentArgs.isEmpty()) {
-            throw new IllegalArgumentException("No Controller implementation is specified");
+            return new DefaultController();
         }
 
         String controllerName, controllerArgs;
@@ -156,13 +159,11 @@ public final class SecurityAgent implements ClassFileTransformer {
                 ("Controller class doesn't have an appropriate public constructor");
         }
 
-        Controller controller;
-
         try {
             if (ctor1 != null && (ctor2 == null || controllerArgs == null)) {
-                controller = (Controller) ctor1.newInstance();
+                return (Controller) ctor1.newInstance();
             } else {
-                controller = (Controller) ctor2.newInstance(controllerArgs);
+                return (Controller) ctor2.newInstance(controllerArgs);
             }
         } catch (Exception e) {
             Throwable cause = e;
@@ -171,8 +172,6 @@ public final class SecurityAgent implements ClassFileTransformer {
             }
             throw new IllegalStateException("Unable to construct the Controller", cause);
         }
-
-        return INSTANCE = new SecurityAgent(controller);
     }
 
     private final Controller mController;
