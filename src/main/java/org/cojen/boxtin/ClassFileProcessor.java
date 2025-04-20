@@ -1100,9 +1100,17 @@ final class ClassFileProcessor {
             op = INVOKESPECIAL;
         }
 
-        pushed += proxyDesc.pushArgs(encoder);
+        int nargs = proxyDesc.pushArgs(encoder);
+        pushed += nargs;
+
         encoder.writeByte(op);
         encoder.writeShort(methodRef.mIndex);
+
+        if (op == INVOKEINTERFACE) {
+            encoder.writeByte(nargs);
+            encoder.writeByte(0);
+        }
+
         proxyDesc.returnValue(encoder);
 
         // Update max_stack, max_locals, and code_length.
