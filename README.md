@@ -9,7 +9,13 @@ Boxtin provides an [instrumentation agent](https://docs.oracle.com/en/java/javas
 java -javaagent:Boxtin.jar=my.app.SecurityController ...
 ```
 
-The design is intended for restricting operations for "plugins", much like the original security manager was intended for restricting applet permissions. There are a few key differences, however:
+If no controller is specified, then a default is selected which only allows limited access to the `java.base` module.
+
+```
+java -javaagent:Boxtin.jar ...
+```
+
+Boxtin is designed to restrict operations for "plugins", much like the original security manager was designed for restricting applet permissions. There are a few key differences, however:
 
 - Boxtin only checks the immediate caller in a stack trace, whereas the original security manager checked all frames within the trace. The original design seemed correct at the time, but in practice it wasn't a good idea. The [`AccessController`](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/security/AccessController.html) was intended for handling special cases, but it was actually used over 1200 times in the JDK. What was expected to be an exceptional case ended up being the normal case.
 - Rules are defined entirely by the host environment, and so the libraries it depends on aren't expected to require any modifications.
