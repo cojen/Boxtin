@@ -59,7 +59,7 @@ Here's an example transform applied to a caller method, which calls a synthetic 
     }
 ```
 
-Although it might seem silly to include a module check which will obviously yield false, it greatly simplifies the code transformation because the exact module isn't known until after the class has been loaded. In practice, the module checking code will be optimized into oblivion by the JVM.
+Although it might seem silly to include a module check which will obviously yield false, it greatly simplifies the code transformation because the target module isn't known until after the class has been loaded. In practice, the module checking code will be optimized into oblivion by the JVM.
 
 Although the caller transform is much more efficient, it doesn't support checks against inherited methods. Target transforms are preferred except in cases where they won't work (cyclic dependencies in the JDK) or where it's known that the rule doesn't apply to a method which is inherited or can be inherited. Care must be taken to not assume that a private constructor prevents inheritance. The JVM permits sub classing without a constructor, allowing access to inherited static methods.
 
