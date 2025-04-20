@@ -688,7 +688,7 @@ public final class RulesBuilder {
             if (methods == null) {
                 mMethods = methods = new HashMap<>();
             }
-            return methods.computeIfAbsent(name, _ -> new MethodScope());
+            return methods.computeIfAbsent(name, k -> new MethodScope());
         }
 
         /**

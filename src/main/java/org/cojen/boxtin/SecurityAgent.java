@@ -43,9 +43,26 @@ public final class SecurityAgent implements ClassFileTransformer {
     /**
      * @hidden
      */
-    public static final StackWalker WALKER = StackWalker.getInstance
-        (java.util.EnumSet.of(StackWalker.Option.DROP_METHOD_INFO,
-                              StackWalker.Option.RETAIN_CLASS_REFERENCE));
+    public static final StackWalker WALKER;
+
+    static {
+        EnumSet<StackWalker.Option> options;
+
+        if (Runtime.version().feature() < 22) {
+            options = EnumSet.of(StackWalker.Option.RETAIN_CLASS_REFERENCE);
+        } else {
+            StackWalker.Option dropMethodInfo;
+            try {
+                dropMethodInfo = (StackWalker.Option)
+                    StackWalker.Option.class.getField("DROP_METHOD_INFO").get(null);
+            } catch (Exception e) {
+                throw new ExceptionInInitializerError(e);
+            }
+            options = EnumSet.of(StackWalker.Option.RETAIN_CLASS_REFERENCE, dropMethodInfo);
+        }
+
+        WALKER = StackWalker.getInstance(options);
+    }
 
     private static volatile SecurityAgent INSTANCE;
 
