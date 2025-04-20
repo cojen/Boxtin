@@ -89,6 +89,28 @@ The Java classfile format supports defining [`MethodHandle`](https://docs.oracle
 
 If the check is intended to be performed in the target class, then module check is omitted. The target method will observe the correct caller class, because the proxy method invocation will be in the call trace. The target method will throw an exception if access is denied.
 
-- Native methods: TBD
-- Reflection: TBD
+### Native methods
+
+Native methods which are checked in the target class require a special transformation. The native method is renamed with a `$boxtin$_` prefix, a new non-native method is defined which performs the check, and then it calls the renamed native method.
+
+```java
+    // original
+    public int native someOperation(int param);
+
+    // transformed
+    public int someOperation(int param) {
+        SecurityAgent.check(SecurityAgent.WALKER.getCallerClass(),
+                            thisClass, "someOperation", "(I)I");
+        return $boxtin$_someOperation(param);
+    }
+
+    // synthetic native method
+    private int native $boxtin$_someOperation(int param);
+```
+
+Because this technique adds a method to the class, it doesn't work if the class was already loaded before the instrumentation agent started. This means that some native methods which are loaded by the bootstrap class loader must be designated as caller checked instead.
+
+### Reflection
+
+TBD
 
