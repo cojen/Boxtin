@@ -537,59 +537,7 @@ final class ClassFileProcessor {
             
                 case "StackMapTable" -> {
                     numStackMapTables++;
-
-                    int numEntries = decoder.readUnsignedShort();
-                    int consumed;
-
-                    if (numEntries == 0) {
-                        encoder.writeInt((int) attrLength);
-                        encoder.writeShort(numEntries);
-                        consumed = 2;
-                    } else {
-                        // Update the first entry.
-                        int type = decoder.readUnsignedByte();
-                        if (type < 64) { // same_frame
-                            if (type + codeGrowth < 64) {
-                                encoder.writeInt((int) attrLength);
-                                encoder.writeShort(numEntries);
-                                encoder.writeByte(type + codeGrowth);
-                            } else {
-                                // Convert to same_frame_extended.
-                                encoder.writeInt((int) attrLength + 2);
-                                encoder.writeShort(numEntries);
-                                encoder.writeByte(251);
-                                encoder.writeShort(type + codeGrowth);
-                            }
-                            consumed = 3;
-                        } else if (type < 128) { // same_locals_1_stack_item_frame
-                            if (type + codeGrowth < 128) {
-                                encoder.writeInt((int) attrLength);
-                                encoder.writeShort(numEntries);
-                                encoder.writeByte(type + codeGrowth);
-                            } else {
-                                // Convert to same_locals_1_stack_item_frame_extended.
-                                encoder.writeInt((int) attrLength + 2);
-                                encoder.writeShort(numEntries);
-                                encoder.writeByte(247);
-                                encoder.writeShort(type - 64 + codeGrowth);
-                            }
-                            consumed = 3;
-                        } else if (type < 247) {
-                            // Not legal, so just leave it alone.
-                            encoder.writeInt((int) attrLength);
-                            encoder.writeShort(numEntries);
-                            encoder.writeByte(type);
-                            consumed = 3;
-                        } else {
-                            encoder.writeInt((int) attrLength);
-                            encoder.writeShort(numEntries);
-                            encoder.writeByte(type);
-                            encoder.writeShort(decoder.readUnsignedShort() + codeGrowth);
-                            consumed = 5;
-                        }
-                    }
-
-                    decoder.transferTo(encoder, attrLength - consumed);
+                    updateStackMapTableOffsets(decoder, encoder, attrLength, codeGrowth);
                 }
             }
         }
@@ -642,6 +590,120 @@ final class ClassFileProcessor {
         encoder.writeShort(desc_index);
         encoder.writeByte(INVOKESTATIC);
         encoder.writeShort(cp.addMethodRef(agentName, "check", checkDesc).mIndex);
+    }
+
+    /**
+     * Decodes a StackMapTable and re-encodes with all offsets incremented by the given delta.
+     */
+    private static void updateStackMapTableOffsets(BufferDecoder decoder, Replacement encoder,
+                                                   long attrLength, int delta)
+        throws IOException
+    {
+        final int startOffset = encoder.length();
+        final int numEntries = decoder.readUnsignedShort();
+
+        int consumed;
+
+        if (numEntries == 0) {
+            encoder.writeInt((int) attrLength);
+            encoder.writeShort(numEntries);
+            consumed = 2;
+        } else {
+            // Update the first entry.
+            int type = decoder.readUnsignedByte();
+
+            if (type < 64) { // same_frame
+                if (type + delta < 64) {
+                    encoder.writeInt((int) attrLength);
+                    encoder.writeShort(numEntries);
+                    encoder.writeByte(type + delta);
+                } else {
+                    // Convert to same_frame_extended.
+                    encoder.writeInt((int) attrLength + 2);
+                    encoder.writeShort(numEntries);
+                    encoder.writeByte(251);
+                    encoder.writeShort(type + delta);
+                }
+                consumed = 3;
+            } else if (type < 128) { // same_locals_1_stack_item_frame
+                if (type + delta < 128) {
+                    encoder.writeInt((int) attrLength);
+                    encoder.writeShort(numEntries);
+                    encoder.writeByte(type + delta);
+                } else {
+                    // Convert to same_locals_1_stack_item_frame_extended.
+                    encoder.writeInt((int) attrLength + 2);
+                    encoder.writeShort(numEntries);
+                    encoder.writeByte(247);
+                    encoder.writeShort(type - 64 + delta);
+                }
+                consumed = 3;
+            } else if (type < 247) {
+                // Not legal, so just leave it alone.
+                encoder.writeInt((int) attrLength);
+                encoder.writeShort(numEntries);
+                encoder.writeByte(type);
+                consumed = 3;
+            } else {
+                encoder.writeInt((int) attrLength);
+                encoder.writeShort(numEntries);
+                encoder.writeByte(type);
+                encoder.writeShort(decoder.readUnsignedShort() + delta);
+                consumed = 5;
+            }
+        }
+
+        decoder.transferTo(encoder, attrLength - consumed);
+
+        // Update the offsets of all Uninitialized_variable_infos.
+
+        byte[] buffer = encoder.buffer();
+        int offset = startOffset + 2;
+
+        for (int i=0; i<numEntries; i++) {
+            int type = buffer[offset++] & 0xff;
+            int numItems;
+
+            if (type < 64) { // same_frame
+                continue;
+            } else if (type < 128) { // same_locals_1_stack_item_frame
+                numItems = 1;
+            } else if (type < 247) { // illegal
+                break;
+            } else if (type == 247) { // same_locals_1_stack_item_frame_extended
+                offset += 2;
+                numItems = 1;
+            } else if (type < 252) { // chop_frame or same_frame_extended
+                offset += 2;
+                continue;
+            } else if (type < 255) { // append_frame
+                offset += 2;
+                numItems = type - 251;
+            } else { // full_frame
+                offset += 2;
+                numItems = decodeUnsignedShortBE(buffer, offset); offset += 2;
+                offset = updateTypeInfos(buffer, offset, delta, numItems);
+                numItems = decodeUnsignedShortBE(buffer, offset); offset += 2;
+            }
+
+            offset = updateTypeInfos(buffer, offset, delta, numItems);
+        }
+    }
+
+    /**
+     * @return updated offset
+     */
+    private static int updateTypeInfos(byte[] buffer, int offset, int delta, int numItems) {
+        for (int i=0; i<numItems; i++) {
+            int tag = buffer[offset++] & 0xff;
+            if (tag == 7) { // ITEM_Object
+                offset += 2;
+            } else if (tag == 8) { // ITEM_Uninitialized
+                encodeShortBE(buffer, offset, decodeUnsignedShortBE(buffer, offset) + delta);
+                offset += 2;
+            }
+        }
+        return offset;
     }
 
     /**
