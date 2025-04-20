@@ -386,12 +386,24 @@ final class ConstantPool {
         return addMemberRef(10, className, name, desc);
     }
 
+    C_MemberRef addMethodRef(C_Class clazz, C_UTF8 name, C_UTF8 desc) {
+        return addMemberRef(10, clazz, name, desc);
+    }
+
     private C_MemberRef addMemberRef(int tag, String className, String name, String desc) {
         return addConstant(new C_MemberRef(tag, addClass(className), addNameAndType(name, desc)));
     }
 
+    private C_MemberRef addMemberRef(int tag, C_Class clazz, C_UTF8 name, C_UTF8 desc) {
+        return addConstant(new C_MemberRef(tag, clazz, addNameAndType(name, desc)));
+    }
+
     C_NameAndType addNameAndType(String name, String desc) {
         return addConstant(new C_NameAndType(12, addUTF8(name), addUTF8(desc)));
+    }
+
+    C_NameAndType addNameAndType(C_UTF8 name, C_UTF8 desc) {
+        return addConstant(new C_NameAndType(12, name, desc));
     }
 
     C_UTF8 addUTF8(String str) {

@@ -64,6 +64,8 @@ public final class SecurityAgent implements ClassFileTransformer {
         WALKER = StackWalker.getInstance(options);
     }
 
+    static final String NATIVE_PREFIX = "$boxtin$_";
+
     private static volatile SecurityAgent INSTANCE;
 
     private static final VarHandle INSTANCE_H;
@@ -85,6 +87,7 @@ public final class SecurityAgent implements ClassFileTransformer {
         SecurityAgent agent = init(agentArgs);
 
         inst.addTransformer(agent, true);
+        inst.setNativeMethodPrefix(agent, NATIVE_PREFIX);
 
         var toRetransform = new ArrayList<Class>();
 

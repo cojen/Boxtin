@@ -182,7 +182,7 @@ final class ClassFileProcessor {
                 };
             }
 
-            C_MemberRef proxyMethod = proxyMethodFor(op, proxyType, methodRef);
+            C_MemberRef proxyMethod = addProxyMethod(op, proxyType, methodRef);
 
             if (mReplacedMethodHandles == null) {
                 mReplacedMethodHandles = new HashMap<>();
@@ -197,6 +197,7 @@ final class ClassFileProcessor {
         final BufferDecoder decoder = mDecoder;
 
         for (int i = mMethodsCount; --i >= 0; ) {
+            int startOffset = decoder.offset();
             int access_flags = decoder.readUnsignedShort();
             int name_index = decoder.readUnsignedShort();
             int desc_index = decoder.readUnsignedShort();
@@ -230,8 +231,40 @@ final class ClassFileProcessor {
                 }
             }
 
+            if (Modifier.isNative(access_flags)) {
+                if (!targetCodeChecked) {
+                    continue;
+                }
+
+                // First, rename the native method to start with NATIVE_PREFIX, and make it
+                // private and synthetic.
+
+                mConstantPool.extend();
+
+                String newNameStr = SecurityAgent.NATIVE_PREFIX + name.str();
+                ConstantPool.C_UTF8 newName = mConstantPool.addUTF8(newNameStr);
+
+                var replacement = new Replacement(4, 4);
+                int newFlags = access_flags & ~(Modifier.PUBLIC | Modifier.PROTECTED);
+                newFlags |= Modifier.PRIVATE | 0x1000; // | synthetic
+                replacement.writeShort(newFlags);
+                replacement.writeShort(newName.mIndex);
+
+                storeReplacement(startOffset, replacement);
+
+                // Define a proxy method which matches the original, performs a check, and then
+                // calls the renamed native method.
+
+                byte op = Modifier.isStatic(access_flags) ? INVOKESTATIC : INVOKEVIRTUAL;
+
+                C_Class thisClass = mConstantPool.findConstant(mThisClassIndex, C_Class.class);
+                C_MemberRef methodRef = mConstantPool.addMethodRef(thisClass, newName, desc);
+
+                addProxyMethod(op, (byte) 2, methodRef,
+                               access_flags & ~Modifier.NATIVE, name, desc);
+            }
+
             // Look for the Code attribute, and then modify it.
-            // FIXME: native methods require special handling
             for (int j = decoder.readUnsignedShort(); --j >= 0; ) {
                 int attrNameIndex = decoder.readUnsignedShort();
                 int originalOffset = decoder.offset(); // offset of the attribute_length field
@@ -394,7 +427,8 @@ final class ClassFileProcessor {
      * If necessary, caller-side checks are also inserted. See insertCallerChecks.
      *
      * @param forCaller is used to create caller-side checks
-     * @param decoder positioned at the max_stack field of the Code attribute.
+     * @param decoder positioned at the max_stack field of the Code attribute
+     * @param name pass null if the method is a constructor
      * @return non-null Replacement instance
      */
     private Replacement insertChecks(Checker forCaller, BufferDecoder decoder, long codeAttrLength,
@@ -433,30 +467,8 @@ final class ClassFileProcessor {
         encoder.writeShort(max_locals);
         encoder.writeInt((int) (code_length + codeGrowth));
 
-        String agentName = "org/cojen/boxtin/SecurityAgent";
-        String walkerName = StackWalker.class.getName().replace('.', '/');
-        String walkerDesc = 'L' + walkerName + ';';
-        String classDesc = Class.class.descriptorString();
-        String stringDesc = String.class.descriptorString();
-        String callerDesc = "()" + classDesc;
-        String checkDesc = '(' + classDesc + classDesc + stringDesc + stringDesc + ")V";
+        encodeAgentCheck(encoder, name_index, desc_index);
 
-        encoder.writeByte(GETSTATIC);
-        encoder.writeShort(cp.addFieldRef(agentName, "WALKER", walkerDesc).mIndex);
-        encoder.writeByte(INVOKEVIRTUAL);
-        encoder.writeShort(cp.addMethodRef(walkerName, "getCallerClass", callerDesc).mIndex);
-        encoder.writeByte(LDC_W);
-        encoder.writeShort(mThisClassIndex);
-        if (name_index != 0) {
-            encoder.writeByte(LDC_W);
-            encoder.writeShort(name_index);
-        } else {
-            encoder.writeByte(ACONST_NULL);
-        }
-        encoder.writeByte(LDC_W);
-        encoder.writeShort(desc_index);
-        encoder.writeByte(INVOKESTATIC);
-        encoder.writeShort(cp.addMethodRef(agentName, "check", checkDesc).mIndex);
         if (name_index != 0) {
             // Add padding to reach 20 bytes of growth.
             encoder.writeByte(NOP);
@@ -594,6 +606,42 @@ final class ClassFileProcessor {
 
     private static int clampShort(int value) {
         return Math.min(value, 65535);
+    }
+
+    /**
+     * SecurityAgent.check(SecurityAgent.WALKER.getCallerClass(), thisClass, name, desc);
+     *
+     * Requires at least 4 operand stack slots.
+     */
+    private void encodeAgentCheck(BufferEncoder encoder, int name_index, int desc_index)
+        throws IOException
+    {
+        ConstantPool cp = mConstantPool;
+
+        String agentName = "org/cojen/boxtin/SecurityAgent";
+        String walkerName = StackWalker.class.getName().replace('.', '/');
+        String walkerDesc = 'L' + walkerName + ';';
+        String classDesc = Class.class.descriptorString();
+        String stringDesc = String.class.descriptorString();
+        String callerDesc = "()" + classDesc;
+        String checkDesc = '(' + classDesc + classDesc + stringDesc + stringDesc + ")V";
+
+        encoder.writeByte(GETSTATIC);
+        encoder.writeShort(cp.addFieldRef(agentName, "WALKER", walkerDesc).mIndex);
+        encoder.writeByte(INVOKEVIRTUAL);
+        encoder.writeShort(cp.addMethodRef(walkerName, "getCallerClass", callerDesc).mIndex);
+        encoder.writeByte(LDC_W);
+        encoder.writeShort(mThisClassIndex);
+        if (name_index != 0) {
+            encoder.writeByte(LDC_W);
+            encoder.writeShort(name_index);
+        } else {
+            encoder.writeByte(ACONST_NULL);
+        }
+        encoder.writeByte(LDC_W);
+        encoder.writeShort(desc_index);
+        encoder.writeByte(INVOKESTATIC);
+        encoder.writeShort(cp.addMethodRef(agentName, "check", checkDesc).mIndex);
     }
 
     /**
@@ -767,7 +815,7 @@ final class ClassFileProcessor {
 
             // This point is reached if the code needs to be modified.
 
-            C_MemberRef proxyMethod = proxyMethodFor(op, (byte) 1, methodRef);
+            C_MemberRef proxyMethod = addProxyMethod(op, (byte) 1, methodRef);
 
             // Length of the attribute_length, max_stack, max_locals, and code_length fields.
             // They all appear immediately before the first bytecode operation.
@@ -855,29 +903,58 @@ final class ClassFileProcessor {
      *     return File.open(path);
      * }
      *
+     * Proxy type 2: Native method.
+     *
+     * public int someNativeThing(int param) {
+     *     SecurityAgent.check(SecurityAgent.WALKER.getCallerClass(), thisClass, name, desc);
+     *     return this.$boxtin$_someNativeThing(param);
+     * }
+     *
      * @param op must be an INVOKE* or NEW operation
      */
-    private C_MemberRef proxyMethodFor(byte op, byte type, C_MemberRef methodRef)
+    private C_MemberRef addProxyMethod(byte op, byte type, C_MemberRef methodRef)
         throws IOException
     {
+        int access_flags = Modifier.PRIVATE | Modifier.STATIC | 0x1000; // | synthetic
+        return addProxyMethod(op, type, methodRef, access_flags, null, null);
+    }
+
+    /**
+     * @return null when given a proxyName and proxyDesc
+     */
+    private C_MemberRef addProxyMethod(byte op, byte type, C_MemberRef methodRef,
+                                       int access_flags,
+                                       ConstantPool.C_UTF8 proxyName, ConstantPool.C_UTF8 proxyDesc)
+        throws IOException
+    {
+        ConstantPool cp = mConstantPool;
+
         if (mNewMethods == null) {
             mNewMethods = new HashMap<>();
-            mConstantPool.extend();
+            cp.extend();
         }
 
         Integer key = (op << 24) | (type << 16) | methodRef.mIndex;
-        C_MemberRef proxyMethod = mNewMethods.get(key);
 
-        if (proxyMethod != null) {
-            return proxyMethod;
+        C_MemberRef proxyMethod;
+
+        if (proxyName != null) {
+            if (proxyDesc == null) {
+                throw new IllegalArgumentException();
+            }
+            proxyMethod = null;
+        } else {
+            proxyMethod = mNewMethods.get(key);
+            if (proxyMethod != null) {
+                return proxyMethod;
+            }
+            proxyDesc = cp.addWithFullSignature(op, methodRef);
+            C_Class thisClass = cp.findConstant(mThisClassIndex, C_Class.class);
+            proxyMethod = cp.addUniqueMethod(thisClass, proxyDesc);
+            proxyName = proxyMethod.mNameAndType.mName;
         }
 
-        ConstantPool cp = mConstantPool;
-
-        ConstantPool.C_UTF8 typeDesc = cp.addWithFullSignature(op, methodRef);
-
-        C_Class thisClass = cp.findConstant(mThisClassIndex, C_Class.class);
-        proxyMethod = cp.addUniqueMethod(thisClass, typeDesc);
+        mNewMethods.put(key, proxyMethod);
 
         var encoder = mNewMethodsBuffer;
 
@@ -885,9 +962,10 @@ final class ClassFileProcessor {
             mNewMethodsBuffer = encoder = new Replacement(100, 0);
         }
 
-        encoder.writeShort(Modifier.PRIVATE | Modifier.STATIC | 0x1000); // | synthetic
-        encoder.writeShort(proxyMethod.mNameAndType.mName.mIndex); // name_index
-        encoder.writeShort(typeDesc.mIndex);  // descriptor_index
+        encoder.writeShort(access_flags);
+        encoder.writeShort(proxyName.mIndex); // name_index
+        encoder.writeShort(proxyDesc.mIndex);  // descriptor_index
+
         encoder.writeShort(1); // attributes_count
         encoder.writeShort(cp.addUTF8("Code").mIndex); // attribute_name_index
         int startPos = encoder.length();
@@ -896,14 +974,9 @@ final class ClassFileProcessor {
         encoder.writeShort(0); // max_locals; to be filled in properly later
         encoder.writeInt(0); // code_length; to be filled in properly later
 
-        int getModuleIndex = cp.addMethodRef
-            ("java/lang/Class", "getModule", "()Ljava/lang/Module;").mIndex;
-        String exClassName = "java/lang/SecurityException";
-        int exClassIndex = cp.addClass(exClassName).mIndex;
-        int exInitIndex = cp.addMethodRef(exClassName, "<init>", "()V").mIndex;
-
         final int codeStartPos = encoder.length();
 
+        int pushed = 0;
         int maxStack, labelOffset;
 
         switch (type) {
@@ -916,6 +989,12 @@ final class ClassFileProcessor {
 
             case 1 -> {
                 maxStack = 1 + 1;
+
+                int getModuleIndex = cp.addMethodRef
+                    ("java/lang/Class", "getModule", "()Ljava/lang/Module;").mIndex;
+                String exClassName = "java/lang/SecurityException";
+                int exClassIndex = cp.addClass(exClassName).mIndex;
+                int exInitIndex = cp.addMethodRef(exClassName, "<init>", "()V").mIndex;
 
                 encoder.writeByte(LDC_W);
                 encoder.writeShort(mThisClassIndex);
@@ -936,6 +1015,19 @@ final class ClassFileProcessor {
 
                 labelOffset = encoder.length() - codeStartPos;
             }
+
+            case 2 -> {
+                maxStack = 4;
+                labelOffset = -1;
+
+                encodeAgentCheck(encoder, cp.addString(proxyName).mIndex,
+                                 cp.addString(proxyDesc).mIndex);
+
+                if (op != INVOKESTATIC) {
+                    encoder.writeByte(ALOAD_0);
+                    pushed++;
+                }
+            }
         }
 
         if (op == NEW) {
@@ -946,10 +1038,10 @@ final class ClassFileProcessor {
             op = INVOKESPECIAL;
         }
 
-        int pushed = typeDesc.pushArgs(encoder);
+        pushed += proxyDesc.pushArgs(encoder);
         encoder.writeByte(op);
         encoder.writeShort(methodRef.mIndex);
-        typeDesc.returnValue(encoder);
+        proxyDesc.returnValue(encoder);
 
         // Update max_stack, max_locals, and code_length.
         byte[] buffer = encoder.buffer();
@@ -973,8 +1065,6 @@ final class ClassFileProcessor {
 
         // Update attribute_length.
         encodeIntBE(buffer, startPos, encoder.length() - startPos - 4);
-
-        mNewMethods.put(key, proxyMethod);
 
         return proxyMethod;
     }
