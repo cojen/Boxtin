@@ -1,8 +1,6 @@
 
 Boxtin is a Java security manager agent, intended to replace the original security manager, which is now [disabled](https://openjdk.org/jeps/486).
 
-Status: Project is experimental, and it doesn't fully work yet.
-
 Boxtin provides an [instrumentation agent](https://docs.oracle.com/en/java/javase/24/docs/api/java.instrument/java/lang/instrument/package-summary.html) which modifies classes to include the necessary security checks. It's launched with a custom [controller](https://github.com/cojen/Boxtin/blob/main/agent/src/main/java/org/cojen/boxtin/Controller.java), which decides what operations are allowed for a given module.
 
 ```
