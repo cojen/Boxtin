@@ -29,6 +29,8 @@ Rules cannot allow access to operations beyond the boundaries already establishe
 
 Rules cannot deny access to operations within a module. A caller is always allowed to call any target operation in its own module, restricted only by the usual private/protected checks. Any rule which would deny access within a module is ignored.
 
+Regarding qualified module exports and opens: TBD
+
 ## Transforms
 
 For a given rule, Boxtin transforms a caller class or a target class. In general, target class transformation is preferred. Here's an example transform applied to a target constructor:
