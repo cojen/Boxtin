@@ -1134,6 +1134,7 @@ final class ClassFileProcessor {
         }
 
         // Update attribute_length.
+        buffer = encoder.buffer(); // might have been replaced due to growth
         encodeIntBE(buffer, startPos, encoder.length() - startPos - 4);
 
         return proxyMethod;
