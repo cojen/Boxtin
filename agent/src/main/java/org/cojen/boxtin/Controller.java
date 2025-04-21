@@ -27,9 +27,11 @@ public interface Controller {
      * an operation.
      *
      * @param module the caller's module
+     * @param clazz the caller's class, represented as a String (with '/' separators) or a
+     * Class object
      * @return a checker instance, which can be null if all operations are allowed
      */
-    public Checker checkerForCaller(Module module);
+    public Checker checkerForCaller(Module module, Object clazz);
 
     /**
      * Returns a Checker which is used to apply changes to classes which have deniable

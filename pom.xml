@@ -1,11 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
+
   <groupId>org.cojen</groupId>
-  <artifactId>boxtin</artifactId>
-  <packaging>jar</packaging>
-  <name>Boxtin</name>
- <version>0.0.1</version>
+  <artifactId>boxtin-parent</artifactId>
+  <packaging>pom</packaging>
+  <name>Boxtin-parent</name>
+  <version>0.0.1</version>
+
+  <modules>
+    <module>agent</module>
+    <module>agent-tests</module>
+  </modules>
+
   <description>
     Boxtin is a Java security manager agent.
   </description>
@@ -26,214 +33,15 @@
     </license>
   </licenses>
 
-  <developers>
-    <developer>
-      <name>Brian O'Neill</name>
-      <email>bronee@gmail.com</email>
-      <organization>Cojen</organization>
-      <organizationUrl>https://cojen.org</organizationUrl>
-    </developer>
-  </developers>
-
   <scm>
     <connection>scm:git:https://github.com/cojen/Boxtin.git</connection>
     <developerConnection>scm:git:ssh://git@github.com:cojen/Boxtin.git</developerConnection>
     <url>https://github.com/cojen/Boxtin</url>
   </scm>
 
-  <distributionManagement>
-    <snapshotRepository>
-      <id>ossrh</id>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-    </snapshotRepository>
-    <repository>
-      <id>ossrh</id>
-      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-    </repository>
-  </distributionManagement>
-
   <properties>
-    <!--  compiler settings -->
-    <maven.compiler.source>17</maven.compiler.source>
-    <maven.compiler.target>17</maven.compiler.target>
-
-    <!-- encoding -->
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
   </properties>
 
-  <dependencies>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>[4.13,)</version>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
-
-
-  <build>
-    <finalName>Boxtin</finalName>
-
-    <plugins>
-
-      <plugin>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
-        <version>0.8.13</version>
-        <executions>
-          <execution>
-            <id>default-prepare-agent</id>
-            <goals>
-              <goal>prepare-agent</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>default-report</id>
-            <goals>
-              <goal>report</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>default-check</id>
-            <goals>
-              <goal>check</goal>
-            </goals>
-            <configuration>
-              <rules>
-                <rule>
-                  <element>BUNDLE</element>
-                  <limits>
-                    <limit>
-                      <counter>INSTRUCTION</counter>
-                      <value>COVEREDRATIO</value>
-                      <minimum>0.50</minimum>
-                    </limit>
-                  </limits>
-                </rule>
-              </rules>
-            </configuration>
-          </execution>
-        </executions>
-        <configuration>
-          <excludes>
-            <exclude>**/DebugWriter.class</exclude>
-          </excludes>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.8.1</version>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>3.1.2</version>
-        <configuration>
-          <archive>
-            <manifestEntries>
-              <Automatic-Module-Name>org.cojen.boxtin</Automatic-Module-Name>
-              <Premain-Class>org.cojen.boxtin.SecurityAgent</Premain-Class>
-              <Can-Redefine-Classes>true</Can-Redefine-Classes>
-              <Can-Retransform-Classes>true</Can-Retransform-Classes>
-              <Can-Set-Native-Method-Prefix>true</Can-Set-Native-Method-Prefix>
-              <Boot-Class-Path>Boxtin.jar</Boot-Class-Path>
-            </manifestEntries>
-          </archive>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <version>3.5.0</version>
-        <configuration>
-          <detectJavaApiLink>true</detectJavaApiLink>
-          <links>
-            <link>https://docs.oracle.com/en/java/javase/24/docs/api</link>
-          </links>
-          <author>false</author>
-          <nodeprecatedlist>true</nodeprecatedlist>
-          <notimestamp>true</notimestamp>
-          <reportOutputDirectory>${basedir}/docs</reportOutputDirectory>
-          <destDir>javadoc</destDir>
-          <excludePackageNames></excludePackageNames>
-          <quiet>true</quiet>
-          <additionalOptions>-Xdoclint:accessibility</additionalOptions>
-          <additionalOptions>-Xdoclint:html</additionalOptions>
-          <additionalOptions>-Xdoclint:reference</additionalOptions>
-          <additionalOptions>-Xdoclint:syntax</additionalOptions>
-        </configuration>
-        <executions>
-          <execution>
-            <id>attach-javadocs</id>
-            <phase>deploy</phase>
-            <goals>
-              <goal>jar</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <version>3.1.0</version>
-        <configuration>
-          <trimStackTrace>false</trimStackTrace>
-          <useFile>false</useFile>
-          <runOrder>random</runOrder>
-          <parallel>classes</parallel>
-          <perCoreThreadCount>false</perCoreThreadCount>
-          <threadCount>6</threadCount>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-source-plugin</artifactId>
-        <version>3.0.1</version>
-        <executions>
-          <execution>
-            <id>attach-sources</id>
-            <phase>deploy</phase>
-            <goals>
-              <goal>jar</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-gpg-plugin</artifactId>
-        <version>1.6</version>
-        <executions>
-          <execution>
-            <id>sign-artifacts</id>
-            <phase>deploy</phase>
-            <goals>
-              <goal>sign</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.sonatype.plugins</groupId>
-        <artifactId>nexus-staging-maven-plugin</artifactId>
-        <version>1.6.13</version>
-        <extensions>true</extensions>
-        <configuration>
-          <serverId>ossrh</serverId>
-          <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-          <autoReleaseAfterClose>false</autoReleaseAfterClose>
-        </configuration>
-      </plugin>
-
-    </plugins>
-  </build>
 </project>

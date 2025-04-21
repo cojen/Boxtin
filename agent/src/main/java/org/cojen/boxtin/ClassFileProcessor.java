@@ -58,8 +58,8 @@ final class ClassFileProcessor {
         int minor = decoder.readUnsignedShort();
         int major = decoder.readUnsignedShort();
 
-        if (major < 51) { // require Java 7+
-            throw new ClassFormatException();
+        if (major < 49) { // require Java 5+
+            throw new ClassFormatException("" + major);
         }
 
         var cp = ConstantPool.decode(decoder);
@@ -402,6 +402,7 @@ final class ClassFileProcessor {
 
         if (mNewMethods != null) {
             // Update the methods_count field.
+            // FIXME: Throw ClassFormatException if too big.
             int numNewMethods = mNewMethods.size();
             int methodsStartOffset = mMethodsStartOffset + (int) cpGrowth;
             encodeShortBE(buffer, methodsStartOffset, mMethodsCount + numNewMethods);

@@ -237,7 +237,7 @@ public final class SecurityAgent implements ClassFileTransformer {
             // Classes loaded by the bootstrap class loader are allowed to call anything.
             forCaller = Rule.ALLOW;
         } else {
-            forCaller = mController.checkerForCaller(module);
+            forCaller = mController.checkerForCaller(module, className);
             if (forCaller == null) {
                 forCaller = Rule.ALLOW;
             }
@@ -303,13 +303,12 @@ public final class SecurityAgent implements ClassFileTransformer {
     public static void check(Class<?> caller, Class<?> target, String name, String desc)
         throws SecurityException
     {
-        Module callerModule = caller.getModule();
-        if (callerModule != target.getModule()) {
-            check(callerModule, target, name, desc);
+        if (caller.getModule() != target.getModule()) {
+            doCheck(caller, target, name, desc);
         }
     }
 
-    private static void check(Module callerModule, Class<?> target, String name, String desc)
+    private static void doCheck(Class<?> caller, Class<?> target, String name, String desc)
         throws SecurityException
     {
         var agent = (SecurityAgent) INSTANCE_H.getAcquire();
@@ -318,13 +317,15 @@ public final class SecurityAgent implements ClassFileTransformer {
             throw new SecurityException();
         }
 
+        Module callerModule = caller.getModule();
+
         Boolean allowed = agent.mCheckCache
             .computeIfAbsent(callerModule, k -> new WeakHashMap<>()) // target weak ref
             .computeIfAbsent(target, k -> new HashMap<>())
             .computeIfAbsent(name, k -> new HashMap<>())
             .computeIfAbsent(desc, k -> {
                 Checker.ForClass forClass = agent.mController
-                    .checkerForCaller(callerModule).forClass(target);
+                    .checkerForCaller(callerModule, caller).forClass(target);
                 if (name == null) {
                     return forClass.isConstructorAllowed(desc);
                 } else {
