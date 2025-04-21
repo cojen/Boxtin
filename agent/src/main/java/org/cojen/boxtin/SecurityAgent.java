@@ -325,7 +325,7 @@ public final class SecurityAgent implements ClassFileTransformer {
             .computeIfAbsent(name, k -> new HashMap<>())
             .computeIfAbsent(desc, k -> {
                 Checker.ForClass forClass = agent.mController
-                    .checkerForCaller(callerModule, caller).forClass(target);
+                    .checkerForCaller(caller).forClass(target);
                 if (name == null) {
                     return forClass.isConstructorAllowed(desc);
                 } else {

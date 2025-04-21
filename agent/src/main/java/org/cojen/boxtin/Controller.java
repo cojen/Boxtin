@@ -27,11 +27,32 @@ public interface Controller {
      * an operation.
      *
      * @param module the caller's module
-     * @param clazz the caller's class, represented as a String (with '/' separators) or a
-     * Class object
      * @return a checker instance, which can be null if all operations are allowed
      */
-    public Checker checkerForCaller(Module module, Object clazz);
+    public Checker checkerForCaller(Module module);
+
+    /**
+     * Returns a Checker which is used to determine if a calling module is allowed to perform
+     * an operation.
+     *
+     * @param module the caller's module
+     * @param className the caller's class name, using '/' separators for packages
+     * @return a checker instance, which can be null if all operations are allowed
+     */
+    public default Checker checkerForCaller(Module module, String className) {
+        return checkerForCaller(module);
+    }
+
+    /**
+     * Returns a Checker which is used to determine if a calling module is allowed to perform
+     * an operation.
+     *
+     * @param clazz the calling class
+     * @return a checker instance, which can be null if all operations are allowed
+     */
+    public default Checker checkerForCaller(Class<?> clazz) {
+        return checkerForCaller(clazz.getModule());
+    }
 
     /**
      * Returns a Checker which is used to apply changes to classes which have deniable

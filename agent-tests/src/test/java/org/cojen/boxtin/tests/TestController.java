@@ -90,11 +90,24 @@ public final class TestController implements Controller {
     }
 
     @Override
-    public Checker checkerForCaller(Module module, Object clazz) {
-        if (clazz instanceof String s && !s.startsWith("org/cojen/boxtin/tests")) {
+    public Checker checkerForCaller(Module module) {
+        return mRules;
+    }
+
+    @Override
+    public Checker checkerForCaller(Module module, String className) {
+        if (!className.startsWith("org/cojen/boxtin/tests")) {
             return null;
         }
-        return mRules;
+        return checkerForCaller(module);
+    }
+
+    @Override
+    public Checker checkerForCaller(Class<?> caller) {
+        if (!caller.getPackageName().startsWith("org/cojen/boxtin/tests")) {
+            return null;
+        }
+        return checkerForCaller(caller.getModule());
     }
 
     @Override

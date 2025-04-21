@@ -41,7 +41,7 @@ final class DefaultController implements Controller {
     }
 
     @Override
-    public Checker checkerForCaller(Module module, Object clazz) {
+    public Checker checkerForCaller(Module module) {
         return mRules;
     }
 
