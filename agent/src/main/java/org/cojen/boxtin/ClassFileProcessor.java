@@ -209,6 +209,14 @@ final class ClassFileProcessor {
                 name = null;
                 desc = null;
             } else {
+                if (!isAccessible(access_flags)) {
+                    if (forCaller == Rule.ALLOW) {
+                        skipAttributes(decoder);
+                        continue;
+                    }
+                    targetCodeChecked = false;
+                }
+
                 name = mConstantPool.findConstantUTF8(name_index);
                 desc = mConstantPool.findConstantUTF8(desc_index);
 
@@ -231,11 +239,7 @@ final class ClassFileProcessor {
                 }
             }
 
-            if (Modifier.isNative(access_flags)) {
-                if (!targetCodeChecked) {
-                    continue;
-                }
-
+            if (targetCodeChecked && Modifier.isNative(access_flags)) {
                 // First, rename the native method to start with NATIVE_PREFIX, and make it
                 // private and synthetic.
 
