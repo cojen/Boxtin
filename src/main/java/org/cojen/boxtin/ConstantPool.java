@@ -24,7 +24,7 @@ import java.nio.charset.StandardCharsets;
 
 import java.util.Arrays;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -308,7 +308,7 @@ final class ConstantPool {
         // Resolve the existing constants, to reduce duplication. Only bother doing this for
         // the types of constants which can be added.
 
-        mMappedConstants = new LinkedHashMap<>(mOffsets.length << 1);
+        mMappedConstants = new HashMap<>(mOffsets.length << 1);
         mAddedConstants = new ArrayList<>();
 
         for (int i=0; i<mOffsets.length; i++) {
