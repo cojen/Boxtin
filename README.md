@@ -23,7 +23,7 @@ Boxtin is designed to restrict operations for "plugins", much like the original 
 
 A _caller_ is the plugin code, represented by a [module](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Module.html), possibly unnamed. A _target_ is the code which is being called by the caller, represented by a rule. A rule logically maps target methods or constructors to an "allow" or "deny" outcome.
 
-The controller decides which set of rules apply for a given module. For convenience, a [`RulesApplier`](https://github.com/cojen/Boxtin/blob/main/src/main/java/org/cojen/boxtin/RulesApplier.java) can define a standard set of rules, by name or category: [`java.base`](https://github.com/cojen/Boxtin/blob/main/src/main/java/org/cojen/boxtin/JavaBaseApplier.java)
+The controller decides which set of rules apply for a given module. For convenience, a [`RulesApplier`](https://github.com/cojen/Boxtin/blob/main/src/main/java/org/cojen/boxtin/RulesApplier.java) can define a standard set of rules, by name or category. For example: [`java.base`](https://github.com/cojen/Boxtin/blob/main/src/main/java/org/cojen/boxtin/JavaBaseApplier.java)
 
 Rules cannot allow access to operations beyond the boundaries already established by modules. For example, a rule cannot be defined to allow access to the internal JDK classes. The existing Java `--add-exports` and `--add-opens` options must be used instead.
 
