@@ -160,13 +160,13 @@ final class ClassFileProcessor {
                 if (!forClass.isConstructorAllowed(nat.mTypeDesc)) {
                     op = NEW;
                     // Constructor check is always in the target.
-                    proxyType = PT_MHC;
+                    proxyType = PT_PLAIN;
                 } else {
                     return;
                 }
             } else {
                 if (forClass.isTargetMethodChecked(nat.mName, nat.mTypeDesc)) {
-                    proxyType = PT_MHC;
+                    proxyType = PT_PLAIN;
                 } else if (forClass.isCallerMethodChecked(nat.mName, nat.mTypeDesc)) {
                     proxyType = PT_CALLER;
                 } else {
@@ -944,11 +944,11 @@ final class ClassFileProcessor {
         return forCaller.forClass(packageName, className);
     }
 
-    private static final byte PT_MHC = 0, PT_CALLER = 1, PT_NATIVE = 2, PT_REFLECTION = 3;
+    private static final byte PT_PLAIN = 0, PT_CALLER = 1, PT_NATIVE = 2, PT_REFLECTION = 3;
 
     /**
-     * PT_MHC: Used by MethodHandle constants with a target-side check, which ensures that the
-     *         correct caller frame is available.
+     * PT_PLAIN: Used by MethodHandle constants with a target-side check, which ensures that
+     *           the correct caller frame is available.
      *
      * private static File $3(String path) {
      *     return File.open(path);
@@ -1043,12 +1043,12 @@ final class ClassFileProcessor {
         switch (type) {
             default -> throw new AssertionError();
 
-            case 0 -> {
+            case PT_PLAIN -> {
                 maxStack = 0;
                 labelOffset = -1;
             }
 
-            case 1 -> {
+            case PT_CALLER -> {
                 maxStack = 1 + 1;
 
                 int getModuleIndex = cp.addMethodRef
@@ -1077,7 +1077,7 @@ final class ClassFileProcessor {
                 labelOffset = encoder.length() - codeStartPos;
             }
 
-            case 2 -> {
+            case PT_NATIVE -> {
                 maxStack = 4;
                 labelOffset = -1;
 
