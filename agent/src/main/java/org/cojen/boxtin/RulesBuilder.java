@@ -468,7 +468,8 @@ public final class RulesBuilder {
         }
 
         /**
-         * Deny access to all constructors, and methods, superseding all previous rules.
+         * Deny access to all constructors and locally declared methods, superseding all
+         * previous rules.
          *
          * @return this
          */
@@ -502,7 +503,7 @@ public final class RulesBuilder {
         }
 
         /**
-         * Deny access to all methods, superseding all previous rules.
+         * Deny access to all locally declared methods, superseding all previous rules.
          *
          * @return this
          */
@@ -559,7 +560,8 @@ public final class RulesBuilder {
         }
 
         /**
-         * Allow access to all constructors, and methods, superseding all previous rules.
+         * Allow access to all constructors and locally declared methods, superseding all
+         * previous rules.
          *
          * @return this
          */
@@ -585,7 +587,7 @@ public final class RulesBuilder {
         }
 
         /**
-         * Allow access to all methods, superseding all previous rules.
+         * Allow access to all locally declared methods, superseding all previous rules.
          *
          * @return this
          */
