@@ -226,11 +226,14 @@ final class ScopedRules implements Rules {
 
         @Override
         public boolean isMethodAllowed(CharSequence name, CharSequence descriptor) {
+            boolean allowed;
             MethodScope scope;
             if (mMethods == null || (scope = mMethods.get(name)) == null) {
-                return mDefaultMethodRule == Rule.ALLOW;
-            }
-            return scope.isMethodAllowed(descriptor);
+                allowed = mDefaultMethodRule == Rule.ALLOW;
+            } else {
+                allowed = scope.isMethodAllowed(descriptor);
+            } 
+            return allowed || isAlwaysAllowed(name, descriptor);
         }
 
 
@@ -253,11 +256,14 @@ final class ScopedRules implements Rules {
 
         @Override
         public boolean isCallerMethodChecked(CharSequence name, CharSequence descriptor) {
+            boolean checked;
             MethodScope scope;
             if (mMethods == null || (scope = mMethods.get(name)) == null) {
-                return mDefaultMethodRule.isCallerChecked();
+                checked = mDefaultMethodRule.isCallerChecked();
+            } else {
+                checked = scope.isCallerMethodChecked(descriptor);
             }
-            return scope.isCallerMethodChecked(descriptor);
+            return checked && !isAlwaysAllowed(name, descriptor);
         }
 
         @Override
@@ -278,11 +284,14 @@ final class ScopedRules implements Rules {
 
         @Override
         public boolean isTargetMethodChecked(CharSequence name, CharSequence descriptor) {
+            boolean checked;
             MethodScope scope;
             if (mMethods == null || (scope = mMethods.get(name)) == null) {
-                return mDefaultMethodRule.isTargetChecked();
+                checked = mDefaultMethodRule.isTargetChecked();
+            } else {
+                checked = scope.isTargetMethodChecked(descriptor);
             }
-            return scope.isTargetMethodChecked(descriptor);
+            return checked && !isAlwaysAllowed(name, descriptor);
         }
 
         void printTo(Appendable a, String indent, String plusIndent, UTFDecoder decoder)
@@ -318,6 +327,28 @@ final class ScopedRules implements Rules {
                     }
                 }
             }
+        }
+
+        private static boolean isAlwaysAllowed(CharSequence name, CharSequence descriptor) {
+            // Public methods defined in the Object class are always allowed. Access cannot be
+            // denied with a caller-side check, because a cast to Object will circumvent it. A
+            // target-side check will work, but it's very odd to deny access to common methods.
+
+            // Note that the equals method is called on the descriptor, and not the String
+            // constants. This is because the equals method as implemented by
+            // ConstantPool.C_UTF8 supports more type of objects, but the String equals method
+            // only supports Strings. This is a violation of the symmetric property, but it
+            // means that UTF8 constants don't need to be fully decoded into Strings.
+
+            if (name.equals("hashCode")) {
+                return descriptor.equals("()I");
+            } else if (name.equals("equals")) {
+                return descriptor.equals("(Ljava/lang/Object;)Z");
+            } else if (name.equals("toString")) {
+                return descriptor.equals("()Ljava/lang/String;");
+            }
+
+            return false;
         }
     }
 
