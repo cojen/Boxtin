@@ -118,6 +118,34 @@ Because this technique adds a method to the class, it doesn't work if the class 
 
 ### Reflection
 
+Access is guarded when `Constructor` and `Method` instances are acquired, and not when they're invoked. A special transformation is applied which proxies the acquisition such that an access check is performed at that time, possibly resulting in an exception being thrown. For methods which return an array, (example: `Class.getMethods()`), a filtering step is applied which removes elements which cannot be accessed.
+
+
+```java
+    // original
+    public void run() {
+        Method m = Widget.class.getMethod("open");
+        ...
+    }
+
+    // transformed
+    public void run() {
+        // An exception is thrown if access is denied.
+        Method m = $9(Widget.class, "open");
+        ...
+    }
+
+    // synthetic proxy method
+    private static Method $9(Class clazz, String name, Class... paramTypes) {
+        // This captures the caller class.
+        Reflection r = SecurityAgent.reflection();
+        // This might throw an exception.
+        return r.Class_getMethod(clazz, name, paramTypes);
+    }
+```
+
+### MethodHandles
+
 TBD
 
 ## Object methods
