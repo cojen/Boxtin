@@ -123,11 +123,6 @@
             </configuration>
           </execution>
         </executions>
-        <configuration>
-          <excludes>
-            <exclude>**/DebugWriter.class</exclude>
-          </excludes>
-        </configuration>
       </plugin>
 
       <plugin>
