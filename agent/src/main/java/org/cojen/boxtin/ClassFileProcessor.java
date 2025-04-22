@@ -136,7 +136,7 @@ final class ClassFileProcessor {
         throws IOException, ClassFormatException
     {
         final boolean targetClassChecked = forTargetClass.isTargetChecked()
-            || forTargetClass.isAnyConstructorDeniable(); // See <init> comment below.
+            || forTargetClass.isAnyConstructorDeniable(); // See isConstructor comment below.
 
         if (forCaller == Rule.ALLOW && (!isAccessible(mAccessFlags) || !targetClassChecked)) {
             // No need to modify inaccessible classes, or those that aren't checked.

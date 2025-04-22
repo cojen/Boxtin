@@ -33,7 +33,8 @@ public interface Controller {
 
     /**
      * Returns a Checker which is used to determine if a calling module is allowed to perform
-     * an operation.
+     * an operation. This variant is provided only for testing and debugging. A class name can
+     * be spoofed, and so it shouldn't be used to determine what Checker to return.
      *
      * @param module the caller's module
      * @param className the caller's class name, using '/' separators for packages
@@ -45,7 +46,8 @@ public interface Controller {
 
     /**
      * Returns a Checker which is used to determine if a calling module is allowed to perform
-     * an operation.
+     * an operation. This variant is provided only for testing and debugging. A class name can
+     * be spoofed, and so it shouldn't be used to determine what Checker to return.
      *
      * @param clazz the calling class
      * @return a checker instance, which can be null if all operations are allowed
