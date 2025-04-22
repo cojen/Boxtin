@@ -93,6 +93,10 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("getBoolean")
             .end()
 
+            // Note: The methods which return Constructors and Methods are treated specially,
+            // and denying access here only denies access to those methods themselves. Checks
+            // are put in place for when callers obtain members, ensuring that access is
+            // allowed to the underlying class member as if it was called directly.
             .forClass("Class")
             .callerCheck()
             .denyMethod("forName")
