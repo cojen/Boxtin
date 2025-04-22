@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.lang.reflect.Modifier;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -201,42 +200,39 @@ final class ClassFileProcessor {
             int access_flags = decoder.readUnsignedShort();
             int name_index = decoder.readUnsignedShort();
             int desc_index = decoder.readUnsignedShort();
-            ConstantPool.C_UTF8 name, desc;
 
             boolean targetCodeChecked;
-            if (!targetClassChecked) {
+            ConstantPool.C_UTF8 name, desc; // both can be null when !targetCodeChecked
+
+            if (!targetClassChecked || !isAccessible(access_flags)) {
                 targetCodeChecked = false;
                 name = null;
                 desc = null;
             } else {
-                if (!isAccessible(access_flags)) {
-                    if (forCaller == Rule.ALLOW) {
-                        skipAttributes(decoder);
-                        continue;
-                    }
-                    targetCodeChecked = false;
-                }
-
                 name = mConstantPool.findConstantUTF8(name_index);
-                desc = mConstantPool.findConstantUTF8(desc_index);
 
-                if (name.isConstructor()) {
-                    // Constructor check must only be in the target class. The code
-                    // modifications to make it work in the client class are too complicated.
-                    // The problem is that uninitialized objects cannot be passed to other
-                    // methods, in this case, the proxy method. See insertCallerChecks.
-                    targetCodeChecked = !forTargetClass.isConstructorAllowed(desc);
-                    name = null;
-                } else if (name.equals("<clinit>")) {
+                if (name.equals("<clinit>")) {
                     targetCodeChecked = false;
+                    desc = null;
                 } else {
-                    targetCodeChecked = forTargetClass.isTargetMethodChecked(name, desc);
-                }
+                    desc = mConstantPool.findConstantUTF8(desc_index);
 
-                if (!targetCodeChecked && forCaller == Rule.ALLOW) {
-                    skipAttributes(decoder);
-                    continue;
+                    if (name.isConstructor()) {
+                        // Constructor check must only be in the target class. The code
+                        // modifications to make it work in the client class are too complicated.
+                        // The problem is that uninitialized objects cannot be passed to other
+                        // methods, in this case, the proxy method. See insertCallerChecks.
+                        targetCodeChecked = !forTargetClass.isConstructorAllowed(desc);
+                        name = null; // indicate that the method is a constructor
+                    } else {
+                        targetCodeChecked = forTargetClass.isTargetMethodChecked(name, desc);
+                    }
                 }
+            }
+
+            if (!targetCodeChecked && forCaller == Rule.ALLOW) {
+                skipAttributes(decoder);
+                continue;
             }
 
             if (targetCodeChecked && Modifier.isNative(access_flags)) {
@@ -783,8 +779,8 @@ final class ClassFileProcessor {
                     C_NameAndType nat = methodRef.mNameAndType;
 
                     if (nat.mName.isConstructor()) {
-                        // Constructor check should have been applied in the target. See See
-                        // the <init> comment in the check method.
+                        // Constructor check should have been applied in the target. See the
+                        // isConstructor comment in the check method.
                         continue;
                     }
 
