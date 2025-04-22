@@ -32,21 +32,27 @@ public class ExitTest {
     }
 
     @Test
-    public void basic() throws Exception {
+    public void system() throws Exception {
         try {
             System.exit(1);
             fail();
         } catch (SecurityException e) {
             // Expected.
         }
+    }
 
+    @Test
+    public void runtime() throws Exception {
         try {
             Runtime.getRuntime().exit(1);
             fail();
         } catch (SecurityException e) {
             // Expected.
         }
+    }
 
+    @Test
+    public void lambda() throws Exception {
         try {
             OptionalInt.of(1).ifPresent(System::exit);
             fail();
