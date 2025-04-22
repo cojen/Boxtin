@@ -54,6 +54,8 @@
         <configuration>
           <argLine>-javaagent:${project.basedir}/../agent/target/Boxtin.jar=org.cojen.boxtin.tests.TestController</argLine>
           <trimStackTrace>false</trimStackTrace>
+          <useFile>false</useFile>
+          <disableXmlReport>true</disableXmlReport>
         </configuration>
       </plugin>
 
