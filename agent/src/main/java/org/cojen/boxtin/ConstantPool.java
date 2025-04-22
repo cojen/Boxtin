@@ -560,6 +560,19 @@ final class ConstantPool {
                 && Utils.decodeUnsignedShortBE(buffer, offset + 4) == 0x743e; // t>
         }
 
+        /**
+         * Returns true if the value is <clinit>.
+         */
+        boolean isClinit() {
+            int length = mLength;
+            if (length != 8) {
+                return false;
+            }
+            byte[] buffer = mBuffer;
+            int offset = mOffset;
+            return Utils.decodeLongBE(buffer, offset) == 0x3c636c696e69743eL;
+        }
+
         String str() throws ClassFormatException {
             String str = mStr;
             return str != null ? str : decodeValue();

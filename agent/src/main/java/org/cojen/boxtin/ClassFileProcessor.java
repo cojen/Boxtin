@@ -204,29 +204,24 @@ final class ClassFileProcessor {
             boolean targetCodeChecked;
             ConstantPool.C_UTF8 name, desc; // both can be null when !targetCodeChecked
 
-            if (!targetClassChecked || !isAccessible(access_flags)) {
+            if (!targetClassChecked || !isAccessible(access_flags) ||
+                (name = mConstantPool.findConstantUTF8(name_index)).isClinit())
+            {
                 targetCodeChecked = false;
                 name = null;
                 desc = null;
             } else {
-                name = mConstantPool.findConstantUTF8(name_index);
+                desc = mConstantPool.findConstantUTF8(desc_index);
 
-                if (name.equals("<clinit>")) {
-                    targetCodeChecked = false;
-                    desc = null;
+                if (name.isConstructor()) {
+                    // Constructor check must only be in the target class. The code
+                    // modifications to make it work in the client class are too complicated.
+                    // The problem is that uninitialized objects cannot be passed to other
+                    // methods, in this case, the proxy method. See insertCallerChecks.
+                    targetCodeChecked = !forTargetClass.isConstructorAllowed(desc);
+                    name = null; // indicate that the method is a constructor
                 } else {
-                    desc = mConstantPool.findConstantUTF8(desc_index);
-
-                    if (name.isConstructor()) {
-                        // Constructor check must only be in the target class. The code
-                        // modifications to make it work in the client class are too complicated.
-                        // The problem is that uninitialized objects cannot be passed to other
-                        // methods, in this case, the proxy method. See insertCallerChecks.
-                        targetCodeChecked = !forTargetClass.isConstructorAllowed(desc);
-                        name = null; // indicate that the method is a constructor
-                    } else {
-                        targetCodeChecked = forTargetClass.isTargetMethodChecked(name, desc);
-                    }
+                    targetCodeChecked = forTargetClass.isTargetMethodChecked(name, desc);
                 }
             }
 
