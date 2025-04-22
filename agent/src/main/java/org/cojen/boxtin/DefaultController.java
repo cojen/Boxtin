@@ -30,10 +30,14 @@ final class DefaultController implements Controller {
         String command = System.getProperty("sun.java.command");
         if (command != null) {
             // Allow access to the main method. Otherwise, an IllegalCallerException is thrown
-            // because main method doesn't have a caller.
-            int index = command.lastIndexOf('.');
-            builder.forPackage(index < 0 ? "" : command.substring(0, index))
-                .forClass(command.substring(index + 1))
+            // because the main method doesn't have a caller.
+            int endIndex = command.indexOf(' ');
+            if (endIndex < 0) {
+                endIndex = command.length();
+            }
+            int dotIndex = command.lastIndexOf('.', endIndex);
+            builder.forPackage(dotIndex < 0 ? "" : command.substring(0, dotIndex))
+                .forClass(command.substring(dotIndex + 1, endIndex))
                 .denyMethod("main").allowVariant("([Ljava/lang/String;)V");
         }
 
