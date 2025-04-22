@@ -1,5 +1,5 @@
 
-Boxtin is a Java security manager agent, intended to replace the original security manager, which is now [disabled](https://openjdk.org/jeps/486).
+Boxtin is a customizable Java security manager agent, intended to replace the original security manager, which is now [disabled](https://openjdk.org/jeps/486).
 
 Project status: Under heavy development, and many more tests are needed.
 
