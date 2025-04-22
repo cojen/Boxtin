@@ -96,6 +96,8 @@ loadScripts(document, 'script');</script>
 <div class="horizontal-scroll">
 <div class="type-signature"><span class="modifiers">public final class </span><span class="element-name type-name-label">RulesBuilder</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
+<div class="block">Is used to build up a set of access rules, which can then be <a href="#build()"><code>built</code></a> into a
+ usable <a href="Rules.html" title="interface in org.cojen.boxtin"><code>Rules</code></a> instance.</div>
 </div>
 </section>
 <section class="summary">
@@ -111,10 +113,14 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color"><code>static final class&nbsp;</code></div>
 <div class="col-second even-row-color"><code><a href="RulesBuilder.ClassScope.html" class="type-name-link" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></code></div>
-<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-last even-row-color">
+<div class="block">Builder of rules at the class level.</div>
+</div>
 <div class="col-first odd-row-color"><code>static final class&nbsp;</code></div>
 <div class="col-second odd-row-color"><code><a href="RulesBuilder.PackageScope.html" class="type-name-link" title="class in org.cojen.boxtin">RulesBuilder.PackageScope</a></code></div>
-<div class="col-last odd-row-color">&nbsp;</div>
+<div class="col-last odd-row-color">
+<div class="block">Builder of rules at the package level.</div>
+</div>
 </div>
 </section>
 </li>
@@ -155,7 +161,7 @@ loadScripts(document, 'script');</script>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#build()" class="member-name-link">build</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Returns a immutable set of rules based on what's been defined so far.</div>
+<div class="block">Returns an immutable set of rules based on what's been defined so far.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.html" title="class in org.cojen.boxtin">RulesBuilder</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#denyAll()" class="member-name-link">denyAll</a>()</code></div>
@@ -299,7 +305,7 @@ loadScripts(document, 'script');</script>
 <h3>build</h3>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a></span>&nbsp;<span class="element-name">build</span>()</div>
-<div class="block">Returns a immutable set of rules based on what's been defined so far.</div>
+<div class="block">Returns an immutable set of rules based on what's been defined so far.</div>
 </div>
 </section>
 </li>

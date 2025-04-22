@@ -89,6 +89,26 @@ loadScripts(document, 'script');</script>
 <div class="type-signature"><span class="modifiers">public final class </span><span class="element-name type-name-label">SecurityAgent</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>
 implements <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.instrument/java/lang/instrument/ClassFileTransformer.html" title="class or interface in java.lang.instrument" class="external-link">ClassFileTransformer</a></span></div>
+<div class="block">The <code>SecurityAgent</code> is an instrumentation agent which transforms classes such that
+ access checks are enforced. For operations which are denied, a <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/SecurityException.html" title="class or interface in java.lang" class="external-link"><code>SecurityException</code></a> is
+ thrown at runtime.
+
+ <p>The agent can be launched with a custom <a href="Controller.html" title="interface in org.cojen.boxtin"><code>Controller</code></a> as follows:
+
+ <pre>
+ java -javaagent:Boxtin.jar=my.app.SecurityController ...
+ </pre>
+
+ If no controller is specified, then a default one is selected which only allows limited
+ access to the <a href="RulesApplier.html#java_base()"><code>java.base</code></a> module.
+
+ <p>The controller must have a public constructor which has no arguments, or it must have a
+ public constructor which accepts a single <code>String</code> argument. To supply a string value,
+ append it after the controller name:
+
+ <pre>
+ java -javaagent:Boxtin.jar=my.app.SecurityController=custom.value ...
+ </pre></div>
 </div>
 </section>
 <section class="summary">
@@ -107,7 +127,10 @@ implements <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.inst
 <div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static void</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#premain(java.lang.String,java.lang.instrument.Instrumentation)" class="member-name-link">premain</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;agentArgs,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.instrument/java/lang/instrument/Instrumentation.html" title="class or interface in java.lang.instrument" class="external-link">Instrumentation</a>&nbsp;inst)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">&nbsp;</div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">The premain method should only be called by the instrumentation layer, when the JVM
+ starts.</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>byte[]</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#transform(java.lang.Module,java.lang.ClassLoader,java.lang.String,java.lang.Class,java.security.ProtectionDomain,byte%5B%5D)" class="member-name-link">transform</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Module.html" title="class or interface in java.lang" class="external-link">Module</a>&nbsp;module,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/ClassLoader.html" title="class or interface in java.lang" class="external-link">ClassLoader</a>&nbsp;loader,
@@ -143,6 +166,8 @@ implements <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.inst
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">premain</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;agentArgs,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.instrument/java/lang/instrument/Instrumentation.html" title="class or interface in java.lang.instrument" class="external-link">Instrumentation</a>&nbsp;inst)</span>
                     throws <span class="exceptions"><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Exception.html" title="class or interface in java.lang" class="external-link">Exception</a></span></div>
+<div class="block">The premain method should only be called by the instrumentation layer, when the JVM
+ starts.</div>
 <dl class="notes">
 <dt>Throws:</dt>
 <dd><code><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Exception.html" title="class or interface in java.lang" class="external-link">Exception</a></code></dd>

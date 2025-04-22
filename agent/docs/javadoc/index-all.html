@@ -103,7 +103,7 @@ loadScripts(document, 'script');</script>
 <dl class="index">
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html#build()" class="member-name-link">build()</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html" title="class in org.cojen.boxtin">RulesBuilder</a></dt>
 <dd>
-<div class="block">Returns a immutable set of rules based on what's been defined so far.</div>
+<div class="block">Returns an immutable set of rules based on what's been defined so far.</div>
 </dd>
 </dl>
 <h2 class="title" id="I:C">C</h2>
@@ -117,7 +117,9 @@ loadScripts(document, 'script');</script>
 <div class="block">Checks if access to a class member is allowed or denied.</div>
 </dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/Checker.ForClass.html" class="type-name-link" title="interface in org.cojen.boxtin">Checker.ForClass</a> - Interface in <a href="org.cojen.boxtin/org/cojen/boxtin/package-summary.html">org.cojen.boxtin</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="block">Checks access to constructors or methods, for a specific class.</div>
+</dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html#checkerForCaller(java.lang.Class)" class="member-name-link">checkerForCaller(Class&lt;?&gt;)</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html" title="interface in org.cojen.boxtin">Controller</a></dt>
 <dd>
 <div class="block">Returns a Checker which is used to determine if a calling module is allowed to perform
@@ -139,7 +141,9 @@ loadScripts(document, 'script');</script>
  operations.</div>
 </dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/ClassFormatException.html" class="type-name-link" title="class in org.cojen.boxtin">ClassFormatException</a> - Exception Class in <a href="org.cojen.boxtin/org/cojen/boxtin/package-summary.html">org.cojen.boxtin</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="block">Is thrown when a class being transformed is malformed, or if the transformation failed.</div>
+</dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/ClassFormatException.html#%3Cinit%3E()" class="member-name-link">ClassFormatException()</a> - Constructor for exception class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/ClassFormatException.html" title="class in org.cojen.boxtin">ClassFormatException</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/ClassFormatException.html#%3Cinit%3E(java.lang.String)" class="member-name-link">ClassFormatException(String)</a> - Constructor for exception class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/ClassFormatException.html" title="class in org.cojen.boxtin">ClassFormatException</a></dt>
@@ -149,7 +153,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/ClassFormatException.html#%3Cinit%3E(java.lang.Throwable)" class="member-name-link">ClassFormatException(Throwable)</a> - Constructor for exception class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/ClassFormatException.html" title="class in org.cojen.boxtin">ClassFormatException</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html" class="type-name-link" title="interface in org.cojen.boxtin">Controller</a> - Interface in <a href="org.cojen.boxtin/org/cojen/boxtin/package-summary.html">org.cojen.boxtin</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="block">Decides what set of operations should be allowed or denied based on the caller's <code>
+ Module</code>.</div>
+</dd>
 </dl>
 <h2 class="title" id="I:D">D</h2>
 <dl class="index">
@@ -204,7 +211,7 @@ loadScripts(document, 'script');</script>
 <dl class="index">
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/Checker.html#forClass(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">forClass(CharSequence, CharSequence)</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Checker.html" title="interface in org.cojen.boxtin">Checker</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Checker.html#forClass(java.lang.Class)" class="member-name-link">forClass(Class)</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Checker.html" title="interface in org.cojen.boxtin">Checker</a></dt>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Checker.html#forClass(java.lang.Class)" class="member-name-link">forClass(Class&lt;?&gt;)</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Checker.html" title="interface in org.cojen.boxtin">Checker</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.PackageScope.html#forClass(java.lang.Class)" class="member-name-link">forClass(Class&lt;?&gt;)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.PackageScope.html" title="class in org.cojen.boxtin">RulesBuilder.PackageScope</a></dt>
 <dd>
@@ -299,7 +306,10 @@ loadScripts(document, 'script');</script>
 <h2 class="title" id="I:P">P</h2>
 <dl class="index">
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/SecurityAgent.html#premain(java.lang.String,java.lang.instrument.Instrumentation)" class="member-name-link">premain(String, Instrumentation)</a> - Static method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/SecurityAgent.html" title="class in org.cojen.boxtin">SecurityAgent</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="block">The premain method should only be called by the instrumentation layer, when the JVM
+ starts.</div>
+</dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/Rules.html#printTo(java.io.PrintStream)" class="member-name-link">printTo(PrintStream)</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Rules.html" title="interface in org.cojen.boxtin">Rules</a></dt>
 <dd>
 <div class="block">Print a description of the rules to the given PrintStream.</div>
@@ -316,22 +326,36 @@ loadScripts(document, 'script');</script>
 <h2 class="title" id="I:R">R</h2>
 <dl class="index">
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/Rules.html" class="type-name-link" title="interface in org.cojen.boxtin">Rules</a> - Interface in <a href="org.cojen.boxtin/org/cojen/boxtin/package-summary.html">org.cojen.boxtin</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="block">A Checker which is defined by a set of rules, built using a <a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html" title="class in org.cojen.boxtin"><code>RulesBuilder</code></a>.</div>
+</dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesApplier.html" class="type-name-link" title="interface in org.cojen.boxtin">RulesApplier</a> - Interface in <a href="org.cojen.boxtin/org/cojen/boxtin/package-summary.html">org.cojen.boxtin</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="block">Defines and applies common sets of rules.</div>
+</dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html" class="type-name-link" title="class in org.cojen.boxtin">RulesBuilder</a> - Class in <a href="org.cojen.boxtin/org/cojen/boxtin/package-summary.html">org.cojen.boxtin</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="block">Is used to build up a set of access rules, which can then be <a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html#build()"><code>built</code></a> into a
+ usable <a href="org.cojen.boxtin/org/cojen/boxtin/Rules.html" title="interface in org.cojen.boxtin"><code>Rules</code></a> instance.</div>
+</dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html#%3Cinit%3E()" class="member-name-link">RulesBuilder()</a> - Constructor for class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html" title="class in org.cojen.boxtin">RulesBuilder</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html" class="type-name-link" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a> - Class in <a href="org.cojen.boxtin/org/cojen/boxtin/package-summary.html">org.cojen.boxtin</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="block">Builder of rules at the class level.</div>
+</dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.PackageScope.html" class="type-name-link" title="class in org.cojen.boxtin">RulesBuilder.PackageScope</a> - Class in <a href="org.cojen.boxtin/org/cojen/boxtin/package-summary.html">org.cojen.boxtin</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="block">Builder of rules at the package level.</div>
+</dd>
 </dl>
 <h2 class="title" id="I:S">S</h2>
 <dl class="index">
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/SecurityAgent.html" class="type-name-link" title="class in org.cojen.boxtin">SecurityAgent</a> - Class in <a href="org.cojen.boxtin/org/cojen/boxtin/package-summary.html">org.cojen.boxtin</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="block">The <code>SecurityAgent</code> is an instrumentation agent which transforms classes such that
+ access checks are enforced.</div>
+</dd>
 </dl>
 <h2 class="title" id="I:T">T</h2>
 <dl class="index">
