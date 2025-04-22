@@ -36,6 +36,33 @@ public final class TestController implements Controller {
             .forPackage("java.lang")
             .allowAll()
 
+            .forClass("Class")
+            .callerCheck()
+            .denyMethod("forName")
+            .allowVariant(String.class)
+            .denyMethod("getClassLoader")
+            .denyMethod("getClasses")
+            .denyMethod("getConstructor")
+            .denyMethod("getConstructors")
+            .denyMethod("getDeclaredClasses")
+            .denyMethod("getDeclaredConstructor")
+            .denyMethod("getDeclaredConstructors")
+            .denyMethod("getDeclaredMethod")
+            .denyMethod("getDeclaredMethods")
+            .denyMethod("getDeclaringClass")
+            .denyMethod("getEnclosingClass")
+            .denyMethod("getEnclosingConstructor")
+            .denyMethod("getEnclosingMethod")
+            .denyMethod("getMethod")
+            .denyMethod("getMethods")
+            .denyMethod("getNestHost")
+            .denyMethod("getNestMembers")
+            .denyMethod("getPermittedSubclasses")
+            .denyMethod("getProtectionDomain")
+            .denyMethod("getRecordComponents")
+            .denyMethod("newInstance") // deprecated
+            .end()
+
             .forClass("Process")
             .denyMethod("children")
             .denyMethod("descendants")
@@ -104,7 +131,7 @@ public final class TestController implements Controller {
 
     @Override
     public Checker checkerForCaller(Class<?> caller) {
-        if (!caller.getPackageName().startsWith("org/cojen/boxtin/tests")) {
+        if (!caller.getPackageName().startsWith("org.cojen.boxtin.tests")) {
             return null;
         }
         return checkerForCaller(caller.getModule());

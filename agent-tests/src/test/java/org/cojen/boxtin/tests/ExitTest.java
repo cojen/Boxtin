@@ -16,6 +16,9 @@
 
 package org.cojen.boxtin.tests;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
 import java.util.OptionalInt;
 
 import org.junit.*;
@@ -77,5 +80,62 @@ public class ExitTest {
         } catch (SecurityException e) {
             // Expected.
         }
+    }
+
+    @Test
+    public void reflect() throws Exception {
+        try {
+            System.class.getMethod("exit", int.class);
+            fail();
+        } catch (SecurityException e) {
+            // Expected.
+        }
+    }
+
+    @Test
+    public void reflect2() throws Exception {
+        Method m = ExitTest.class.getDeclaredMethod("exit");
+
+        try {
+            m.invoke(null);
+            fail();
+        } catch (InvocationTargetException e) {
+            assertTrue(e.getCause() instanceof SecurityException);
+        }
+    }
+
+    @Test
+    public void reflectPass() throws Exception {
+        Object x = ExitTest.class.getDeclaredMethod("okay", int.class).invoke(null, 10);
+        assertEquals(10, (int) x);
+    }
+
+    @Test
+    public void reflectFilter() throws Exception {
+        Method[] methods = System.class.getMethods();
+
+        for (Method m : methods) {
+            assertNotEquals("exit", m.getName());
+        }
+    }
+
+    @Test
+    public void doubleReflect() throws Exception {
+        // Cannot get access to the reflection methods via reflection.
+
+        try {
+            Class.class.getMethod("getMethod", String.class, Class[].class);
+            fail();
+        } catch (SecurityException e) {
+            // Expected.
+        } 
+   }
+
+    private static void exit() {
+        System.exit(1);
+    }
+
+    private static int okay(int x) {
+        return x;
     }
 }

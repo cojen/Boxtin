@@ -66,13 +66,14 @@ public final class SecurityAgent implements ClassFileTransformer {
 
     static final String NATIVE_PREFIX = "$boxtin$_";
 
-    private static final String BOXTIN_PACKAGE;
+    static final String CLASS_NAME, BOXTIN_PACKAGE;
 
     private static volatile SecurityAgent INSTANCE;
 
     private static final VarHandle INSTANCE_H;
 
     static {
+        CLASS_NAME = SecurityAgent.class.getName().replace('.', '/');
         BOXTIN_PACKAGE = SecurityAgent.class.getPackageName().replace('.', '/');
 
         try {
@@ -288,7 +289,13 @@ public final class SecurityAgent implements ClassFileTransformer {
 
         var processor = ClassFileProcessor.begin(classBuffer);
 
-        if (!processor.check(forCaller, forTarget.forClass(packageName, className))) {
+        Checker.ForClass forTargetClass = forTarget.forClass(packageName, className);
+
+        // Classes loaded by the bootstrap loader are allowed to perform reflection, and so
+        // special transforms aren't needed. If enabled, it would likely cause issues anyhow.
+        boolean reflectionChecks = loader != null;
+
+        if (!processor.check(forCaller, forTargetClass, reflectionChecks)) {
             return null;
         }
 
@@ -310,14 +317,15 @@ public final class SecurityAgent implements ClassFileTransformer {
     public static void check(Class<?> caller, Class<?> target, String name, String desc)
         throws SecurityException
     {
-        if (caller.getModule() != target.getModule()) {
-            doCheck(caller, target, name, desc);
+        if (caller.getModule() != target.getModule() && !isAllowed(caller, target, name, desc)) {
+            throw new SecurityException();
         }
     }
 
-    private static void doCheck(Class<?> caller, Class<?> target, String name, String desc)
-        throws SecurityException
-    {
+    /**
+     * Note: Module comparison should be performed as a prerequisite.
+     */
+    static boolean isAllowed(Class<?> caller, Class<?> target, String name, String desc) {
         var agent = (SecurityAgent) INSTANCE_H.getAcquire();
 
         if (agent == null) {
@@ -326,27 +334,32 @@ public final class SecurityAgent implements ClassFileTransformer {
 
         Module callerModule = caller.getModule();
 
-        Boolean allowed = agent.mCheckCache
-            .computeIfAbsent(callerModule, k -> new WeakHashMap<>()) // target weak ref
+        return agent.mCheckCache
+            .computeIfAbsent(callerModule, k -> new WeakHashMap<>()) // weak ref to target
             .computeIfAbsent(target, k -> new HashMap<>())
             .computeIfAbsent(name, k -> new HashMap<>())
             .computeIfAbsent(desc, k -> {
-                Checker.ForClass forClass = agent.mController
-                    .checkerForCaller(caller).forClass(target);
+                Checker checker = agent.mController.checkerForCaller(caller);
+                if (checker == null) {
+                    return true;
+                }
+                Checker.ForClass forClass = checker.forClass(target);
                 if (name == null) {
                     return forClass.isConstructorAllowed(desc);
                 } else {
                     return forClass.isMethodAllowed(name, desc);
                 }
             });
+    }
 
-        /*
-        System.out.println("check: " + callerModule + ", " + target + ", " + name + ", " + desc
-                           + ", " + allowed);
-        */
-
-        if (!allowed) {
-            throw new SecurityException();
-        }
+    /**
+     * Returns a Reflection instance corresponding to the current caller.
+     *
+     * @hidden
+     */
+    public static Reflection reflection() {
+        // The caller class cannot be passed in as a parameter, because this is a public
+        // method, and anything can be passed in. Use the WALKER to get the real caller.
+        return new Reflection(WALKER.getCallerClass());
     }
 }

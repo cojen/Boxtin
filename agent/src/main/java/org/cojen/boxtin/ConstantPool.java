@@ -373,12 +373,20 @@ final class ConstantPool {
         return addMemberRef(10, clazz, name, desc);
     }
 
+    C_MemberRef addMethodRef(C_Class clazz, C_NameAndType nat) {
+        return addMemberRef(10, clazz, nat);
+    }
+
     private C_MemberRef addMemberRef(int tag, String className, String name, String desc) {
-        return addConstant(new C_MemberRef(tag, addClass(className), addNameAndType(name, desc)));
+        return addMemberRef(tag, addClass(className), addNameAndType(name, desc));
     }
 
     private C_MemberRef addMemberRef(int tag, C_Class clazz, C_UTF8 name, C_UTF8 desc) {
-        return addConstant(new C_MemberRef(tag, clazz, addNameAndType(name, desc)));
+        return addMemberRef(tag, clazz, addNameAndType(name, desc));
+    }
+
+    private C_MemberRef addMemberRef(int tag, C_Class clazz, C_NameAndType nat) {
+        return addConstant(new C_MemberRef(tag, clazz, nat));
     }
 
     C_NameAndType addNameAndType(String name, String desc) {
@@ -793,6 +801,29 @@ final class ConstantPool {
                     return 1;
                 }
             }
+        }
+
+        /**
+         * Returns true if this method descriptor matches the given descriptor, ignoring any
+         * extra leading parameters it might have. The descriptors must only contain ASCII
+         * characters.
+         */
+        boolean tailMatches(String str) {
+            int length = mLength;
+            int strIndex = str.length();
+
+            if (strIndex >= length) {
+                byte[] buffer = mBuffer;
+                int start = mOffset;
+                for (int offset = start + length; --offset >= start; ) {
+                    int c = buffer[offset] & 0xff;
+                    if (str.charAt(--strIndex) != c) {
+                        return c == '(';
+                    }
+                }
+            }
+
+            return false;
         }
 
         @Override

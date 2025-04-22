@@ -100,6 +100,8 @@ final class ClassFileProcessor {
         }
     }
 
+    private boolean mReflectionChecks;
+
     private Map<Integer, Replacement> mReplacements;
 
     private Map<Integer, C_MemberRef> mNewMethods;
@@ -129,9 +131,11 @@ final class ClassFileProcessor {
      *
      * @param forCaller checker against the class when it's acting as a caller
      * @param forTargetClass checker against the class when it's acting as a target
+     * @param reflectionChecks pass true to perform special caller-side reflection transforms
      * @return true if class requires modification
      */
-    public boolean check(Checker forCaller, Checker.ForClass forTargetClass)
+    public boolean check(Checker forCaller, Checker.ForClass forTargetClass,
+                         boolean reflectionChecks)
         throws IOException, ClassFormatException
     {
         final boolean targetClassChecked = forTargetClass.isTargetChecked()
@@ -142,7 +146,11 @@ final class ClassFileProcessor {
             return false;
         }
 
+        mReflectionChecks = reflectionChecks;
+
         // Check the MethodHandle constants.
+
+        // FIXME: If reflectionChecks is true, MethodHandle constants should honor it too.
 
         mConstantPool.visitMethodHandleRefs(true, (kind, offset, methodRef) -> {
             Checker.ForClass forClass = forClass(forCaller, methodRef);
@@ -562,7 +570,7 @@ final class ClassFileProcessor {
     {
         ConstantPool cp = mConstantPool;
 
-        String agentName = "org/cojen/boxtin/SecurityAgent";
+        String agentName = SecurityAgent.CLASS_NAME;
         String walkerName = StackWalker.class.getName().replace('.', '/');
         String walkerDesc = 'L' + walkerName + ';';
         String classDesc = Class.class.descriptorString();
@@ -873,7 +881,18 @@ final class ClassFileProcessor {
 
             // This point is reached if the code needs to be modified.
 
-            C_MemberRef proxyMethod = addProxyMethod(op, PT_CALLER, methodRef);
+            byte type = PT_CALLER;
+
+            if (mReflectionChecks && methodRef.mClass.mValue.equals("java/lang/Class")) {
+                C_NameAndType nat = Reflection.findMethod(mConstantPool, methodRef);
+                if (nat != null) {
+                    type = PT_REFLECTION;
+                    methodRef = mConstantPool.addMethodRef
+                        (mConstantPool.addClass(Reflection.CLASS_NAME), nat);
+                }
+            }
+
+            C_MemberRef proxyMethod = addProxyMethod(op, type, methodRef);
 
             // Length of the attribute_length, max_stack, max_locals, and code_length fields.
             // They all appear immediately before the first bytecode operation.
@@ -970,6 +989,13 @@ final class ClassFileProcessor {
      *     return this.$boxtin$_someNativeThing(param);
      * }
      *
+     * PT_REFLECTION: Reflection.
+     *
+     * private static Method $7(Class clazz, String name, Class... paramTypes) {
+     *     Reflection r = SecurityAgent.reflection();
+     *     return r.Class_getMethod(clazz, name, paramTypes);
+     * }
+     *
      * @param op must be an INVOKE* or NEW operation
      * @param type PT_*
      */
@@ -1009,7 +1035,11 @@ final class ClassFileProcessor {
             if (proxyMethod != null) {
                 return proxyMethod;
             }
-            proxyDesc = cp.addWithFullSignature(op, methodRef);
+            if (type != PT_REFLECTION) {
+                proxyDesc = cp.addWithFullSignature(op, methodRef);
+            } else {
+                proxyDesc = methodRef.mNameAndType.mTypeDesc;
+            }
             C_Class thisClass = cp.findConstant(mThisClassIndex, C_Class.class);
             proxyMethod = cp.addUniqueMethod(thisClass, proxyDesc);
             proxyName = proxyMethod.mNameAndType.mName;
@@ -1088,6 +1118,19 @@ final class ClassFileProcessor {
                     encoder.writeByte(ALOAD_0);
                     pushed++;
                 }
+            }
+
+            case PT_REFLECTION -> {
+                pushed = 1;
+                maxStack = 1;
+                labelOffset = -1;
+
+                // FIXME: As an optimization, use a static final instance, captured by the
+                // clinit method.
+                encoder.writeByte(INVOKESTATIC);
+                String agentName = SecurityAgent.CLASS_NAME;
+                String desc = "()L" + Reflection.CLASS_NAME + ';';
+                encoder.writeShort(cp.addMethodRef(agentName, "reflection", desc).mIndex);
             }
         }
 
