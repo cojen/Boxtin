@@ -104,7 +104,8 @@ loadScripts(document, 'script');</script>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1"><code>static <a href="RulesApplier.html" title="interface in org.cojen.boxtin">RulesApplier</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab1"><code><a href="#java_base()" class="member-name-link">java_base</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1">
-<div class="block">Returns an applier of rules for the java.base module.</div>
+<div class="block">Returns an applier of rules for the java.base module, which denies operations which
+ could be considered harmful.</div>
 </div>
 </div>
 </div>
@@ -134,7 +135,9 @@ loadScripts(document, 'script');</script>
 <h3>java_base</h3>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="modifiers">static</span>&nbsp;<span class="return-type"><a href="RulesApplier.html" title="interface in org.cojen.boxtin">RulesApplier</a></span>&nbsp;<span class="element-name">java_base</span>()</div>
-<div class="block">Returns an applier of rules for the java.base module.</div>
+<div class="block">Returns an applier of rules for the java.base module, which denies operations which
+ could be considered harmful. This includes file I/O, network I/O, exiting the current
+ process, launching processes, etc.</div>
 </div>
 </section>
 </li>
