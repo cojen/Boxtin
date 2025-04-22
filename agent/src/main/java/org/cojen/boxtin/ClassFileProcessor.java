@@ -160,7 +160,7 @@ final class ClassFileProcessor {
                 if (!forClass.isConstructorAllowed(nat.mTypeDesc)) {
                     op = NEW;
                     // Constructor check is always in the target.
-                    proxyType = 0;
+                    proxyType = PT_MHC;
                 } else {
                     return;
                 }
