@@ -72,7 +72,7 @@ final class Utils {
     /**
      * @return true if the given member is public or protected
      */
-    static boolean isAccessible(Class clazz) {
+    static boolean isAccessible(Class<?> clazz) {
         return isAccessible(clazz.getModifiers());
     }
 
@@ -114,7 +114,7 @@ final class Utils {
     /**
      * Returns the class name with the package name stripped off.
      */
-    static String className(String packageName, Class clazz) {
+    static String className(String packageName, Class<?> clazz) {
         String className = clazz.getName();
         return packageName.isEmpty() ? className : className.substring(packageName.length() + 1);
     }

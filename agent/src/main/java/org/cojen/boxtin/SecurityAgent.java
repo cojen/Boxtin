@@ -89,9 +89,9 @@ public final class SecurityAgent implements ClassFileTransformer {
         inst.addTransformer(agent, true);
         inst.setNativeMethodPrefix(agent, NATIVE_PREFIX);
 
-        var toRetransform = new ArrayList<Class>();
+        var toRetransform = new ArrayList<Class<?>>();
 
-        for (Class loaded : inst.getAllLoadedClasses()) {
+        for (Class<?> loaded : inst.getAllLoadedClasses()) {
             if (!agent.isSpecial(loaded) &&
                 inst.isModifiableClass(loaded) && agent.isTargetChecked(loaded))
             {
@@ -103,14 +103,14 @@ public final class SecurityAgent implements ClassFileTransformer {
         inst.retransformClasses(toRetransform.toArray(Class[]::new));
     }
 
-    private static synchronized SecurityAgent init(String agentArgs) throws Exception {
+    private static synchronized SecurityAgent init(String agentArgs) {
         if (INSTANCE != null) {
             throw new SecurityException();
         }
         return INSTANCE = new SecurityAgent(initController(agentArgs));
     }
 
-    private static Controller initController(String agentArgs) throws Exception {
+    private static Controller initController(String agentArgs) {
         if (agentArgs == null || agentArgs.isEmpty()) {
             return new DefaultController();
         }
@@ -176,17 +176,17 @@ public final class SecurityAgent implements ClassFileTransformer {
 
     private final Controller mController;
 
-    private final Map<Module, Map<Class, Map<String, Map<String, Boolean>>>> mCheckCache;
+    private final Map<Module, Map<Class<?>, Map<String, Map<String, Boolean>>>> mCheckCache;
 
-    private SecurityAgent(Controller contoller) {
-        mController = contoller;
-        mCheckCache = new WeakHashMap<Module, Map<Class, Map<String, Map<String, Boolean>>>>();
+    private SecurityAgent(Controller controller) {
+        mController = controller;
+        mCheckCache = new WeakHashMap<>();
     }
 
     /**
      * Returns true if the given class might need to have target-side checks inserted.
      */
-    private boolean isTargetChecked(Class clazz) {
+    private boolean isTargetChecked(Class<?> clazz) {
         if (Utils.isAccessible(clazz) && clazz.getModule().isExported(clazz.getPackageName())) {
             Checker checker = mController.checkerForTarget();
             if (checker != null) {
@@ -196,7 +196,7 @@ public final class SecurityAgent implements ClassFileTransformer {
         return false;
     }
 
-    private boolean isSpecial(Class clazz) {
+    private boolean isSpecial(Class<?> clazz) {
         return clazz == SecurityAgent.class || clazz == mController.getClass();
     }
 
@@ -280,12 +280,6 @@ public final class SecurityAgent implements ClassFileTransformer {
         }
 
         byte[] bytes = processor.redefine();
-
-        /*
-        if (bytes != null) {
-            System.out.println("  transformed: " + packageName + ", " + className);
-        }
-        */
 
         return bytes;
     }

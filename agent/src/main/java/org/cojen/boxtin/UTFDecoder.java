@@ -67,7 +67,7 @@ final class UTFDecoder extends DataInputStream {
             if (mLengthPos < 2) {
                 return mLengthPos++ == 0 ? (mLength >> 8) & 0xff : (mLength & 0xff);
             } else {
-                return mBuffer[mOffset++];
+                return mBuffer[mOffset++] & 0xff;
             }
         }
 

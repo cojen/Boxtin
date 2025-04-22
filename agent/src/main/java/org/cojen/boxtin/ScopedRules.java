@@ -19,8 +19,6 @@ package org.cojen.boxtin;
 import java.io.IOException;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -87,8 +85,6 @@ final class ScopedRules implements Rules {
 
         printAllowOrDenyAll(a, scopeIndent, mDefaultRule).append('\n');
 
-        var decoder = new UTFDecoder();
-
         if (mPackages != null) {
             String subScopeIndent = scopeIndent + plusIndent;
 
@@ -97,7 +93,7 @@ final class ScopedRules implements Rules {
                 a.append(e.getKey().replace('/', '.'));
                 a.append(" {").append('\n');
 
-                e.getValue().printTo(a, subScopeIndent, plusIndent, decoder);
+                e.getValue().printTo(a, subScopeIndent, plusIndent);
 
                 a.append(scopeIndent).append('}').append('\n');
             }
@@ -150,9 +146,7 @@ final class ScopedRules implements Rules {
             return scope;
         }
 
-        void printTo(Appendable a, String indent, String plusIndent, UTFDecoder decoder)
-            throws IOException
-        {
+        void printTo(Appendable a, String indent, String plusIndent) throws IOException {
             printAllowOrDenyAll(a, indent, mDefaultRule).append('\n');
 
             if (mClasses != null) {
@@ -163,7 +157,7 @@ final class ScopedRules implements Rules {
                     String name = e.getKey().replace('$', '.');
                     a.append(name).append(" {").append('\n');
 
-                    e.getValue().printTo(a, scopeIndent, plusIndent, decoder);
+                    e.getValue().printTo(a, scopeIndent, plusIndent);
 
                     a.append(indent).append('}').append('\n');
                 }
@@ -294,9 +288,7 @@ final class ScopedRules implements Rules {
             return checked && !isAlwaysAllowed(name, descriptor);
         }
 
-        void printTo(Appendable a, String indent, String plusIndent, UTFDecoder decoder)
-            throws IOException
-        {
+        void printTo(Appendable a, String indent, String plusIndent) throws IOException {
             if (mDefaultConstructorRule == mDefaultMethodRule &&
                 mConstructors == null && mMethods == null)
             {
@@ -308,14 +300,13 @@ final class ScopedRules implements Rules {
                 .append(" constructors").append('\n');
 
             if (mConstructors != null && mConstructors.mVariants != null) {
-                mConstructors.printTo(a, indent + plusIndent, plusIndent, decoder);
+                mConstructors.printTo(a, indent + plusIndent);
             }
 
             printAllowOrDenyAll(a, indent, mDefaultMethodRule)
                 .append(" methods").append('\n');
 
             if (mMethods != null) {
-                String scopeIndent = indent + plusIndent;
                 Set<Map.Entry<String, MethodScope>> entries = sortedEntries(mMethods);
                 for (Map.Entry<String, MethodScope> e : entries) {
                     String name = e.getKey();
@@ -323,7 +314,7 @@ final class ScopedRules implements Rules {
                     a.append(indent).append(allowOrDeny(scope.mDefaultRule)).append(' ')
                         .append("method").append(' ').append(name).append('\n');
                     if (scope.mVariants != null) {
-                        scope.printTo(a, indent + plusIndent, plusIndent, decoder);
+                        scope.printTo(a, indent + plusIndent);
                     }
                 }
             }
@@ -398,9 +389,7 @@ final class ScopedRules implements Rules {
             return rule.isTargetChecked();
         }
 
-        void printTo(Appendable a, String indent, String plusIndent, UTFDecoder decoder)
-            throws IOException
-        {
+        void printTo(Appendable a, String indent) throws IOException {
             if (mVariants != null) {
                 for (Map.Entry<String, Rule> e : sortedEntries(mVariants)) {
                     a.append(indent).append(allowOrDeny(e.getValue()));

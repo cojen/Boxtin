@@ -20,8 +20,6 @@ import java.io.IOException;
 
 import java.lang.invoke.MethodHandleInfo;
 
-import java.nio.charset.StandardCharsets;
-
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -103,10 +101,6 @@ final class ConstantPool {
         mEndOffset = decoder.offset();
         mOffsets = offsets;
         mMethodHandleOffsets = methodHandleOffsets;
-    }
-
-    BufferDecoder decoder() {
-        return mDecoder;
     }
 
     byte[] buffer() {
@@ -237,7 +231,7 @@ final class ConstantPool {
         /**
          * @param kind the kind of MethodHandle constant
          * @param offset buffer offset which stores a constant field or method index
-         * @param ref refers to the current MethodHandle info
+         * @param memberRef refers to the current MethodHandle info
          * @see MethodHandleInfo
          */
         void accept(int kind, int offset, C_MemberRef memberRef) throws IOException;
@@ -255,8 +249,8 @@ final class ConstantPool {
 
         byte[] buffer = buffer();
 
-        for (int i=0; i<mMethodHandleOffsets.length; i++) {
-            int offset = mMethodHandleOffsets[i];
+        for (int mMethodHandleOffset : mMethodHandleOffsets) {
+            int offset = mMethodHandleOffset;
 
             if (offset == 0) {
                 break;
@@ -275,7 +269,7 @@ final class ConstantPool {
                 }
 
                 case REF_invokeVirtual, REF_invokeStatic, REF_invokeSpecial,
-                    REF_newInvokeSpecial, REF_invokeInterface ->
+                     REF_newInvokeSpecial, REF_invokeInterface ->
                 {
                     // Okay.
                 }
@@ -300,7 +294,7 @@ final class ConstantPool {
         return mAddedConstants != null;
     }
 
-    private void doExtend() throws IOException {
+    private void doExtend() {
         if (hasBeenExtended()) {
             return;
         }
@@ -345,13 +339,6 @@ final class ConstantPool {
         return size;
     }
 
-    /**
-     * Returns the size of the constant pool, in bytes.
-     */
-    long size() {
-        return originalSize() + growth();
-    }
-
     void writeTo(BufferEncoder encoder) throws IOException, ClassFormatException {
         int count = mOffsets.length + 1;
         if (mAddedConstants != null) {
@@ -368,10 +355,6 @@ final class ConstantPool {
                 c.writeTo(encoder);
             }
         }
-    }
-
-    C_Long addLong(long value) {
-        return addConstant(new C_Long(5, value));
     }
 
     C_Class addClass(String className) {
@@ -417,7 +400,7 @@ final class ConstantPool {
     /**
      * If necessary, adds a type signature constant which has been adapted such that the first
      * argument is an instance type from the given methodRef. If the op is NEW, then a return
-     * type is defined. The extend method must have already been called.
+     * type is defined. The `extend` method must have already been called.
      *
      * @param op must be an INVOKE* or NEW operation
      * @return method type descriptor
@@ -461,7 +444,7 @@ final class ConstantPool {
     }
 
     /**
-     * Adds a constant method reference, with an invented name. The extend method must have
+     * Adds a constant method reference, with an invented name. The `extend` method must have
      * already been called.
      */
     C_MemberRef addUniqueMethod(C_Class clazz, C_UTF8 typeDesc) {
@@ -717,7 +700,7 @@ final class ConstantPool {
 
         /**
          * Assume that the string refers to a method type descriptor, and generate operations
-         * to push all of the arguments to the operand stack.
+         * to push all the arguments to the operand stack.
          *
          * @return number of stack slots pushed
          */
@@ -916,21 +899,8 @@ final class ConstantPool {
     }
 
     static final class C_Class extends C_String {
-        private String mName;
-
         C_Class(int tag, C_UTF8 name) {
             super(tag, name);
-        }
-
-        /**
-         * Returns the name using '.' characters instead of '/' characters.
-         */
-        String name() {
-            String name = mName;
-            if (name == null) {
-                mName = name = mValue.str().replace('/', '.');
-            }
-            return name;
         }
 
         /**

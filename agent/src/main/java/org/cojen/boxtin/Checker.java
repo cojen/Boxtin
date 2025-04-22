@@ -31,7 +31,7 @@ public interface Checker {
     /**
      * @return non-null ForClass instance
      */
-    public default ForClass forClass(Class clazz) {
+    public default ForClass forClass(Class<?> clazz) {
         String packageName = clazz.getPackageName();
         return forClass(packageName.replace('.', '/'), Utils.className(packageName, clazz));
     }

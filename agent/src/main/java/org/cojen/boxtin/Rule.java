@@ -37,7 +37,7 @@ enum Rule implements Checker, Checker.ForClass {
     }
 
     @Override
-    public ForClass forClass(Class clazz) {
+    public ForClass forClass(Class<?> clazz) {
         return this;
     }
 

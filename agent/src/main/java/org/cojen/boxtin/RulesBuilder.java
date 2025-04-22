@@ -23,7 +23,6 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 
@@ -114,7 +113,7 @@ public final class RulesBuilder {
     public RulesBuilder validate(ClassLoader loader)
         throws ClassNotFoundException, NoSuchMethodException
     {
-        // FIXME: Validate inheritence when using caller checks. Also check
+        // FIXME: Validate inheritance when using caller checks. Also check
         // for @CallerSensitive methods, which must rely on caller checks.
 
         Objects.requireNonNull(loader);
@@ -127,7 +126,7 @@ public final class RulesBuilder {
     }
 
     /**
-     * Returns a immutable set of rules based on what's been defined so far.
+     * Returns an immutable set of rules based on what's been defined so far.
      */
     public Rules build() {
         Map<String, ScopedRules.PackageScope> builtPackages;
@@ -150,7 +149,7 @@ public final class RulesBuilder {
     private static String nameFor(Class<?> clazz) {
         String name = clazz.getSimpleName();
         Class<?> enclosing = clazz.getEnclosingClass();
-        return name == null ? name : nameFor(enclosing) + '.' + name;
+        return enclosing == null ? name : nameFor(enclosing) + '.' + name;
     }
 
     private static void checkMethodName(String name) {
@@ -228,10 +227,10 @@ public final class RulesBuilder {
         throw new NoSuchMethodException("Invalid descriptor: " + descriptor);
     }
 
-    private static Constructor tryFindConstructor(final Class<?> clazz,
-                                                  final Class<?>... paramTypes)
+    private static Constructor<?> tryFindConstructor(final Class<?> clazz,
+                                                     final Class<?>... paramTypes)
     {
-        for (Constructor c : clazz.getDeclaredConstructors()) {
+        for (Constructor<?> c : clazz.getDeclaredConstructors()) {
             if (isAccessible(c) && Arrays.equals(c.getParameterTypes(), paramTypes)) {
                 return c;
             }
@@ -458,7 +457,7 @@ public final class RulesBuilder {
         /**
          * Indicate that access checking code should be generated in the target class, which is
          * the default behavior. Checking in the target is less efficient, but the check isn't
-         * affected by inheritence.
+         * affected by inheritance.
          *
          * @return this
          */
@@ -761,7 +760,7 @@ public final class RulesBuilder {
          * @param rule must be CALLER_DENY or TARGET_DENY
          * @return this
          */
-         MethodScope denyVariant(Rule rule, String descriptor) {
+        MethodScope denyVariant(Rule rule, String descriptor) {
             return variantAction(descriptor, rule);
         }
 
