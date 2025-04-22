@@ -166,9 +166,9 @@ final class ClassFileProcessor {
                 }
             } else {
                 if (forClass.isTargetMethodChecked(nat.mName, nat.mTypeDesc)) {
-                    proxyType = 0;
+                    proxyType = PT_MHC;
                 } else if (forClass.isCallerMethodChecked(nat.mName, nat.mTypeDesc)) {
-                    proxyType = 1;
+                    proxyType = PT_CALLER;
                 } else {
                     return;
                 }
@@ -255,7 +255,7 @@ final class ClassFileProcessor {
                 C_Class thisClass = mConstantPool.findConstant(mThisClassIndex, C_Class.class);
                 C_MemberRef methodRef = mConstantPool.addMethodRef(thisClass, newName, desc);
 
-                addProxyMethod(op, (byte) 2, methodRef,
+                addProxyMethod(op, PT_NATIVE, methodRef,
                                access_flags & ~Modifier.NATIVE, name, desc);
             }
 
@@ -873,7 +873,7 @@ final class ClassFileProcessor {
 
             // This point is reached if the code needs to be modified.
 
-            C_MemberRef proxyMethod = addProxyMethod(op, (byte) 1, methodRef);
+            C_MemberRef proxyMethod = addProxyMethod(op, PT_CALLER, methodRef);
 
             // Length of the attribute_length, max_stack, max_locals, and code_length fields.
             // They all appear immediately before the first bytecode operation.
@@ -944,15 +944,17 @@ final class ClassFileProcessor {
         return forCaller.forClass(packageName, className);
     }
 
+    private static final byte PT_MHC = 0, PT_CALLER = 1, PT_NATIVE = 2, PT_REFLECTION = 3;
+
     /**
-     * Proxy type 0: Used by MethodHandle constants with a target-side check, which ensures
-     *               that the correct caller frame is available.
+     * PT_MHC: Used by MethodHandle constants with a target-side check, which ensures that the
+     *         correct caller frame is available.
      *
      * private static File $3(String path) {
      *     return File.open(path);
      * }
      *
-     * Proxy type 1: Basic caller-side check.
+     * PT_CALLER: Basic caller-side check.
      *
      * private static File $3(String path) {
      *     if (thisClass.getModule() != File.class.getModule()) {
@@ -961,7 +963,7 @@ final class ClassFileProcessor {
      *     return File.open(path);
      * }
      *
-     * Proxy type 2: Native method.
+     * PT_NATIVE: Native method.
      *
      * public int someNativeThing(int param) {
      *     SecurityAgent.check(SecurityAgent.WALKER.getCallerClass(), thisClass, name, desc);
@@ -969,6 +971,7 @@ final class ClassFileProcessor {
      * }
      *
      * @param op must be an INVOKE* or NEW operation
+     * @param type PT_*
      */
     private C_MemberRef addProxyMethod(byte op, byte type, C_MemberRef methodRef)
         throws IOException
