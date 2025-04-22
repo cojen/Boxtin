@@ -30,9 +30,10 @@ import java.security.ProtectionDomain;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.WeakHashMap;
+
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * The {@code SecurityAgent} is an instrumentation agent which transforms classes such that
@@ -357,10 +358,12 @@ public final class SecurityAgent implements ClassFileTransformer {
 
         Module callerModule = caller.getModule();
 
+        // FIXME: WeakHashMap isn't thread safe -- use something else.
+
         return agent.mCheckCache
             .computeIfAbsent(callerModule, k -> new WeakHashMap<>()) // weak ref to target
-            .computeIfAbsent(target, k -> new HashMap<>())
-            .computeIfAbsent(name, k -> new HashMap<>())
+            .computeIfAbsent(target, k -> new ConcurrentHashMap<>())
+            .computeIfAbsent(name, k -> new ConcurrentHashMap<>())
             .computeIfAbsent(desc, k -> {
                 Checker checker = agent.mController.checkerForCaller(caller);
                 if (checker == null) {
