@@ -17,7 +17,8 @@
 package org.cojen.boxtin;
 
 /**
- * 
+ * Decides what set of operations should be allowed or denied based on the caller's {@code
+ * Module}.
  *
  * @author Brian S. O'Neill
  */

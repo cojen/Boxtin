@@ -36,6 +36,9 @@ public interface Checker {
         return forClass(packageName.replace('.', '/'), Utils.className(packageName, clazz));
     }
 
+    /**
+     * Checks access to constructors or methods, for a specific class.
+     */
     public static interface ForClass {
         /**
          * Check if any constructor in the class can deny access.

@@ -21,7 +21,7 @@ import java.io.PrintStream;
 import java.io.PrintWriter;
 
 /**
- * 
+ * A Checker which is defined by a set of rules, built using a {@link RulesBuilder}.
  *
  * @author Brian S. O'Neill
  */

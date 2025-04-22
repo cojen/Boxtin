@@ -17,7 +17,7 @@
 package org.cojen.boxtin;
 
 /**
- * 
+ * Defines and applies common sets of rules.
  *
  * @author Brian S. O'Neill
  */

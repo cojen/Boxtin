@@ -35,7 +35,26 @@ import java.util.Map;
 import java.util.WeakHashMap;
 
 /**
- * 
+ * The {@code SecurityAgent} is an instrumentation agent which transforms classes such that
+ * access checks are enforced. For operations which are denied, a {@link SecurityException} is
+ * thrown at runtime.
+ *
+ * <p>The agent can be launched with a custom {@link Controller} as follows:
+ *
+ * <pre>
+ * java -javaagent:Boxtin.jar=my.app.SecurityController ...
+ * </pre>
+ *
+ * If no controller is specified, then a default one is selected which only allows limited
+ * access to the {@link RulesApplier#java_base java.base} module.
+ *
+ * <p>The controller must have a public constructor which has no arguments, or it must have a
+ * public constructor which accepts a single {@code String} argument. To supply a string value,
+ * append it after the controller name:
+ *
+ * <pre>
+ * java -javaagent:Boxtin.jar=my.app.SecurityController=custom.value ...
+ * </pre>
  *
  * @author Brian S. O'Neill
  */
@@ -84,6 +103,10 @@ public final class SecurityAgent implements ClassFileTransformer {
         }
     }
 
+    /**
+     * The premain method should only be called by the instrumentation layer, when the JVM
+     * starts.
+     */
     public static void premain(String agentArgs, Instrumentation inst) throws Exception {
         if (inst == null) {
             throw new NullPointerException();

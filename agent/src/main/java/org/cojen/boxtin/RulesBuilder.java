@@ -30,7 +30,8 @@ import static org.cojen.boxtin.Rule.*;
 import static org.cojen.boxtin.Utils.*;
 
 /**
- * 
+ * Is used to build up a set of access rules, which can then be {@link #build built} into a
+ * usable {@link Rules} instance.
  *
  * @author Brian S. O'Neill
  */
@@ -275,6 +276,9 @@ public final class RulesBuilder {
         return null;
     }
 
+    /**
+     * Builder of rules at the package level.
+     */
     public static final class PackageScope {
         private final RulesBuilder mParent;
         private final String mName;
@@ -413,6 +417,9 @@ public final class RulesBuilder {
         }
     }
 
+    /**
+     * Builder of rules at the class level.
+     */
     public static final class ClassScope {
         private final PackageScope mParent;
         private final String mName;

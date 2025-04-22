@@ -17,7 +17,7 @@
 package org.cojen.boxtin;
 
 /**
- * 
+ * Is thrown when a class being transformed is malformed, or if the transformation failed.
  *
  * @author Brian S. O'Neill
  */
