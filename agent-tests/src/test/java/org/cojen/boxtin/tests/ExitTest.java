@@ -31,6 +31,24 @@ public class ExitTest {
         org.junit.runner.JUnitCore.main(ExitTest.class.getName());
     }
 
+    private static final SecurityException INIT_EX;
+
+    static {
+        SecurityException ex;
+        try {
+            System.exit(1);
+            ex = null;
+        } catch (SecurityException e) {
+            ex = e;
+        }
+        INIT_EX = ex;
+    }
+
+    @Test
+    public void clinit() {
+        assertNotNull(INIT_EX);
+    }
+
     @Test
     public void system() throws Exception {
         try {
