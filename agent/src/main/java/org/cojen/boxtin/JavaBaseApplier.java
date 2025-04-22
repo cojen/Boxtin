@@ -17,9 +17,11 @@
 package org.cojen.boxtin;
 
 /**
- * 
+ * Defines a set of rules to deny operations in the java.base module which could be considered
+ * harmful.
  *
  * @author Brian S. O'Neill
+ * @see RulesApplier#java_base
  */
 final class JavaBaseApplier implements RulesApplier {
     @Override

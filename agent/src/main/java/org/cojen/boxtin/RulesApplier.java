@@ -28,7 +28,9 @@ public interface RulesApplier {
     public void applyRulesTo(RulesBuilder builder);
 
     /**
-     * Returns an applier of rules for the java.base module.
+     * Returns an applier of rules for the java.base module, which denies operations which
+     * could be considered harmful. This includes file I/O, network I/O, exiting the current
+     * process, launching processes, etc.
      */
     public static RulesApplier java_base() {
         return new JavaBaseApplier();
