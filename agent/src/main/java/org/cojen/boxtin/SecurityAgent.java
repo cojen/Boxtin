@@ -66,11 +66,15 @@ public final class SecurityAgent implements ClassFileTransformer {
 
     static final String NATIVE_PREFIX = "$boxtin$_";
 
+    private static final String BOXTIN_PACKAGE;
+
     private static volatile SecurityAgent INSTANCE;
 
     private static final VarHandle INSTANCE_H;
 
     static {
+        BOXTIN_PACKAGE = SecurityAgent.class.getPackageName().replace('.', '/');
+
         try {
             INSTANCE_H = MethodHandles.lookup()
                 .findStaticVarHandle(SecurityAgent.class, "INSTANCE", SecurityAgent.class);
@@ -197,6 +201,7 @@ public final class SecurityAgent implements ClassFileTransformer {
     }
 
     private boolean isSpecial(Class<?> clazz) {
+        // These classes won't be transformed.
         return clazz == SecurityAgent.class || clazz == mController.getClass();
     }
 
@@ -232,8 +237,10 @@ public final class SecurityAgent implements ClassFileTransformer {
             return null;
         }
 
+        ClassLoader loader = module.getClassLoader();
+
         Checker forCaller;
-        if (module.getClassLoader() == null) {
+        if (loader == null) {
             // Classes loaded by the bootstrap class loader are allowed to call anything.
             forCaller = Rule.ALLOW;
         } else {
@@ -252,10 +259,16 @@ public final class SecurityAgent implements ClassFileTransformer {
             return null;
         }
 
-        String packageName;
+        final String packageName;
+
         {
             int index = className.lastIndexOf('/');
             packageName = index < 0 ? "" : className.substring(0, index);
+
+            if (loader == null && packageName.equals(BOXTIN_PACKAGE)) {
+                // No need to transform packages in this package.
+                return null;
+            }
 
             if (forTarget != Rule.ALLOW && !module.isExported(packageName.replace('/', '.'))) {
                 // If the package isn't exported, then it cannot be called outside the module.
