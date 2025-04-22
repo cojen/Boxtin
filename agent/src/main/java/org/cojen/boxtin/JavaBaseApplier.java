@@ -231,8 +231,8 @@ final class JavaBaseApplier implements RulesApplier {
             .end()
 
             .forClass("Thread")
+            .denyAll()
             .allowAllConstructors()
-            .denyAllMethods()
             .allowMethod("currentThread")
             .allowMethod("dumpStack")
             .allowMethod("getDefaultUncaughtExceptionHandler")
