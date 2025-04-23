@@ -678,7 +678,7 @@ public final class RulesBuilder {
             Class<?> clazz = loader.loadClass(className);
 
             if (mConstructors != null) {
-                mConstructors.validateConstuctor(loader, clazz);
+                mConstructors.validateConstructor(loader, clazz);
             }
 
             if (mMethods != null) {
@@ -811,7 +811,7 @@ public final class RulesBuilder {
             return this;
         }
 
-        void validateConstuctor(ClassLoader loader, Class<?> clazz)
+        void validateConstructor(ClassLoader loader, Class<?> clazz)
             throws ClassNotFoundException, NoSuchMethodException
         {
             if (isEmpty(mVariants)) {

@@ -68,7 +68,7 @@ final class ScopedRules implements Rules {
     }
 
     @Override
-    public ForClass forClass(Class clazz) {
+    public ForClass forClass(Class<?> clazz) {
         String packageName = clazz.getPackageName();
         PackageScope scope;
         if (mPackages == null || (scope = mPackages.get(packageName.replace('.', '/'))) == null) {
@@ -464,7 +464,7 @@ final class ScopedRules implements Rules {
 
                 case 'L' -> {
                     pos++;
-                    int end  = descriptor.indexOf(';', pos);
+                    int end = descriptor.indexOf(';', pos);
                     if (end < 0) {
                         return 0;
                     }

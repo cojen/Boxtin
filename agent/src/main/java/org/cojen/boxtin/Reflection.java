@@ -28,7 +28,7 @@ import static org.cojen.boxtin.ConstantPool.*;
 
 /**
  * Provides checked access to reflection features. Attempting to access a constructor or method
- * which is denied causes a exception to be thrown. When accessing an array of constructors or
+ * which is denied causes an exception to be thrown. When accessing an array of constructors or
  * methods, the denied ones are filtered out -- no exception is thrown.
  *
  * @author Brian S. O'Neill
@@ -53,7 +53,6 @@ public final class Reflection {
 
     /**
      * @param cp constant can be added into here
-     * @param className fully qualified class name with '/' separators
      * @return method to call, or else null
      */
     static C_NameAndType findMethod(ConstantPool cp, C_MemberRef methodRef) {
