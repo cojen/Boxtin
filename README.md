@@ -151,6 +151,10 @@ Access is guarded when `Constructor` and `Method` instances are acquired, and no
 
 TBD
 
+### IllegalCallerException
+
+When the `main` method is called, or when a thread is started by directly overriding the `run` method, no caller frame exists, and so an `IllegalCallerException` is thrown. Currently, the only way to prevent this from happening is to create a special rule for allowing the primordial method. Ideally, the caller frame in this case should be the current frame, but the stack walker cannot be configured that way. A better solution is needed.
+
 ## Object methods
 
 The common `hashCode`, `equals`, and `toString` methods cannot be denied, even when done so explicitly. Access cannot be denied with a caller-side check, because a cast to `Object` will circumvent it. A target-side check might work, but it's still very odd to deny access to these common methods.
