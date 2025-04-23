@@ -219,7 +219,7 @@ public final class SecurityAgent implements ClassFileTransformer {
      */
     private boolean isTargetChecked(Class<?> clazz) {
         if (Utils.isAccessible(clazz) && clazz.getModule().isExported(clazz.getPackageName())) {
-            Checker checker = mController.checkerForTarget();
+            Checker checker = mController.checkerForTarget(clazz);
             if (checker != null) {
                 return checker.forClass(clazz).isTargetChecked();
             }
@@ -277,7 +277,7 @@ public final class SecurityAgent implements ClassFileTransformer {
             }
         }
 
-        Checker forTarget = mController.checkerForTarget();
+        Checker forTarget = mController.checkerForTarget(module, className);
         if (forTarget == null) {
             forTarget = Rule.ALLOW;
         }

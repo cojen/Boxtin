@@ -29,8 +29,10 @@ final class DefaultController implements Controller {
 
         String command = System.getProperty("sun.java.command");
         if (command != null) {
-            // Allow access to the main method. Otherwise, an IllegalCallerException is thrown
-            // because the main method doesn't have a caller.
+            // Allow access to the main method. Otherwise, an IllegalCallerException can be
+            // thrown because the main method doesn't have a caller. This doesn't happen if the
+            // main method is in an unnamed module, because the checkerForTarget method
+            // returns null (allow all) for unnamed modules.
             int endIndex = command.indexOf(' ');
             if (endIndex < 0) {
                 endIndex = command.length();
@@ -50,7 +52,7 @@ final class DefaultController implements Controller {
     }
 
     @Override
-    public Checker checkerForTarget() {
-        return mRules;
+    public Checker checkerForTarget(Module module) {
+        return module.isNamed() ? mRules : null;
     }
 }

@@ -57,12 +57,39 @@ public interface Controller {
         return checkerForCaller(clazz.getModule());
     }
 
+    // FIXME: The checkerForTarget result is generally supposed to be the "union" of all
+    // denials, of all rule sets. Does this mean that the method should be renamed? Should
+    // other methods be provided? Define utilities for combining rule sets?
+
     /**
      * Returns a Checker which is used to apply changes to classes which have deniable
      * operations.
      *
+     * @param module the target's module
      * @return a checker instance, which can be null if all operations are allowed
      */
-    // FIXME: This is supposed to be the "union" of all denials, of all rule sets.
-    public Checker checkerForTarget();
+    public Checker checkerForTarget(Module module);
+
+    /**
+     * Returns a Checker which is used to apply changes to classes which have deniable
+     * operations.
+     *
+     * @param module the target's module
+     * @param className the target's class name, using '/' separators for packages
+     * @return a checker instance, which can be null if all operations are allowed
+     */
+    public default Checker checkerForTarget(Module module, String className) {
+        return checkerForTarget(module);
+    }
+
+    /**
+     * Returns a Checker which is used to apply changes to classes which have deniable
+     * operations.
+     *
+     * @param clazz the target class
+     * @return a checker instance, which can be null if all operations are allowed
+     */
+    public default Checker checkerForTarget(Class<?> clazz) {
+        return checkerForTarget(clazz.getModule());
+    }
 }
