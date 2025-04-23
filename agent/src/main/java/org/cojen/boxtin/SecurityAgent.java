@@ -35,6 +35,8 @@ import java.util.WeakHashMap;
 
 import java.util.concurrent.ConcurrentHashMap;
 
+import static java.util.Collections.synchronizedMap;
+
 /**
  * The {@code SecurityAgent} is an instrumentation agent which transforms classes such that
  * access checks are enforced. For operations which are denied, a {@link SecurityException} is
@@ -209,7 +211,7 @@ public final class SecurityAgent implements ClassFileTransformer {
 
     private SecurityAgent(Controller controller) {
         mController = controller;
-        mCheckCache = new WeakHashMap<>();
+        mCheckCache = synchronizedMap(new WeakHashMap<>());
     }
 
     /**
@@ -358,12 +360,11 @@ public final class SecurityAgent implements ClassFileTransformer {
 
         Module callerModule = caller.getModule();
 
-        // FIXME: WeakHashMap isn't thread safe -- use something else.
-
         return agent.mCheckCache
-            .computeIfAbsent(callerModule, k -> new WeakHashMap<>()) // weak ref to target
-            .computeIfAbsent(target, k -> new ConcurrentHashMap<>())
-            .computeIfAbsent(name, k -> new ConcurrentHashMap<>())
+            // weak ref to target
+            .computeIfAbsent(callerModule, k -> synchronizedMap(new WeakHashMap<>(4)))
+            .computeIfAbsent(target, k -> new ConcurrentHashMap<>(4))
+            .computeIfAbsent(name == null ? "<init>" : name, k -> new ConcurrentHashMap<>(4))
             .computeIfAbsent(desc, k -> {
                 Checker checker = agent.mController.checkerForCaller(caller);
                 if (checker == null) {
