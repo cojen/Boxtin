@@ -19,6 +19,7 @@ package org.cojen.boxtin;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.lang.instrument.Instrumentation;
+import java.lang.instrument.UnmodifiableClassException;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
@@ -47,9 +48,9 @@ import static java.util.Collections.synchronizedMap;
  * <pre>
  * java -javaagent:Boxtin.jar=my.app.SecurityController ...
  * </pre>
- *
- * If no controller is specified, then a default one is selected which only allows limited
- * access to the {@link RulesApplier#java_base java.base} module.
+ * 
+ * <p>If the controller is specified as "default", then a default one is selected which only
+ * allows limited access to the {@link RulesApplier#java_base java.base} module.
  *
  * <p>The controller must have a public constructor which has no arguments, or it must have a
  * public constructor which accepts a single {@code String} argument. To supply a string value,
@@ -58,6 +59,9 @@ import static java.util.Collections.synchronizedMap;
  * <pre>
  * java -javaagent:Boxtin.jar=my.app.SecurityController=custom.value ...
  * </pre>
+ *
+ * <p>If no controller is specified, then then the {@link #activate activate} method must be
+ * called later, preferably from the main method.
  *
  * @author Brian S. O'Neill
  */
@@ -90,17 +94,20 @@ public final class SecurityAgent implements ClassFileTransformer {
 
     static final String CLASS_NAME, BOXTIN_PACKAGE;
 
-    private static volatile SecurityAgent INSTANCE;
+    private static Instrumentation cInst;
 
-    private static final VarHandle INSTANCE_H;
+    private static volatile SecurityAgent cAgent;
+
+    private static final VarHandle AGENT_H;
 
     static {
         CLASS_NAME = SecurityAgent.class.getName().replace('.', '/');
         BOXTIN_PACKAGE = SecurityAgent.class.getPackageName().replace('.', '/');
 
+
         try {
-            INSTANCE_H = MethodHandles.lookup()
-                .findStaticVarHandle(SecurityAgent.class, "INSTANCE", SecurityAgent.class);
+            AGENT_H = MethodHandles.lookup()
+                .findStaticVarHandle(SecurityAgent.class, "cAgent", SecurityAgent.class);
         } catch (Throwable e) {
             throw new ExceptionInInitializerError(e);
         }
@@ -110,40 +117,32 @@ public final class SecurityAgent implements ClassFileTransformer {
      * The premain method should only be called by the instrumentation layer, when the JVM
      * starts.
      */
-    public static void premain(String agentArgs, Instrumentation inst) throws Exception {
-        if (inst == null) {
-            throw new NullPointerException();
-        }
-
-        SecurityAgent agent = init(agentArgs);
-
-        inst.addTransformer(agent, true);
-        inst.setNativeMethodPrefix(agent, NATIVE_PREFIX);
-
-        var toRetransform = new ArrayList<Class<?>>();
-
-        for (Class<?> loaded : inst.getAllLoadedClasses()) {
-            if (!agent.isSpecial(loaded) &&
-                inst.isModifiableClass(loaded) && agent.isTargetChecked(loaded))
-            {
-                toRetransform.add(loaded);
+    public static void premain(String agentArgs, Instrumentation inst) {
+        synchronized (SecurityAgent.class) {
+            if (cInst != null) {
+                // Already called.
+                throw new SecurityException();
             }
+            if (inst == null) {
+                throw new NullPointerException();
+            }
+            cInst = inst;
         }
 
-        // FIXME: Check if any classes were loaded on demand and got skipped.
-        inst.retransformClasses(toRetransform.toArray(Class[]::new));
-    }
+        Controller controller = initController(agentArgs);
 
-    private static synchronized SecurityAgent init(String agentArgs) {
-        if (INSTANCE != null) {
-            throw new SecurityException();
+        if (controller != null) {
+            activate(controller);
         }
-        return INSTANCE = new SecurityAgent(initController(agentArgs));
     }
 
     private static Controller initController(String agentArgs) {
         if (agentArgs == null || agentArgs.isEmpty()) {
-            return new DefaultController();
+            return null;
+        }
+
+        if ("default".equals(agentArgs)) {
+            return new DefaultController(true);
         }
 
         String controllerName, controllerArgs;
@@ -205,6 +204,75 @@ public final class SecurityAgent implements ClassFileTransformer {
         }
     }
 
+    /**
+     * Activate the security agent if not already done so. Activation should be done as early
+     * as possible, because some classes which have already been loaded might not be
+     * transformable.
+     *
+     * @param controller if null, a default one is used which only allows limited access to the
+     * {@link RulesApplier#java_base java.base} module
+     * @throws IllegalStateException if the SecurityAgent wasn't loaded
+     * @throws SecurityException if already activated
+     */
+    public static void activate(Controller controller) {
+        if (!tryActivate(controller)) {
+            throw new SecurityException();
+        }
+    }
+
+    /**
+     * Activate the security agent if not already done so. Activation should be done as early
+     * as possible, because some classes which have already been loaded might not be
+     * transformable.
+     *
+     * @param controller if null, a default one is used which only allows limited access to the
+     * {@link RulesApplier#java_base java.base} module
+     * @throws IllegalStateException if the SecurityAgent wasn't loaded
+     * @return false if already activated
+     */
+    public static boolean tryActivate(Controller controller) {
+        if (controller == null) {
+            controller = new DefaultController(false);
+        }
+
+        Instrumentation inst;
+        SecurityAgent agent;
+
+        synchronized (SecurityAgent.class) {
+            if ((inst = cInst) == null) {
+                throw new IllegalStateException("SecurityAgent must be loaded using -javaagent");
+            }
+            if (cAgent != null) {
+                // Already activated.
+                return false;
+            }
+            cAgent = agent = new SecurityAgent(controller);
+        }
+
+        inst.addTransformer(agent, true);
+        inst.setNativeMethodPrefix(agent, NATIVE_PREFIX);
+
+        var toRetransform = new ArrayList<Class<?>>();
+
+        for (Class<?> loaded : inst.getAllLoadedClasses()) {
+            if (!agent.isSpecial(loaded) &&
+                inst.isModifiableClass(loaded) && agent.isTargetChecked(loaded))
+            {
+                toRetransform.add(loaded);
+            }
+        }
+
+        try {
+            // FIXME: Check if any classes were loaded on demand and got skipped.
+            inst.retransformClasses(toRetransform.toArray(Class[]::new));
+        } catch (UnmodifiableClassException e) {
+            // FIXME: How to report this? How to deal with classes that got skipped?
+            e.printStackTrace();
+        }
+
+        return true;
+    }
+
     private final Controller mController;
 
     private final Map<Module, Map<Class<?>, Map<String, Map<String, Boolean>>>> mCheckCache;
@@ -247,7 +315,6 @@ public final class SecurityAgent implements ClassFileTransformer {
             // FIXME: Any exception thrown from this method is discarded! That's bad! Instead,
             // return a new class which throws a SecurityException from every method and
             // constructor.
-            System.out.println("***");
             e.printStackTrace();
             if (e instanceof IllegalClassFormatException ex) {
                 throw ex;
@@ -352,7 +419,7 @@ public final class SecurityAgent implements ClassFileTransformer {
      * Note: Module comparison should be performed as a prerequisite.
      */
     static boolean isAllowed(Class<?> caller, Class<?> target, String name, String desc) {
-        var agent = (SecurityAgent) INSTANCE_H.getAcquire();
+        var agent = (SecurityAgent) AGENT_H.getAcquire();
 
         if (agent == null) {
             throw new SecurityException();

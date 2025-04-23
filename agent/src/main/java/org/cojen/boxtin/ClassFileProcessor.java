@@ -881,6 +881,8 @@ final class ClassFileProcessor {
 
             // This point is reached if the code needs to be modified.
 
+            mConstantPool.extend();
+
             byte type = PT_CALLER;
 
             if (mReflectionChecks && methodRef.mClass.mValue.equals("java/lang/Class")) {
