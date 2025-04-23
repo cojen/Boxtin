@@ -149,7 +149,7 @@ Access is guarded when `Constructor` and `Method` instances are acquired, and no
 
 ### MethodHandles
 
-TBD
+Special `MethodHandle` checks aren't implemented yet, but they'll likely follow the same strategy as for reflection.
 
 ### IllegalCallerException
 
