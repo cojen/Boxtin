@@ -153,7 +153,7 @@ TBD
 
 ### IllegalCallerException
 
-When the `main` method is called, or when a thread is started by directly overriding the `run` method, no caller frame exists, and so an `IllegalCallerException` is thrown. Currently, the only way to prevent this from happening is to create a special rule for allowing the primordial method. Ideally, the caller frame in this case should be the current frame, but the stack walker cannot be configured that way. A better solution is needed.
+When the `main` method is called, or when a thread is started by directly overriding the `run` method, no caller frame exists, and so an `IllegalCallerException` is thrown. Currently, the only way to prevent this from happening is to create a special rule for allowing the primordial method. One option is to capture the caller frame that invoked the start method, and save it in a special field. When the run method is called and it has no caller, check the caller of the start method. This technique requires special logic to determine if the class extends Thread, but the transform won't work if the class is already loaded -- the special field cannot be added.
 
 ## Object methods
 
