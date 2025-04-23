@@ -20,6 +20,7 @@ Boxtin is designed to restrict operations for "plugins", much like the original 
 - Boxtin is a shallow sandbox, which means it only checks the immediate caller in a stack trace. The original Java security manager checked all frames within the trace, which seemed like a good idea at the time, but in practice it was too complicated. The [`AccessController.doPrivileged`](https://docs.oracle.com/en/java/javase/23/docs/api/java.base/java/security/AccessController.html) methods were intended for handling special cases, but it they were actually used over 1200 times in the JDK. What was expected to be an exceptional case ended up being the normal case.
 - Rules are defined entirely by the host environment, and so the libraries it depends on aren't expected to require any modifications.
 - The rules strictly allow or deny access to a constructor or method, and they cannot perform any special "filtering" operations. If a plugin wishes to open a file, but the operation is generally denied, then the plugin must ask the host environment to open the file on its behalf. The host environment is responsible for performing the necessary path filtering checks.
+- Rules are selected by module, not by code source or protection domain.
 
 A _caller_ is the plugin code, represented by a [module](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Module.html), possibly unnamed. A _target_ is the code which is being called by the caller, represented by a rule. A rule logically maps target methods or constructors to an "allow" or "deny" outcome.
 
