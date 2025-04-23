@@ -29,7 +29,7 @@ import java.util.TreeMap;
 import static org.cojen.boxtin.Utils.*;
 
 /**
- * 
+ * Defines an immutable set of rules.
  *
  * @author Brian S. O'Neill
  */
