@@ -9,11 +9,7 @@ Boxtin provides an [instrumentation agent](https://docs.oracle.com/en/java/javas
 java -javaagent:Boxtin.jar=my.app.SecurityController ...
 ```
 
-If no controller is specified, then a default is selected which only allows limited access to the [`java.base`](https://github.com/cojen/Boxtin/blob/main/agent/src/main/java/org/cojen/boxtin/JavaBaseApplier.java) module.
-
-```
-java -javaagent:Boxtin.jar ...
-```
+If the controller is specified as "default", then a default is selected which only allows limited access to the [`java.base`](https://github.com/cojen/Boxtin/blob/main/agent/src/main/java/org/cojen/boxtin/JavaBaseApplier.java) module. If no controller is specified, then then the [`activate`](https://github.com/cojen/Boxtin/blob/96e3cdd4d8cfc832f8b5600d2f863679b36437b4/agent/src/main/java/org/cojen/boxtin/SecurityAgent.java#L207) method must be called later, preferably from the main method.
 
 Boxtin is designed to restrict operations for "plugins", much like the original security manager was designed for restricting applet permissions. There are a few key differences, however:
 
@@ -153,7 +149,7 @@ Special `MethodHandle` checks aren't implemented yet, but they'll likely follow 
 
 ### IllegalCallerException
 
-When the `main` method is called, or when a thread is started by directly overriding the `run` method, no caller frame exists, and so an `IllegalCallerException` is thrown. Currently, the only way to prevent this from happening is to create a special rule for allowing the primordial method. One option is to capture the caller frame that invoked the start method, and save it in a special field. When the run method is called and it has no caller, check the caller of the start method. This technique requires special logic to determine if the class extends Thread, but the transform won't work if the class is already loaded -- the special field cannot be added.
+When a thread is started by directly overriding the `run` method, no caller frame exists, and so an `IllegalCallerException` is thrown. Currently, the only way to prevent this from happening is to create a special rule for allowing the primordial method. One option is to capture the caller frame that invoked the start method, and save it in a special field. When the run method is called and it has no caller, check the caller of the start method. This technique requires special logic to determine if the class extends Thread, but the transform won't work if the class is already loaded -- the special field cannot be added.
 
 ## Object methods
 
