@@ -33,7 +33,7 @@ import static org.cojen.boxtin.Utils.*;
  *
  * @author Brian S. O'Neill
  */
-final class ScopedRules implements Rules {
+final class RuleSet implements Rules {
     // Is null when empty.
     private final Map<String, PackageScope> mPackages;
 
@@ -43,7 +43,7 @@ final class ScopedRules implements Rules {
     /**
      * @param packages package names must have '/' characters as separators
      */
-    ScopedRules(Map<String, PackageScope> packages, Rule defaultRule) {
+    RuleSet(Map<String, PackageScope> packages, Rule defaultRule) {
         if (packages != null && packages.isEmpty()) {
             packages = null;
         }
@@ -53,7 +53,7 @@ final class ScopedRules implements Rules {
 
     @Override
     public boolean equals(Object obj) {
-        return this == obj || obj instanceof ScopedRules other
+        return this == obj || obj instanceof RuleSet other
             && mDefaultRule == other.mDefaultRule
             && Objects.equals(mPackages, other.mPackages);
     }

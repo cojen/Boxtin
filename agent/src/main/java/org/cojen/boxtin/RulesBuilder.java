@@ -130,21 +130,21 @@ public final class RulesBuilder {
      * Returns an immutable set of rules based on what's been defined so far.
      */
     public Rules build() {
-        Map<String, ScopedRules.PackageScope> builtPackages;
+        Map<String, RuleSet.PackageScope> builtPackages;
 
         if (isEmpty(mPackages)) {
             builtPackages = null;
         } else {
             builtPackages = new HashMap<>();
             for (Map.Entry<String, PackageScope> e : mPackages.entrySet()) {
-                ScopedRules.PackageScope scope = e.getValue().build(mDefaultRule);
+                RuleSet.PackageScope scope = e.getValue().build(mDefaultRule);
                 if (scope != null) {
                     builtPackages.put(e.getKey().replace('.', '/').intern(), scope);
                 }
             }
         }
 
-        return new ScopedRules(builtPackages, mDefaultRule);
+        return new RuleSet(builtPackages, mDefaultRule);
     }
 
     private static String nameFor(Class<?> clazz) {
@@ -394,26 +394,26 @@ public final class RulesBuilder {
         /**
          * @return null if redundant
          */
-        private ScopedRules.PackageScope build(Rule parentRule) {
+        private RuleSet.PackageScope build(Rule parentRule) {
             if (isEmpty(mClasses) && parentRule == mDefaultRule) {
                 return null;
             }
 
-            Map<String, ScopedRules.ClassScope> builtClasses;
+            Map<String, RuleSet.ClassScope> builtClasses;
 
             if (isEmpty(mClasses)) {
                 builtClasses = null;
             } else {
                 builtClasses = new HashMap<>();
                 for (Map.Entry<String, ClassScope> e : mClasses.entrySet()) {
-                    ScopedRules.ClassScope scope = e.getValue().build(mDefaultRule);
+                    RuleSet.ClassScope scope = e.getValue().build(mDefaultRule);
                     if (scope != null) {
                         builtClasses.put(e.getKey().intern(), scope);
                     }
                 }
             }
 
-            return new ScopedRules.PackageScope(builtClasses, mDefaultRule);
+            return new RuleSet.PackageScope(builtClasses, mDefaultRule);
         }
     }
 
@@ -702,14 +702,14 @@ public final class RulesBuilder {
         /**
          * @return null if redundant
          */
-        private ScopedRules.ClassScope build(Rule parentRule) {
+        private RuleSet.ClassScope build(Rule parentRule) {
             if (mConstructors == null && isEmpty(mMethods) &&
                 parentRule == mDefaultConstructorRule && parentRule == mDefaultMethodRule)
             {
                 return null;
             }
 
-            ScopedRules.MethodScope builtConstructors;
+            RuleSet.MethodScope builtConstructors;
 
             if (mConstructors == null) {
                 builtConstructors = null;
@@ -717,22 +717,22 @@ public final class RulesBuilder {
                 builtConstructors = mConstructors.build(mDefaultConstructorRule);
             }
 
-            Map<String, ScopedRules.MethodScope> builtMethods;
+            Map<String, RuleSet.MethodScope> builtMethods;
 
             if (isEmpty(mMethods)) {
                 builtMethods = null;
             } else {
                 builtMethods = new HashMap<>();
                 for (Map.Entry<String, MethodScope> e : mMethods.entrySet()) {
-                    ScopedRules.MethodScope scope = e.getValue().build(mDefaultMethodRule);
+                    RuleSet.MethodScope scope = e.getValue().build(mDefaultMethodRule);
                     if (scope != null) {
                         builtMethods.put(e.getKey().intern(), scope);
                     }
                 }
             }
 
-            return new ScopedRules.ClassScope(builtConstructors, mDefaultConstructorRule,
-                                              builtMethods, mDefaultMethodRule); 
+            return new RuleSet.ClassScope(builtConstructors, mDefaultConstructorRule,
+                                          builtMethods, mDefaultMethodRule); 
         }
     }
 
@@ -868,11 +868,11 @@ public final class RulesBuilder {
         /**
          * @return null if redundant
          */
-        private ScopedRules.MethodScope build(Rule parentRule) {
+        private RuleSet.MethodScope build(Rule parentRule) {
             if (isEmpty(mVariants) && mDefaultRule == parentRule) {
                 return null;
             }
-            return new ScopedRules.MethodScope(mVariants, mDefaultRule);
+            return new RuleSet.MethodScope(mVariants, mDefaultRule);
         }
     }
 }
