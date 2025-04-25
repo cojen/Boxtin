@@ -68,9 +68,7 @@ loadScripts(document, 'script');</script>
 <li><a href="#checkerForCaller(java.lang.Module)" tabindex="0">checkerForCaller(Module)</a></li>
 <li><a href="#checkerForCaller(java.lang.Module,java.lang.String)" tabindex="0">checkerForCaller(Module, String)</a></li>
 <li><a href="#checkerForCaller(java.lang.Class)" tabindex="0">checkerForCaller(Class)</a></li>
-<li><a href="#checkerForTarget(java.lang.Module)" tabindex="0">checkerForTarget(Module)</a></li>
-<li><a href="#checkerForTarget(java.lang.Module,java.lang.String)" tabindex="0">checkerForTarget(Module, String)</a></li>
-<li><a href="#checkerForTarget(java.lang.Class)" tabindex="0">checkerForTarget(Class)</a></li>
+<li><a href="#checkerForTarget()" tabindex="0">checkerForTarget()</a></li>
 </ol>
 </li>
 </ol>
@@ -120,22 +118,9 @@ loadScripts(document, 'script');</script>
 <div class="block">Returns a Checker which is used to determine if a calling module is allowed to perform
  an operation.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="Checker.html" title="interface in org.cojen.boxtin">Checker</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#checkerForTarget(java.lang.Class)" class="member-name-link">checkerForTarget</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;?&gt;&nbsp;clazz)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
-<div class="block">Returns a Checker which is used to apply changes to classes which have deniable
- operations.</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="Checker.html" title="interface in org.cojen.boxtin">Checker</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#checkerForTarget(java.lang.Module)" class="member-name-link">checkerForTarget</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Module.html" title="class or interface in java.lang" class="external-link">Module</a>&nbsp;module)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
-<div class="block">Returns a Checker which is used to apply changes to classes which have deniable
- operations.</div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="Checker.html" title="interface in org.cojen.boxtin">Checker</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#checkerForTarget(java.lang.Module,java.lang.String)" class="member-name-link">checkerForTarget</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Module.html" title="class or interface in java.lang" class="external-link">Module</a>&nbsp;module,
- <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;className)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="Checker.html" title="interface in org.cojen.boxtin">Checker</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#checkerForTarget()" class="member-name-link">checkerForTarget</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Returns a Checker which is used to apply changes to classes which have deniable
  operations.</div>
 </div>
@@ -206,49 +191,13 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="checkerForTarget(java.lang.Module)">
+<section class="detail" id="checkerForTarget()">
 <h3>checkerForTarget</h3>
 <div class="horizontal-scroll">
-<div class="member-signature"><span class="return-type"><a href="Checker.html" title="interface in org.cojen.boxtin">Checker</a></span>&nbsp;<span class="element-name">checkerForTarget</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Module.html" title="class or interface in java.lang" class="external-link">Module</a>&nbsp;module)</span></div>
+<div class="member-signature"><span class="return-type"><a href="Checker.html" title="interface in org.cojen.boxtin">Checker</a></span>&nbsp;<span class="element-name">checkerForTarget</span>()</div>
 <div class="block">Returns a Checker which is used to apply changes to classes which have deniable
  operations.</div>
 <dl class="notes">
-<dt>Parameters:</dt>
-<dd><code>module</code> - the target's module</dd>
-<dt>Returns:</dt>
-<dd>a checker instance, which can be null if all operations are allowed</dd>
-</dl>
-</div>
-</section>
-</li>
-<li>
-<section class="detail" id="checkerForTarget(java.lang.Module,java.lang.String)">
-<h3>checkerForTarget</h3>
-<div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="Checker.html" title="interface in org.cojen.boxtin">Checker</a></span>&nbsp;<span class="element-name">checkerForTarget</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Module.html" title="class or interface in java.lang" class="external-link">Module</a>&nbsp;module,
- <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;className)</span></div>
-<div class="block">Returns a Checker which is used to apply changes to classes which have deniable
- operations.</div>
-<dl class="notes">
-<dt>Parameters:</dt>
-<dd><code>module</code> - the target's module, which is named</dd>
-<dd><code>className</code> - the target's class name, using '/' separators for packages</dd>
-<dt>Returns:</dt>
-<dd>a checker instance, which can be null if all operations are allowed</dd>
-</dl>
-</div>
-</section>
-</li>
-<li>
-<section class="detail" id="checkerForTarget(java.lang.Class)">
-<h3>checkerForTarget</h3>
-<div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="Checker.html" title="interface in org.cojen.boxtin">Checker</a></span>&nbsp;<span class="element-name">checkerForTarget</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;?&gt;&nbsp;clazz)</span></div>
-<div class="block">Returns a Checker which is used to apply changes to classes which have deniable
- operations.</div>
-<dl class="notes">
-<dt>Parameters:</dt>
-<dd><code>clazz</code> - the target class, which comes from a named module</dd>
 <dt>Returns:</dt>
 <dd>a checker instance, which can be null if all operations are allowed</dd>
 </dl>
