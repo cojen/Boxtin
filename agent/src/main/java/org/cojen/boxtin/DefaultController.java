@@ -72,6 +72,6 @@ final class DefaultController implements Controller {
 
     @Override
     public Checker checkerForTarget(Module module) {
-        return module.isNamed() ? mRules : null;
+        return mRules;
     }
 }

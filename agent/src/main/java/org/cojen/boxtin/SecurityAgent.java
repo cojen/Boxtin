@@ -286,13 +286,13 @@ public final class SecurityAgent implements ClassFileTransformer {
      * Returns true if the given class might need to have target-side checks inserted.
      */
     private boolean isTargetChecked(Class<?> clazz) {
-        if (Utils.isAccessible(clazz) && clazz.getModule().isExported(clazz.getPackageName())) {
-            Checker checker = mController.checkerForTarget(clazz);
-            if (checker != null) {
-                return checker.forClass(clazz).isTargetChecked();
-            }
-        }
-        return false;
+        Module module;
+        Checker checker;
+        return Utils.isAccessible(clazz)
+            && (module = clazz.getModule()).isNamed()
+            && module.isExported(clazz.getPackageName())
+            && (checker = mController.checkerForTarget(clazz)) != null
+            && checker.forClass(clazz).isTargetChecked();
     }
 
     private boolean isSpecial(Class<?> clazz) {
@@ -344,8 +344,13 @@ public final class SecurityAgent implements ClassFileTransformer {
             }
         }
 
-        Checker forTarget = mController.checkerForTarget(module, className);
-        if (forTarget == null) {
+        // Note that unnamed modules cannot have target security checks applied to them, since
+        // they're not expected to implement sensitive operations.
+
+        Checker forTarget;
+        if (!module.isNamed() ||
+            (forTarget = mController.checkerForTarget(module, className)) == null)
+        {
             forTarget = Rule.ALLOW;
         }
 

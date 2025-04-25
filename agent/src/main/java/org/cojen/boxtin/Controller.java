@@ -37,7 +37,7 @@ public interface Controller {
      * an operation. This variant is provided only for testing and debugging. A class name can
      * be spoofed, and so it shouldn't be used to determine what Checker to return.
      *
-     * @param module the caller's module
+     * @param module the caller's module, which can be named or unnamed
      * @param className the caller's class name, using '/' separators for packages
      * @return a checker instance, which can be null if all operations are allowed
      */
@@ -50,7 +50,7 @@ public interface Controller {
      * an operation. This variant is provided only for testing and debugging. A class name can
      * be spoofed, and so it shouldn't be used to determine what Checker to return.
      *
-     * @param clazz the calling class
+     * @param clazz the calling class, which can come from a named or unnamed module
      * @return a checker instance, which can be null if all operations are allowed
      */
     public default Checker checkerForCaller(Class<?> clazz) {
@@ -74,7 +74,7 @@ public interface Controller {
      * Returns a Checker which is used to apply changes to classes which have deniable
      * operations.
      *
-     * @param module the target's module
+     * @param module the target's module, which is named
      * @param className the target's class name, using '/' separators for packages
      * @return a checker instance, which can be null if all operations are allowed
      */
@@ -86,7 +86,7 @@ public interface Controller {
      * Returns a Checker which is used to apply changes to classes which have deniable
      * operations.
      *
-     * @param clazz the target class
+     * @param clazz the target class, which comes from a named module
      * @return a checker instance, which can be null if all operations are allowed
      */
     public default Checker checkerForTarget(Class<?> clazz) {
