@@ -29,19 +29,36 @@ final class DefaultController implements Controller {
 
         if (allowMain) {
             String command = System.getProperty("sun.java.command");
+
             if (command != null) {
                 // Allow access to the main method. Otherwise, an IllegalCallerException can be
                 // thrown because the main method doesn't have a caller. This doesn't happen if
-                // the main method is in an unnamed module, because the checkerForTarget method
-                // returns null (allow all) for unnamed modules.
+                // the main method is in an unnamed module, because unnamed modules cannot have
+                // target checks applied to them.
+
                 int endIndex = command.indexOf(' ');
                 if (endIndex < 0) {
                     endIndex = command.length();
                 }
                 int dotIndex = command.lastIndexOf('.', endIndex);
-                builder.forPackage(dotIndex < 0 ? "" : command.substring(0, dotIndex))
-                    .forClass(command.substring(dotIndex + 1, endIndex))
-                    .denyMethod("main").allowVariant("([Ljava/lang/String;)V");
+
+                String packageName = dotIndex < 0 ? "" : command.substring(0, dotIndex);
+
+                Module module = null;
+
+                for (Module m : ModuleLayer.boot().modules()) {
+                    if (m.getPackages().contains(packageName)) {
+                        module = m;
+                        break;
+                    }
+                }
+
+                if (module != null) {
+                    String className = command.substring(dotIndex + 1, endIndex);
+
+                    builder.forModule(module).forPackage(packageName).forClass(className)
+                        .denyMethod("main").allowVariant("([Ljava/lang/String;)V");
+                }
             }
         }
 

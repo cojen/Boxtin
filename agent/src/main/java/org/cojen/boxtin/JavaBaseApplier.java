@@ -26,7 +26,9 @@ package org.cojen.boxtin;
 final class JavaBaseApplier implements RulesApplier {
     @Override
     public void applyRulesTo(RulesBuilder b) {
-        b.forPackage("java.io")
+        b.forModule("java.base")
+
+            .forPackage("java.io")
             .allowAll()
 
             .forClass("File")
@@ -37,20 +39,16 @@ final class JavaBaseApplier implements RulesApplier {
             .allowMethod("getParentFile")
             .allowMethod("getPath")
             .allowMethod("toPath")
-            .end()
 
             .forClass("FileInputStream")
             .denyAllConstructors()
-            .end()
 
             .forClass("FileOutputStream")
             .denyAllConstructors()
-            .end()
 
             .forClass("ObjectInputFilter.Config")
             .denyMethod("setSerialFilter")
             .denyMethod("setSerialFilterFactory")
-            .end()
 
             .forClass("ObjectInputStream")
             .denyAllConstructors()
@@ -58,21 +56,18 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("enableResolveObject")
             .denyMethod("readUnshared")
             .denyMethod("setObjectInputFilter")
-            .end()
 
             .forClass("ObjectOutputStream")
             .denyAllConstructors()
             .allowVariant("Ljava/io/OutputStream;")
             .denyMethod("enableReplaceObject")
             .denyMethod("writeUnshared")
-            .end()
 
             .forClass("PrintStream")
             .denyAllConstructors()
             .allowVariant("Ljava/io/OutputStream;")
             .allowVariant("Ljava/io/OutputStream;Z")
             .allowVariant("Ljava/io/OutputStream;ZLjava/nio/charset/Charset;")
-            .end()
 
             .forClass("PrintWriter")
             .denyAllConstructors()
@@ -81,19 +76,15 @@ final class JavaBaseApplier implements RulesApplier {
             .allowVariant("Ljava/io/OutputStream;ZLjava/nio/charset/Charset;")
             .allowVariant("Ljava/io/Writer;")
             .allowVariant("Ljava/io/Writer;Z")
-            .end()
 
             .forClass("RandomAccessFile")
             .denyAllConstructors()
-            .end()
-            ;
 
-        b.forPackage("java.lang")
+            .forPackage("java.lang")
             .allowAll()
 
             .forClass("Boolean")
             .denyMethod("getBoolean")
-            .end()
 
             // Note: The methods which return Constructors and Methods are treated specially,
             // and denying access here only denies access to those methods themselves. Checks
@@ -124,7 +115,6 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("getProtectionDomain")
             .denyMethod("getRecordComponents")
             .denyMethod("newInstance") // deprecated
-            .end()
 
             .forClass("ClassLoader")
             .denyAllConstructors()
@@ -138,50 +128,42 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("setDefaultAssertionStatus")
             .denyMethod("setPackageAssertionStatus")
             .denyMethod("clearAssertionStatus")
-            .end()
 
             .forClass("Integer")
             .denyMethod("getInteger")
-            .end()
 
             .forClass("Long")
             .denyMethod("getLong")
-            .end()
 
             .forClass("Module")
             .callerCheck()
             .denyMethod("getClassLoader")
-            .end()
+
 
             .forClass("ModuleLayer")
             .denyMethod("defineModules")
             .denyMethod("defineModulesWithOneLoader")
             .denyMethod("defineModulesWithManyLoaders")
             .denyMethod("findLoader")
-            .end()
 
             .forClass("ModuleLayer.Controller")
             // Is @CallerSensitive and @Restricted, and so this check might be redundant.
             .callerCheck()
             .denyMethod("enableNativeAccess")
-            .end()
 
             .forClass("Package")
             .callerCheck()
             .denyMethod("getPackage")
-            .end()
 
             .forClass("Process")
             .denyMethod("children")
             .denyMethod("descendants")
             .denyMethod("toHandle")
-            .end()
 
             .forClass("ProcessBuilder")
             .denyMethod("environment")
             .denyMethod("start")
             .denyMethod("startPipeline")
-            .end()
 
             .forClass("ProcessHandle")
             .denyMethod("allProcesses")
@@ -191,7 +173,6 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("children")
             .denyMethod("descendants")
             .denyMethod("parent")
-            .end()
 
             .forClass("Runtime")
             .callerCheck()
@@ -204,16 +185,13 @@ final class JavaBaseApplier implements RulesApplier {
             .allowMethod("runFinalization")
             .allowMethod("totalMemory")
             .allowMethod("version")
-            .end()
 
             .forClass("SecurityManager")
             .denyAll()
-            .end()
 
             .forClass("StackWalker")
             .denyMethod("getInstance")
             .allowVariant() // no args
-            .end()
 
             .forClass("System")
             .callerCheck()
@@ -226,11 +204,9 @@ final class JavaBaseApplier implements RulesApplier {
             .allowMethod("lineSeparator")
             .allowMethod("nanoTime")
             .allowMethod("runFinalization")
-            .end()
 
             .forClass("System.LoggerFinder")
             .denyAll()
-            .end()
 
             .forClass("Thread")
             .denyAll()
@@ -260,13 +236,11 @@ final class JavaBaseApplier implements RulesApplier {
             .allowMethod("startVirtualThread")
             .allowMethod("threadId")
             .allowMethod("yield")
-            .end()
 
             .forClass("Thread.Builder.OfPlatform")
             .callerCheck()
             .denyMethod("daemon")
             .denyMethod("priority")
-            .end()
 
             .forClass("ThreadGroup")
             .denyMethod("enumerate")
@@ -276,48 +250,41 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("parentOf")
             .denyMethod("setDaemon")
             .denyMethod("setMaxPriority")
-            .end()
-            ;
 
-        b.forPackage("java.lang.annotation")
+            .forPackage("java.lang.annotation")
             .allowAll()
 
             .forClass("AnnotationTypeMismatchException")
             .denyMethod("element")
-            .end()
-            ;
 
-        b.forPackage("java.lang.classfile").allowAll();
+            .forPackage("java.lang.classfile").allowAll()
 
-        b.forPackage("java.lang.classfile.attribute").allowAll();
+            .forPackage("java.lang.classfile.attribute").allowAll()
 
-        b.forPackage("java.lang.classfile.constantpool").allowAll();
+            .forPackage("java.lang.classfile.constantpool").allowAll()
 
-        b.forPackage("java.lang.classfile.instruction").allowAll();
+            .forPackage("java.lang.classfile.instruction").allowAll()
 
-        b.forPackage("java.lang.constant").allowAll();
+            .forPackage("java.lang.constant").allowAll()
 
-        b.forPackage("java.lang.foreign")
+            .forPackage("java.lang.foreign")
             .allowAll()
 
             .forClass("AddressLayout")
             // Is @CallerSensitive and @Restricted, and so this check might be redundant.
             .callerCheck()
             .denyMethod("withTargetLayout")
-            .end()
 
             .forClass("Linker")
             // Is @CallerSensitive and @Restricted, and so these checks might be redundant.
             .callerCheck()
             .denyMethod("downcallHandle")
             .denyMethod("upcallStub")
-            .end()
 
             .forClass("MemorySegment")
             // Is @CallerSensitive and @Restricted, and so this check might be redundant.
             .callerCheck()
             .denyMethod("reinterpret")
-            .end()
 
             .forClass("SymbolLookup")
             // Is @CallerSensitive, but is also defined in a non-sealed interface, and so this
@@ -325,16 +292,13 @@ final class JavaBaseApplier implements RulesApplier {
             // checks for restricted methods are sufficient.
             .callerCheck()
             .denyMethod("libraryLookup")
-            .end()
-            ;
 
-        b.forPackage("java.lang.invoke")
+            .forPackage("java.lang.invoke")
             .allowAll()
 
             .forClass("MethodHandles")
             .denyMethod("privateLookupIn")
             .denyMethod("reflectAs")
-            .end()
 
             .forClass("MethodHandles.Lookup")
             .callerCheck()
@@ -343,92 +307,75 @@ final class JavaBaseApplier implements RulesApplier {
             .allowMethod("hasFullPrivilegeAccess")
             .allowMethod("lookupClass")
             .allowMethod("lookupModes")
-            .end()
 
             .forClass("MethodType")
             .denyMethod("fromMethodDescriptorString")
-            .end()
-            ;
 
-        b.forPackage("java.lang.module")
+            .forPackage("java.lang.module")
             .allowAll()
 
             .forClass("Configuration")
             .denyMethod("resolve")
             .denyMethod("resolveAndBind")
-            .end()
 
             .forClass("ModuleFinder")
             .callerCheck()
             .denyMethod("find")
             .denyMethod("findAll")
             .denyMethod("ofSystem")
-            .end()
 
             .forClass("ModuleReader")
             .denyAll()
-            .end()
 
             .forClass("ModuleReference")
             .allowAll()
             .callerCheck()
             .denyMethod("open")
-            .end()
-            ;
 
-        b.forPackage("java.lang.ref").allowAll();
+            .forPackage("java.lang.ref").allowAll()
 
-        b.forPackage("java.lang.reflect")
+            .forPackage("java.lang.reflect")
             .allowAll()
 
             .forClass("AccessibleObject")
             .callerCheck()
             .denyMethod("setAccessible")
             .denyMethod("trySetAccessible")
-            .end()
 
             .forClass("Constructor")
             .callerCheck()
             .denyMethod("setAccessible")
-            .end()
 
             .forClass("Field")
             .callerCheck()
             .denyMethod("setAccessible")
-            .end()
 
             .forClass("Method")
             .callerCheck()
             .denyMethod("setAccessible")
-            .end()
 
             .forClass("RecordComponent")
             .denyMethod("getAccessor")
-            .end()
 
             .forClass("Proxy")
             .denyMethod("getProxyClass") // deprecated
             .denyMethod("newProxyInstance")
-            .end()
-            ;
 
-        b.forPackage("java.lang.runtime").allowAll();
+            .forPackage("java.lang.runtime").allowAll()
 
-        b.forPackage("java.math").allowAll();
+            .forPackage("java.math").allowAll()
 
-        b.forPackage("java.net")
+            .forPackage("java.net")
             .allowAll()
 
             .forClass("Authenticator")
             .denyMethod("getDefault")
             .denyMethod("setDefault")
             .denyMethod("requestPasswordAuthentication")
-            .end()
 
             .forClass("CookieHandler")
             .denyMethod("getDefault")
             .denyMethod("setDefault")
-            .end()
 
             .forClass("DatagramSocket")
             .denyAllConstructors()
@@ -440,42 +387,35 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("send")
             .denyMethod("setDatagramSocketImplFactory")
             .denyMethod("setOption")
-            .end()
 
             .forClass("HttpURLConnection")
             .denyMethod("setFollowRedirects")
             .denyMethod("setRequestMethod")
-            .end()
 
             .forClass("InetAddress")
             .denyMethod("getByName")
             .denyMethod("getAllByName")
-            .end()
  
             .forClass("InetSocketAddress")
             .denyAllConstructors()
             .allowVariant(int.class)
             .allowVariant("Ljava/net/InetAddress;I")
-            .end()
 
             .forClass("MulticastSocket")
             .denyAllConstructors()
             .denyMethod("joinGroup")
             .denyMethod("leaveGroup")
             .denyMethod("send")
-            .end()
 
             .forClass("ResponseCache")
             .denyAllConstructors()
             .denyMethod("getDefault")
             .denyMethod("setDefault")
-            .end()
 
             .forClass("ProxySelector")
             .denyAllConstructors()
             .denyMethod("getDefault")
             .denyMethod("setDefault")
-            .end()
 
             .forClass("ServerSocket")
             .denyAllConstructors()
@@ -485,7 +425,6 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("getOption")
             .denyMethod("setOption")
             .denyMethod("setSocketFactory")
-            .end()
 
             .forClass("Socket")
             .denyAllConstructors()
@@ -494,51 +433,42 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("getOption")
             .denyMethod("setOption")
             .denyMethod("setSocketImplFactory")
-            .end()
 
             .forClass("URL")
             .denyAllConstructors()
             .denyMethod("of")
             .denyMethod("openConnection")
             .denyMethod("setURLStreamHandlerFactory")
-            .end()
 
             .forClass("URLClassLoader")
             .denyAllConstructors()
             .denyMethod("close")
-            .end()
 
             .forClass("URLConnection")
             .denyMethod("setContentHandlerFactory")
             .denyMethod("setFileNameMap")
-            .end()
 
             .forClass("URLStreamHandler")
             .denyMethod("setURL")
-            .end()
-            ;
 
-        b.forPackage("java.net.spi").denyAll();
+            .forPackage("java.net.spi").denyAll()
 
-        b.forPackage("java.nio").allowAll();
+            .forPackage("java.nio").allowAll()
 
-        b.forPackage("java.nio.channels")
+            .forPackage("java.nio.channels")
             .allowAll()
 
             .forClass("AsynchronousFileChannel")
             .denyMethod("open")
-            .end()
 
             .forClass("AsynchronousServerSocketChannel")
             .denyMethod("bind")
-            .end()
 
             .forClass("AsynchronousSocketChannel")
             .denyAllConstructors()
             .callerCheck()
             .denyMethod("bind")
             .denyMethod("connect")
-            .end()
 
             .forClass("DatagramChannel")
             .denyAllConstructors()
@@ -547,28 +477,23 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("connect")
             .denyMethod("receive")
             .denyMethod("send")
-            .end()
 
             .forClass("FileChannel")
             .denyMethod("open")
-            .end()
 
             .forClass("MulticastChannel")
             .callerCheck()
             .denyMethod("join")
-            .end()
 
             .forClass("NetworkChannel")
             .callerCheck()
             .denyMethod("bind")
-            .end()
 
             .forClass("ServerSocketChannel")
             .denyAllConstructors()
             .callerCheck()
             .denyMethod("accept")
             .denyMethod("bind")
-            .end()
 
             .forClass("SocketChannel")
             .denyAllConstructors()
@@ -576,26 +501,22 @@ final class JavaBaseApplier implements RulesApplier {
             .callerCheck()
             .denyMethod("bind")
             .denyMethod("connect")
-            .end()
-            ;
 
-        b.forPackage("java.nio.channels.spi").denyAll();
+            .forPackage("java.nio.channels.spi").denyAll()
 
-        b.forPackage("java.nio.charset").allowAll();
+            .forPackage("java.nio.charset").allowAll()
 
-        b.forPackage("java.nio.charset.spi").denyAll();
+            .forPackage("java.nio.charset.spi").denyAll()
 
-        b.forPackage("java.nio.file")
+            .forPackage("java.nio.file")
             .allowAll()
 
             .forClass("Files")
             .denyAll()
-            .end()
 
             .forClass("FileSystems")
             .denyMethod("getFileSystem")
             .denyMethod("newFileSystem")
-            .end()
 
             .forClass("Path")
             .callerCheck()
@@ -604,11 +525,9 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("toAbsolutePath")
             .denyMethod("toRealPath")
             .denyMethod("toUri")
-            .end()
 
             .forClass("Paths")
             .denyMethod("get")
-            .end()
 
             .forClass("SecureDirectoryStream")
             .callerCheck()
@@ -617,15 +536,12 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("move")
             .denyMethod("newByteChannel")
             .denyMethod("newDirectoryStream")
-            .end()
 
             .forClass("Watchable")
             .callerCheck()
             .denyMethod("register")
-            .end()
-            ;
 
-        b.forPackage("java.nio.file.attribute")
+            .forPackage("java.nio.file.attribute")
             .allowAll()
 
             .forClass("AclFileAttributeView")
@@ -634,13 +550,11 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("getOwner")
             .denyMethod("setAcl")
             .denyMethod("setOwner")
-            .end()
 
             .forClass("BasicFileAttributeView")
             .callerCheck()
             .denyMethod("readAttributes")
             .denyMethod("setTimes")
-            .end()
 
             .forClass("DosFileAttributeView")
             .callerCheck()
@@ -650,13 +564,11 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("setReadOnly")
             .denyMethod("setSystem")
             .denyMethod("setTimes")
-            .end()
 
             .forClass("FileOwnerAttributeView")
             .callerCheck()
             .denyMethod("getOwner")
             .denyMethod("setOwner")
-            .end()
 
             .forClass("PosixFileAttributeView")
             .callerCheck()
@@ -666,7 +578,6 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("setOwner")
             .denyMethod("setPermissions")
             .denyMethod("setTimes")
-            .end()
 
             .forClass("UserDefinedFileAttributeView")
             .callerCheck()
@@ -675,59 +586,47 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("read")
             .denyMethod("size")
             .denyMethod("write")
-            .end()
 
             .forClass("UserPrincipalLookupService")
             .denyAll()
-            .end()
-            ;
 
-        b.forPackage("java.nio.file.spi").denyAll();
+            .forPackage("java.nio.file.spi").denyAll()
 
-        b.forPackage("java.security")
+            .forPackage("java.security")
             .allowAll()
 
             .forClass("AccessControlContext") // deprecated
             .denyAll()
-            .end()
 
             .forClass("AuthProvider")
             .callerCheck()
             .denyMethod("login")
             .denyMethod("logout")
             .denyMethod("setCallbackHandler")
-            .end()
 
             .forClass("Guard")
             .callerCheck()
             .denyMethod("checkGuard")
-            .end()
 
             .forClass("GuardedObject")
             .denyMethod("getObject")
-            .end()
 
             .forClass("Identity") // deprecated
             .denyAll()
-            .end()
 
             .forClass("IdentityScope") // deprecated
             .denyAll()
-            .end()
 
             .forClass("KeyStore")
             .denyMethod("getInstance")
-            .end()
 
             .forClass("Permission")
             .denyMethod("checkGuard")
-            .end()
 
             .forClass("Policy")
             .denyMethod("getInstance")
             .denyMethod("getPolicy")
             .denyMethod("setPolicy")
-            .end()
 
             .forClass("Provider")
             .denyMethod("clear")
@@ -742,12 +641,10 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("removeService")
             .denyMethod("replace")
             .denyMethod("replaceAll")
-            .end()
 
             .forClass("SecureClassLoader")
             .denyAllConstructors()
             .denyMethod("defineClass")
-            .end()
 
             .forClass("Security")
             .denyMethod("addProvider")
@@ -755,34 +652,31 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("insertProviderAt")
             .denyMethod("removeProvider")
             .denyMethod("setProperty")
-            .end()
 
             .forClass("Signer") // deprecated
             .denyAll()
-            .end()
-            ;
 
-        b.forPackage("java.security.cert").allowAll();
+            .forPackage("java.security.cert").allowAll()
 
-        b.forPackage("java.security.interfaces").allowAll();
+            .forPackage("java.security.interfaces").allowAll()
 
-        b.forPackage("java.security.spec").allowAll();
+            .forPackage("java.security.spec").allowAll()
 
-        b.forPackage("java.text").allowAll();
+            .forPackage("java.text").allowAll()
 
-        b.forPackage("java.text.spi").allowAll();
+            .forPackage("java.text.spi").allowAll()
 
-        b.forPackage("java.time").allowAll();
+            .forPackage("java.time").allowAll()
 
-        b.forPackage("java.time.chrono").allowAll();
+            .forPackage("java.time.chrono").allowAll()
 
-        b.forPackage("java.time.format").allowAll();
+            .forPackage("java.time.format").allowAll()
 
-        b.forPackage("java.time.temporal").allowAll();
+            .forPackage("java.time.temporal").allowAll()
 
-        b.forPackage("java.time.zone").allowAll();
+            .forPackage("java.time.zone").allowAll()
 
-        b.forPackage("java.util")
+            .forPackage("java.util")
             .allowAll()
 
             .forClass("Formatter")
@@ -796,11 +690,10 @@ final class JavaBaseApplier implements RulesApplier {
             .allowVariant("Ljava/io/OutputStream;Ljava/lang/String;")
             .allowVariant("Ljava/io/OutputStream;Ljava/lang/String;Ljava/util/Locale;")
             .allowVariant("Ljava/io/OutputStream;Ljava/nio/charset/Charset;Ljava/util/Locale;")
-            .end()
 
             .forClass("Locale")
             .denyMethod("setDefault")
-            .end()
+
 
             /* FIXME: Cannot call getCallerClass() from a @CallerSensitive method. Tagging these
                       methods using callerCheck() doesn't work because ResourceBundle can be
@@ -813,117 +706,96 @@ final class JavaBaseApplier implements RulesApplier {
             .allowVariant("Ljava/lang.String;Ljava/util/Locale;")
             .allowVariant("Ljava/lang.String;Ljava/util/ResourceBundle$Control;")
             .allowVariant("Ljava/lang.String;Ljava/util/Locale;Ljava/util/ResourceBundle$Control;")
-            .end()
             */
 
             .forClass("TimeZone")
             .denyMethod("setDefault")
-            .end()
-            ;
 
-        b.forPackage("java.util.concurrent")
+            .forPackage("java.util.concurrent")
             .allowAll()
 
             .forClass("ForkJoinPool")
-            // These methods are denied because shared instances are provided by public static
-            // methods: ForkJoinPool.commonPool() and ForkJoinTask.getPool().
+            // These methods are denied because shared instances can be accessed by calling the
+            // ForkJoinTask.getPool() method.
             .denyMethod("close")
             .denyMethod("shutdown")
             .denyMethod("shutdownNow")
-            .end()
-            ;
- 
-        b.forPackage("java.util.concurrent.atomic").allowAll();
 
-        b.forPackage("java.util.concurrent.locks").allowAll();
+            .forPackage("java.util.concurrent.atomic").allowAll()
 
-        b.forPackage("java.util.function").allowAll();
+            .forPackage("java.util.concurrent.locks").allowAll()
 
-        b.forPackage("java.util.jar")
+            .forPackage("java.util.function").allowAll()
+
+            .forPackage("java.util.jar")
             .allowAll()
 
             .forClass("JarFile")
             .denyAllConstructors()
-            .end()
-            ;
+            
+            .forPackage("java.util.random").allowAll()
 
-        b.forPackage("java.util.random").allowAll();
+            .forPackage("java.util.regex").allowAll()
 
-        b.forPackage("java.util.regex").allowAll();
-
-        b.forPackage("java.util.spi")
+            .forPackage("java.util.spi")
             .allowAll()
 
             .forClass("LocaleServiceProvider")
             .denyAllConstructors()
-            .end()
-            ;
 
-        b.forPackage("java.util.stream").allowAll();
+            .forPackage("java.util.stream").allowAll()
 
-        b.forPackage("java.util.zip")
+            .forPackage("java.util.zip")
             .allowAll()
 
             .forClass("ZipFile")
             .denyAllConstructors()
-            .end()
-            ;
 
-        b.forPackage("javax.crypto").allowAll();
+            .forPackage("javax.crypto").allowAll()
 
-        b.forPackage("javax.crypto.interfaces").allowAll();
+            .forPackage("javax.crypto.interfaces").allowAll()
 
-        b.forPackage("javax.crypto.spec").allowAll();
+            .forPackage("javax.crypto.spec").allowAll()
 
-        b.forPackage("javax.net")
+            .forPackage("javax.net")
             .allowAll()
 
             .forClass("ServerSocketFactory")
             .denyAllConstructors()
             .callerCheck()
             .denyMethod("createServerSocket")
-            .end()
 
             .forClass("SocketFactory")
             .denyAllConstructors()
             .callerCheck()
             .denyMethod("createSocket")
-            .end()
-            ;
 
-        b.forPackage("javax.net.ssl")
+            .forPackage("javax.net.ssl")
             .allowAll()
 
             .forClass("ExtendedSSLSession")
             .callerCheck()
             .denyMethod("getSessionContext")
-            .end()
 
             .forClass("HttpsURLConnection")
             .denyMethod("setDefaultHostnameVerifier")
             .denyMethod("setDefaultSSLSocketFactory")
             .denyMethod("setSSLSocketFactory")
-            .end()
 
             .forClass("SSLContext")
             .denyMethod("setDefault")
-            .end()
 
             .forClass("SSLServerSocket")
             .denyAllConstructors()
-            .end()
 
             .forClass("SSLSession")
             .callerCheck()
             .denyMethod("getSessionContext")
-            .end()
 
             .forClass("SSLSocket")
             .denyAllConstructors()
-            .end()
-            ;
 
-        b.forPackage("javax.security.auth")
+            .forPackage("javax.security.auth")
             .allowAll()
 
             .forClass("Subject")
@@ -931,21 +803,19 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("doAsPrivileged")
             .denyMethod("getSubject")
             .denyMethod("setReadOnly")
-            .end()
-            ;
 
-        b.forPackage("javax.security.auth.callback").allowAll();
+            .forPackage("javax.security.auth.callback").allowAll()
 
-        b.forPackage("javax.security.auth.login")
+            .forPackage("javax.security.auth.login")
             .allowAll()
 
             .forClass("Configuration")
             .denyMethod("getInstance")
-            .end()
+
+            .forPackage("javax.security.auth.spi").allowAll()
+
+            .forPackage("javax.security.auth.x500").allowAll()
+
             ;
-
-        b.forPackage("javax.security.auth.spi").allowAll();
-
-        b.forPackage("javax.security.auth.x500").allowAll();
     }
 }

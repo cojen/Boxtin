@@ -23,8 +23,10 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import static org.cojen.boxtin.Rule.*;
 import static org.cojen.boxtin.Utils.*;
@@ -37,7 +39,7 @@ import static org.cojen.boxtin.Utils.*;
  */
 public final class RulesBuilder {
     // Can be null when empty.
-    private Map<String, PackageScope> mPackages;
+    private Map<String, ModuleScope> mModules;
 
     // Default is selected when no map entry is found.
     private Rule mDefaultRule;
@@ -63,7 +65,7 @@ public final class RulesBuilder {
      * @return this
      */
     public RulesBuilder denyAll() {
-        mPackages = null;
+        mModules = null;
         mDefaultRule = TARGET_DENY;
         return this;
     }
@@ -75,72 +77,79 @@ public final class RulesBuilder {
      * @return this
      */
     public RulesBuilder allowAll() {
-        mPackages = null;
+        mModules = null;
         mDefaultRule = ALLOW;
         return this;
     }
 
     /**
-     * Define specific rules against the given package, which can supersede all previous rules.
+     * Define specific rules against the given module, which can supersede all previous rules.
      *
-     * @param name fully qualified package name
+     * @param name fully qualified module name
      */
-    public PackageScope forPackage(String name) {
-        final String dottedName = name.replace('/', '.');
-        Map<String, PackageScope> packages = mPackages;
-        if (packages == null) {
-            mPackages = packages = new HashMap<>();
+    public ModuleScope forModule(String name) {
+        Objects.requireNonNull(name);
+        Map<String, ModuleScope> modules = mModules;
+        if (modules == null) {
+            mModules = modules = new HashMap<>();
         }
-        return packages.computeIfAbsent(dottedName, k -> {
-            var scope = new PackageScope(this, dottedName);
+        return modules.computeIfAbsent(name, k -> {
+            var scope = new ModuleScope(this, name);
             return mDefaultRule == ALLOW ? scope.allowAll() : scope.denyAll(mDefaultRule);
         });
     }
 
     /**
-     * Define specific rules against the given package, which can supersede all previous rules.
+     * Define specific rules against the given module, which can supersede all previous rules.
      */
-    public PackageScope forPackage(Package p) {
-        return forPackage(p.getName());
+    public ModuleScope forModule(Module module) {
+        return forModule(module.getName());
     }
 
     /**
      * Validates that all classes are loadable, and that all class members are found. An
      * exception is thrown if validation fails.
      *
-     * @param loader required
+     * @param layer required
      * @return this
      */
-    public RulesBuilder validate(ClassLoader loader)
+    public RulesBuilder validate(ModuleLayer layer)
         throws ClassNotFoundException, NoSuchMethodException
     {
         // FIXME: Validate inheritance when using caller checks. Also check
         // for @CallerSensitive methods, which must rely on caller checks.
 
-        Objects.requireNonNull(loader);
-        if (mPackages != null) {
-            for (PackageScope ps : mPackages.values()) {
-                ps.validate(loader);
+        Objects.requireNonNull(layer);
+
+        if (mModules != null) {
+            var packageNames = new HashSet<String>();
+
+            for (ModuleScope ms : mModules.values()) {
+                ms.preValidate(packageNames);
+            }
+
+            for (ModuleScope ms : mModules.values()) {
+                ms.validate(layer);
             }
         }
+
         return this;
     }
 
     /**
      * Returns an immutable set of rules based on what's been defined so far.
+     *
+     * @throws IllegalStateException if a package is defined in multiple modules
      */
     public Rules build() {
         Map<String, RuleSet.PackageScope> builtPackages;
 
-        if (isEmpty(mPackages)) {
+        if (isEmpty(mModules)) {
             builtPackages = null;
         } else {
             builtPackages = new HashMap<>();
-            for (Map.Entry<String, PackageScope> e : mPackages.entrySet()) {
-                RuleSet.PackageScope scope = e.getValue().build(mDefaultRule);
-                if (scope != null) {
-                    builtPackages.put(e.getKey().replace('.', '/').intern(), scope);
-                }
+            for (ModuleScope ms  : mModules.values()) {
+                ms.buildInto(builtPackages);
             }
         }
 
@@ -216,7 +225,7 @@ public final class RulesBuilder {
                         break parse;
                     }
                     String name = descriptor.substring(pos, end).replace('/', '.');
-                    type = loader.loadClass(name);
+                    type = Class.forName(name, false, loader);
                     pos = end;
                 }
             }
@@ -277,10 +286,162 @@ public final class RulesBuilder {
     }
 
     /**
+     * Builder of rules at the module level.
+     */
+    public static final class ModuleScope {
+        private final RulesBuilder mParent;
+        private final String mName;
+
+        // Can be null when empty.
+        private Map<String, PackageScope> mPackages;
+
+        // Default is selected when no map entry is found.
+        private Rule mDefaultRule;
+
+        private ModuleScope(RulesBuilder parent, String name) {
+            mParent = parent;
+            mName = name;
+        }
+
+        /**
+         * Deny access to all packages, superseding all previous rules. This action is
+         * recursive, denying access to all classes, constructors, etc.
+         *
+         * @return this
+         */
+        public ModuleScope denyAll() {
+            return denyAll(TARGET_DENY);
+        }
+
+        /**
+         * @param rule must be CALLER_DENY or TARGET_DENY
+         * @return this
+         */
+        ModuleScope denyAll(Rule rule) {
+            mPackages = null;
+            mDefaultRule = rule;
+            return this;
+        }
+
+        /**
+         * Allow access to all packages, superseding all previous rules. This action is
+         * recursive, allowing access to all classes, constructors, etc.
+         *
+         * @return this
+         */
+        public ModuleScope allowAll() {
+            mPackages = null;
+            mDefaultRule = ALLOW;
+            return this;
+        }
+
+        /**
+         * Define specific rules against the given package, which can supersede all previous
+         * rules.
+         *
+         * @param name fully qualified package name
+         */
+        public PackageScope forPackage(String name) {
+            final String dottedName = name.replace('/', '.');
+            Map<String, PackageScope> packages = mPackages;
+            if (packages == null) {
+                mPackages = packages = new HashMap<>();
+            }
+            return packages.computeIfAbsent(dottedName, k -> {
+                var scope = new PackageScope(this, dottedName);
+                return mDefaultRule == ALLOW ? scope.allowAll() : scope.denyAll(mDefaultRule);
+            });
+        }
+
+        /**
+         * Define specific rules against the given module, which can supersede all previous
+         * rules.
+         */
+        public PackageScope forPackage(Package p) {
+            return forPackage(p.getName());
+        }
+
+        /**
+         * End the current rules for this module and return to the outermost scope. More rules
+         * can be added to the scope later if desired.
+         */
+        public RulesBuilder end() {
+            return mParent;
+        }
+
+        /**
+         * End the current rules for this module and begin a new module scope. More rules can
+         * be added to the scope later if desired.
+         */
+        public ModuleScope forModule(String name) {
+            return end().forModule(name);
+        }
+
+        /**
+         * End the current rules for this module and begin a new module scope. More rules can
+         * be added to the scope later if desired.
+         */
+        public ModuleScope forModule(Module module) {
+            return end().forModule(module);
+        }
+
+        void preValidate(Set<String> packageNames) {
+            for (String name : mPackages.keySet()) {
+                if (!packageNames.add(name)) {
+                    throw new IllegalStateException
+                        ("Package is defined in multiple modules: " + name);
+                }
+            }
+        }
+
+        /**
+         * Validates that all classes are loadable, and that all class members are found.
+         *
+         * @param layer required
+         * @throws IllegalStateException if validation fails
+         */
+        void validate(ModuleLayer layer) throws ClassNotFoundException, NoSuchMethodException {
+            Module module = layer.findModule(mName).orElse(null);
+
+            if (module == null) {
+                throw new IllegalStateException("Module isn't found: " + mName);
+            }
+
+            ClassLoader loader;
+            try {
+                loader = layer.findLoader(mName);
+            } catch (IllegalArgumentException e) {
+                throw new IllegalStateException("Module isn't found: " + mName);
+            }
+
+            Set<String> packages = module.getPackages();
+
+            if (mPackages != null) {
+                for (PackageScope ps : mPackages.values()) {
+                    ps.validate(packages, loader);
+                }
+            }
+        }
+
+        private void buildInto(Map<String, RuleSet.PackageScope> builtPackages) {
+            for (Map.Entry<String, PackageScope> e : mPackages.entrySet()) {
+                RuleSet.PackageScope scope = e.getValue().build(mDefaultRule);
+                if (scope != null) {
+                    String key = e.getKey().replace('.', '/').intern();
+                    if (builtPackages.putIfAbsent(key, scope) != null) {
+                        throw new IllegalStateException
+                            ("Package is defined in multiple modules: " + e.getKey());
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * Builder of rules at the package level.
      */
     public static final class PackageScope {
-        private final RulesBuilder mParent;
+        private final ModuleScope mParent;
         private final String mName;
 
         // Can be null when empty.
@@ -289,7 +450,7 @@ public final class RulesBuilder {
         // Default is selected when no map entry is found.
         private Rule mDefaultRule;
 
-        private PackageScope(RulesBuilder parent, String name) {
+        private PackageScope(ModuleScope parent, String name) {
             mParent = parent;
             mName = name;
         }
@@ -370,20 +531,55 @@ public final class RulesBuilder {
          * End the current rules for this package and return to the outermost scope. More rules
          * can be added to the scope later if desired.
          */
-        public RulesBuilder end() {
+        public ModuleScope end() {
             return mParent;
+        }
+
+        /**
+         * End the current rules for this package and begin a new package scope. More rules can
+         * be added to the scope later if desired.
+         */
+        public PackageScope forPackage(String name) {
+            return end().forPackage(name);
+        }
+
+        /**
+         * End the current rules for this package and begin a new package scope. More rules can
+         * be added to the scope later if desired.
+         */
+        public PackageScope forPackage(Package p) {
+            return end().forPackage(p);
+        }
+
+        /**
+         * End the current rules for this package and module, and begin a new module scope.
+         * More rules can be added to the scope later if desired.
+         */
+        public ModuleScope forModule(String name) {
+            return end().forModule(name);
+        }
+
+        /**
+         * End the current rules for this package and module, and begin a new module scope.
+         * More rules can be added to the scope later if desired.
+         */
+        public ModuleScope forModule(Module module) {
+            return end().forModule(module);
         }
 
         /**
          * Validates that all classes are loadable, and that all class members are found.
          *
-         * @param loader required
          * @throws IllegalStateException if validation fails
          */
-        public void validate(ClassLoader loader) 
+        void validate(Set<String> packages, ClassLoader loader)
             throws ClassNotFoundException, NoSuchMethodException
         {
-            Objects.requireNonNull(loader);
+            if (!packages.contains(mName)) {
+                throw new IllegalStateException
+                    ("Package isn't found: " + mParent.mName + '/' + mName);
+            }
+
             if (mClasses != null) {
                 for (ClassScope cs : mClasses.values()) {
                     cs.validate(loader);
@@ -659,23 +855,66 @@ public final class RulesBuilder {
         }
 
         /**
+         * End the current rules for this class and begin a new class scope. More rules can
+         * be added to the scope later if desired.
+         */
+        public ClassScope forClass(String name) {
+            return end().forClass(name);
+        }
+
+        /**
+         * End the current rules for this class and begin a new class scope. More rules can
+         * be added to the scope later if desired.
+         */
+        public ClassScope forClass(Class<?> clazz) {
+            return end().forClass(clazz);
+        }
+
+        /**
+         * End the current rules for this class and package, and begin a new package scope.
+         * More rules can be added to the scope later if desired.
+         */
+        public PackageScope forPackage(String name) {
+            return end().forPackage(name);
+        }
+
+        /**
+         * End the current rules for this class and package, and begin a new package scope.
+         * More rules can be added to the scope later if desired.
+         */
+        public PackageScope forPackage(Package p) {
+            return end().forPackage(p);
+        }
+
+        /**
+         * End the current rules for this class, package and module, and begin a new module
+         * scope. More rules can be added to the scope later if desired.
+         */
+        public ModuleScope forModule(String name) {
+            return end().forModule(name);
+        }
+
+        /**
+         * End the current rules for this class, package and module, and begin a new module
+         * scope. More rules can be added to the scope later if desired.
+         */
+        public ModuleScope forModule(Module module) {
+            return end().forModule(module);
+        }
+
+        /**
          * Validates that all classes are loadable, and that all class members are found.
          *
-         * @param loader required
          * @throws IllegalStateException if validation fails
          */
-        public void validate(ClassLoader loader)
-            throws ClassNotFoundException, NoSuchMethodException
-        {
-            Objects.requireNonNull(loader);
-
+        void validate(ClassLoader loader) throws ClassNotFoundException, NoSuchMethodException {
             String className = mName;
             String pkg = mParent.mName;
             if (!pkg.isEmpty()) {
                 className = pkg.replace('/', '.') + '.' + className;
             }
 
-            Class<?> clazz = loader.loadClass(className);
+            Class<?> clazz = Class.forName(className, false, loader);
 
             if (mConstructors != null) {
                 mConstructors.validateConstructor(loader, clazz);
@@ -692,6 +931,7 @@ public final class RulesBuilder {
          * Caller must call allowAll or denyAll on the returned MethodScope.
          */
         private MethodScope forMethod(String name) {
+            Objects.requireNonNull(name);
             Map<String, MethodScope> methods = mMethods;
             if (methods == null) {
                 mMethods = methods = new HashMap<>();

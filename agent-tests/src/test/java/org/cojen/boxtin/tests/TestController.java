@@ -30,8 +30,10 @@ public final class TestController implements Controller {
     private final Rules mRules;
 
     public TestController() {
-        var builder = new RulesBuilder()
-            .allowAll()
+        var builder = new RulesBuilder();
+
+        builder.allowAll()
+            .forModule("java.base")
 
             .forPackage("java.lang")
             .allowAll()
@@ -61,19 +63,16 @@ public final class TestController implements Controller {
             .denyMethod("getProtectionDomain")
             .denyMethod("getRecordComponents")
             .denyMethod("newInstance") // deprecated
-            .end()
 
             .forClass("Process")
             .denyMethod("children")
             .denyMethod("descendants")
             .denyMethod("toHandle")
-            .end()
 
             .forClass("ProcessBuilder")
             .denyMethod("environment")
             .denyMethod("start")
             .denyMethod("startPipeline")
-            .end()
 
             .forClass("ProcessHandle")
             .denyMethod("allProcesses")
@@ -83,7 +82,6 @@ public final class TestController implements Controller {
             .denyMethod("children")
             .denyMethod("descendants")
             .denyMethod("parent")
-            .end()
 
             .forClass("Runtime")
             .callerCheck()
@@ -96,7 +94,6 @@ public final class TestController implements Controller {
             .allowMethod("runFinalization")
             .allowMethod("totalMemory")
             .allowMethod("version")
-            .end()
 
             .forClass("System")
             .callerCheck()
@@ -109,9 +106,8 @@ public final class TestController implements Controller {
             .allowMethod("lineSeparator")
             .allowMethod("nanoTime")
             .allowMethod("runFinalization")
-            .end()
 
-            .end();
+            ;
 
         mRules = builder.build();
     }
