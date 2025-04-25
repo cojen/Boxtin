@@ -55,6 +55,10 @@ loadScripts(document, 'script');</script>
 <a href="#I:A">A</a>&nbsp;<a href="#I:B">B</a>&nbsp;<a href="#I:C">C</a>&nbsp;<a href="#I:D">D</a>&nbsp;<a href="#I:E">E</a>&nbsp;<a href="#I:F">F</a>&nbsp;<a href="#I:I">I</a>&nbsp;<a href="#I:J">J</a>&nbsp;<a href="#I:O">O</a>&nbsp;<a href="#I:P">P</a>&nbsp;<a href="#I:R">R</a>&nbsp;<a href="#I:S">S</a>&nbsp;<a href="#I:T">T</a>&nbsp;<a href="#I:V">V</a>&nbsp;<br><a href="allclasses-index.html">All&nbsp;Classes&nbsp;and&nbsp;Interfaces</a><span class="vertical-separator">|</span><a href="allpackages-index.html">All&nbsp;Packages</a><span class="vertical-separator">|</span><a href="serialized-form.html">Serialized&nbsp;Form</a>
 <h2 class="title" id="I:A">A</h2>
 <dl class="index">
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/SecurityAgent.html#activate(org.cojen.boxtin.Controller)" class="member-name-link">activate(Controller)</a> - Static method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/SecurityAgent.html" title="class in org.cojen.boxtin">SecurityAgent</a></dt>
+<dd>
+<div class="block">Activate the security agent if not already done so.</div>
+</dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html#allowAll()" class="member-name-link">allowAll()</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html" title="class in org.cojen.boxtin">RulesBuilder</a></dt>
 <dd>
 <div class="block">Allow access to all packages, superseding all previous rules.</div>
@@ -63,6 +67,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Allow access to all constructors and locally declared methods, superseding all
  previous rules.</div>
+</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ModuleScope.html#allowAll()" class="member-name-link">allowAll()</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ModuleScope.html" title="class in org.cojen.boxtin">RulesBuilder.ModuleScope</a></dt>
+<dd>
+<div class="block">Allow access to all packages, superseding all previous rules.</div>
 </dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.PackageScope.html#allowAll()" class="member-name-link">allowAll()</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.PackageScope.html" title="class in org.cojen.boxtin">RulesBuilder.PackageScope</a></dt>
 <dd>
@@ -135,7 +143,17 @@ loadScripts(document, 'script');</script>
 <div class="block">Returns a Checker which is used to determine if a calling module is allowed to perform
  an operation.</div>
 </dd>
-<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html#checkerForTarget()" class="member-name-link">checkerForTarget()</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html" title="interface in org.cojen.boxtin">Controller</a></dt>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html#checkerForTarget(java.lang.Class)" class="member-name-link">checkerForTarget(Class&lt;?&gt;)</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html" title="interface in org.cojen.boxtin">Controller</a></dt>
+<dd>
+<div class="block">Returns a Checker which is used to apply changes to classes which have deniable
+ operations.</div>
+</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html#checkerForTarget(java.lang.Module)" class="member-name-link">checkerForTarget(Module)</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html" title="interface in org.cojen.boxtin">Controller</a></dt>
+<dd>
+<div class="block">Returns a Checker which is used to apply changes to classes which have deniable
+ operations.</div>
+</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html#checkerForTarget(java.lang.Module,java.lang.String)" class="member-name-link">checkerForTarget(Module, String)</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html" title="interface in org.cojen.boxtin">Controller</a></dt>
 <dd>
 <div class="block">Returns a Checker which is used to apply changes to classes which have deniable
  operations.</div>
@@ -166,6 +184,10 @@ loadScripts(document, 'script');</script>
  previous rules.</div>
 </dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html#denyAll()" class="member-name-link">denyAll()</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html" title="class in org.cojen.boxtin">RulesBuilder</a></dt>
+<dd>
+<div class="block">Deny access to all packages, superseding all previous rules.</div>
+</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ModuleScope.html#denyAll()" class="member-name-link">denyAll()</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ModuleScope.html" title="class in org.cojen.boxtin">RulesBuilder.ModuleScope</a></dt>
 <dd>
 <div class="block">Deny access to all packages, superseding all previous rules.</div>
 </dd>
@@ -202,6 +224,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">End the current rules for this class and return to the package scope.</div>
 </dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ModuleScope.html#end()" class="member-name-link">end()</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ModuleScope.html" title="class in org.cojen.boxtin">RulesBuilder.ModuleScope</a></dt>
+<dd>
+<div class="block">End the current rules for this module and return to the outermost scope.</div>
+</dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.PackageScope.html#end()" class="member-name-link">end()</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.PackageScope.html" title="class in org.cojen.boxtin">RulesBuilder.PackageScope</a></dt>
 <dd>
 <div class="block">End the current rules for this package and return to the outermost scope.</div>
@@ -213,23 +239,83 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/Checker.html#forClass(java.lang.Class)" class="member-name-link">forClass(Class&lt;?&gt;)</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Checker.html" title="interface in org.cojen.boxtin">Checker</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html#forClass(java.lang.Class)" class="member-name-link">forClass(Class&lt;?&gt;)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></dt>
+<dd>
+<div class="block">End the current rules for this class and begin a new class scope.</div>
+</dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.PackageScope.html#forClass(java.lang.Class)" class="member-name-link">forClass(Class&lt;?&gt;)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.PackageScope.html" title="class in org.cojen.boxtin">RulesBuilder.PackageScope</a></dt>
 <dd>
 <div class="block">Define specific rules against the given class, which can supersede all previous
  rules.</div>
+</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html#forClass(java.lang.String)" class="member-name-link">forClass(String)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></dt>
+<dd>
+<div class="block">End the current rules for this class and begin a new class scope.</div>
 </dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.PackageScope.html#forClass(java.lang.String)" class="member-name-link">forClass(String)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.PackageScope.html" title="class in org.cojen.boxtin">RulesBuilder.PackageScope</a></dt>
 <dd>
 <div class="block">Define specific rules against the given class, which can supersede all previous
  rules.</div>
 </dd>
-<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html#forPackage(java.lang.Package)" class="member-name-link">forPackage(Package)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html" title="class in org.cojen.boxtin">RulesBuilder</a></dt>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html#forModule(java.lang.Module)" class="member-name-link">forModule(Module)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></dt>
 <dd>
-<div class="block">Define specific rules against the given package, which can supersede all previous rules.</div>
+<div class="block">End the current rules for this class, package and module, and begin a new module
+ scope.</div>
 </dd>
-<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html#forPackage(java.lang.String)" class="member-name-link">forPackage(String)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html" title="class in org.cojen.boxtin">RulesBuilder</a></dt>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html#forModule(java.lang.Module)" class="member-name-link">forModule(Module)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html" title="class in org.cojen.boxtin">RulesBuilder</a></dt>
 <dd>
-<div class="block">Define specific rules against the given package, which can supersede all previous rules.</div>
+<div class="block">Define specific rules against the given module, which can supersede all previous rules.</div>
+</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ModuleScope.html#forModule(java.lang.Module)" class="member-name-link">forModule(Module)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ModuleScope.html" title="class in org.cojen.boxtin">RulesBuilder.ModuleScope</a></dt>
+<dd>
+<div class="block">End the current rules for this module and begin a new module scope.</div>
+</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.PackageScope.html#forModule(java.lang.Module)" class="member-name-link">forModule(Module)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.PackageScope.html" title="class in org.cojen.boxtin">RulesBuilder.PackageScope</a></dt>
+<dd>
+<div class="block">End the current rules for this package and module, and begin a new module scope.</div>
+</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html#forModule(java.lang.String)" class="member-name-link">forModule(String)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></dt>
+<dd>
+<div class="block">End the current rules for this class, package and module, and begin a new module
+ scope.</div>
+</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html#forModule(java.lang.String)" class="member-name-link">forModule(String)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html" title="class in org.cojen.boxtin">RulesBuilder</a></dt>
+<dd>
+<div class="block">Define specific rules against the given module, which can supersede all previous rules.</div>
+</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ModuleScope.html#forModule(java.lang.String)" class="member-name-link">forModule(String)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ModuleScope.html" title="class in org.cojen.boxtin">RulesBuilder.ModuleScope</a></dt>
+<dd>
+<div class="block">End the current rules for this module and begin a new module scope.</div>
+</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.PackageScope.html#forModule(java.lang.String)" class="member-name-link">forModule(String)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.PackageScope.html" title="class in org.cojen.boxtin">RulesBuilder.PackageScope</a></dt>
+<dd>
+<div class="block">End the current rules for this package and module, and begin a new module scope.</div>
+</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html#forPackage(java.lang.Package)" class="member-name-link">forPackage(Package)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></dt>
+<dd>
+<div class="block">End the current rules for this class and package, and begin a new package scope.</div>
+</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ModuleScope.html#forPackage(java.lang.Package)" class="member-name-link">forPackage(Package)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ModuleScope.html" title="class in org.cojen.boxtin">RulesBuilder.ModuleScope</a></dt>
+<dd>
+<div class="block">Define specific rules against the given module, which can supersede all previous
+ rules.</div>
+</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.PackageScope.html#forPackage(java.lang.Package)" class="member-name-link">forPackage(Package)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.PackageScope.html" title="class in org.cojen.boxtin">RulesBuilder.PackageScope</a></dt>
+<dd>
+<div class="block">End the current rules for this package and begin a new package scope.</div>
+</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html#forPackage(java.lang.String)" class="member-name-link">forPackage(String)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></dt>
+<dd>
+<div class="block">End the current rules for this class and package, and begin a new package scope.</div>
+</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ModuleScope.html#forPackage(java.lang.String)" class="member-name-link">forPackage(String)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ModuleScope.html" title="class in org.cojen.boxtin">RulesBuilder.ModuleScope</a></dt>
+<dd>
+<div class="block">Define specific rules against the given package, which can supersede all previous
+ rules.</div>
+</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.PackageScope.html#forPackage(java.lang.String)" class="member-name-link">forPackage(String)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.PackageScope.html" title="class in org.cojen.boxtin">RulesBuilder.PackageScope</a></dt>
+<dd>
+<div class="block">End the current rules for this package and begin a new package scope.</div>
 </dd>
 </dl>
 <h2 class="title" id="I:I">I</h2>
@@ -345,6 +431,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Builder of rules at the class level.</div>
 </dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ModuleScope.html" class="type-name-link" title="class in org.cojen.boxtin">RulesBuilder.ModuleScope</a> - Class in <a href="org.cojen.boxtin/org/cojen/boxtin/package-summary.html">org.cojen.boxtin</a></dt>
+<dd>
+<div class="block">Builder of rules at the module level.</div>
+</dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.PackageScope.html" class="type-name-link" title="class in org.cojen.boxtin">RulesBuilder.PackageScope</a> - Class in <a href="org.cojen.boxtin/org/cojen/boxtin/package-summary.html">org.cojen.boxtin</a></dt>
 <dd>
 <div class="block">Builder of rules at the package level.</div>
@@ -367,18 +457,14 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/SecurityAgent.html#transform(java.lang.Module,java.lang.ClassLoader,java.lang.String,java.lang.Class,java.security.ProtectionDomain,byte%5B%5D)" class="member-name-link">transform(Module, ClassLoader, String, Class&lt;?&gt;, ProtectionDomain, byte[])</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/SecurityAgent.html" title="class in org.cojen.boxtin">SecurityAgent</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/SecurityAgent.html#tryActivate(org.cojen.boxtin.Controller)" class="member-name-link">tryActivate(Controller)</a> - Static method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/SecurityAgent.html" title="class in org.cojen.boxtin">SecurityAgent</a></dt>
+<dd>
+<div class="block">Activate the security agent if not already done so.</div>
+</dd>
 </dl>
 <h2 class="title" id="I:V">V</h2>
 <dl class="index">
-<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html#validate(java.lang.ClassLoader)" class="member-name-link">validate(ClassLoader)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></dt>
-<dd>
-<div class="block">Validates that all classes are loadable, and that all class members are found.</div>
-</dd>
-<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.PackageScope.html#validate(java.lang.ClassLoader)" class="member-name-link">validate(ClassLoader)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.PackageScope.html" title="class in org.cojen.boxtin">RulesBuilder.PackageScope</a></dt>
-<dd>
-<div class="block">Validates that all classes are loadable, and that all class members are found.</div>
-</dd>
-<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html#validate(java.lang.ClassLoader)" class="member-name-link">validate(ClassLoader)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html" title="class in org.cojen.boxtin">RulesBuilder</a></dt>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html#validate(java.lang.ModuleLayer)" class="member-name-link">validate(ModuleLayer)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html" title="class in org.cojen.boxtin">RulesBuilder</a></dt>
 <dd>
 <div class="block">Validates that all classes are loadable, and that all class members are found.</div>
 </dd>

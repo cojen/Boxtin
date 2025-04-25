@@ -75,9 +75,9 @@ loadScripts(document, 'script');</script>
 <li><a href="#applyRules(org.cojen.boxtin.RulesApplier)" tabindex="0">applyRules(RulesApplier)</a></li>
 <li><a href="#denyAll()" tabindex="0">denyAll()</a></li>
 <li><a href="#allowAll()" tabindex="0">allowAll()</a></li>
-<li><a href="#forPackage(java.lang.String)" tabindex="0">forPackage(String)</a></li>
-<li><a href="#forPackage(java.lang.Package)" tabindex="0">forPackage(Package)</a></li>
-<li><a href="#validate(java.lang.ClassLoader)" tabindex="0">validate(ClassLoader)</a></li>
+<li><a href="#forModule(java.lang.String)" tabindex="0">forModule(String)</a></li>
+<li><a href="#forModule(java.lang.Module)" tabindex="0">forModule(Module)</a></li>
+<li><a href="#validate(java.lang.ModuleLayer)" tabindex="0">validate(ModuleLayer)</a></li>
 <li><a href="#build()" tabindex="0">build()</a></li>
 </ol>
 </li>
@@ -117,8 +117,13 @@ loadScripts(document, 'script');</script>
 <div class="block">Builder of rules at the class level.</div>
 </div>
 <div class="col-first odd-row-color"><code>static final class&nbsp;</code></div>
-<div class="col-second odd-row-color"><code><a href="RulesBuilder.PackageScope.html" class="type-name-link" title="class in org.cojen.boxtin">RulesBuilder.PackageScope</a></code></div>
+<div class="col-second odd-row-color"><code><a href="RulesBuilder.ModuleScope.html" class="type-name-link" title="class in org.cojen.boxtin">RulesBuilder.ModuleScope</a></code></div>
 <div class="col-last odd-row-color">
+<div class="block">Builder of rules at the module level.</div>
+</div>
+<div class="col-first even-row-color"><code>static final class&nbsp;</code></div>
+<div class="col-second even-row-color"><code><a href="RulesBuilder.PackageScope.html" class="type-name-link" title="class in org.cojen.boxtin">RulesBuilder.PackageScope</a></code></div>
+<div class="col-last even-row-color">
 <div class="block">Builder of rules at the package level.</div>
 </div>
 </div>
@@ -168,18 +173,18 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Deny access to all packages, superseding all previous rules.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.PackageScope.html" title="class in org.cojen.boxtin">RulesBuilder.PackageScope</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#forPackage(java.lang.Package)" class="member-name-link">forPackage</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Package.html" title="class or interface in java.lang" class="external-link">Package</a>&nbsp;p)</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.ModuleScope.html" title="class in org.cojen.boxtin">RulesBuilder.ModuleScope</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#forModule(java.lang.Module)" class="member-name-link">forModule</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Module.html" title="class or interface in java.lang" class="external-link">Module</a>&nbsp;module)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Define specific rules against the given package, which can supersede all previous rules.</div>
+<div class="block">Define specific rules against the given module, which can supersede all previous rules.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.PackageScope.html" title="class in org.cojen.boxtin">RulesBuilder.PackageScope</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#forPackage(java.lang.String)" class="member-name-link">forPackage</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name)</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.ModuleScope.html" title="class in org.cojen.boxtin">RulesBuilder.ModuleScope</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#forModule(java.lang.String)" class="member-name-link">forModule</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Define specific rules against the given package, which can supersede all previous rules.</div>
+<div class="block">Define specific rules against the given module, which can supersede all previous rules.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.html" title="class in org.cojen.boxtin">RulesBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#validate(java.lang.ClassLoader)" class="member-name-link">validate</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/ClassLoader.html" title="class or interface in java.lang" class="external-link">ClassLoader</a>&nbsp;loader)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#validate(java.lang.ModuleLayer)" class="member-name-link">validate</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/ModuleLayer.html" title="class or interface in java.lang" class="external-link">ModuleLayer</a>&nbsp;layer)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Validates that all classes are loadable, and that all class members are found.</div>
 </div>
@@ -258,39 +263,39 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="forPackage(java.lang.String)">
-<h3>forPackage</h3>
+<section class="detail" id="forModule(java.lang.String)">
+<h3>forModule</h3>
 <div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RulesBuilder.PackageScope.html" title="class in org.cojen.boxtin">RulesBuilder.PackageScope</a></span>&nbsp;<span class="element-name">forPackage</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name)</span></div>
-<div class="block">Define specific rules against the given package, which can supersede all previous rules.</div>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RulesBuilder.ModuleScope.html" title="class in org.cojen.boxtin">RulesBuilder.ModuleScope</a></span>&nbsp;<span class="element-name">forModule</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name)</span></div>
+<div class="block">Define specific rules against the given module, which can supersede all previous rules.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>name</code> - fully qualified package name</dd>
+<dd><code>name</code> - fully qualified module name</dd>
 </dl>
 </div>
 </section>
 </li>
 <li>
-<section class="detail" id="forPackage(java.lang.Package)">
-<h3>forPackage</h3>
+<section class="detail" id="forModule(java.lang.Module)">
+<h3>forModule</h3>
 <div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RulesBuilder.PackageScope.html" title="class in org.cojen.boxtin">RulesBuilder.PackageScope</a></span>&nbsp;<span class="element-name">forPackage</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Package.html" title="class or interface in java.lang" class="external-link">Package</a>&nbsp;p)</span></div>
-<div class="block">Define specific rules against the given package, which can supersede all previous rules.</div>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RulesBuilder.ModuleScope.html" title="class in org.cojen.boxtin">RulesBuilder.ModuleScope</a></span>&nbsp;<span class="element-name">forModule</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Module.html" title="class or interface in java.lang" class="external-link">Module</a>&nbsp;module)</span></div>
+<div class="block">Define specific rules against the given module, which can supersede all previous rules.</div>
 </div>
 </section>
 </li>
 <li>
-<section class="detail" id="validate(java.lang.ClassLoader)">
+<section class="detail" id="validate(java.lang.ModuleLayer)">
 <h3>validate</h3>
 <div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RulesBuilder.html" title="class in org.cojen.boxtin">RulesBuilder</a></span>&nbsp;<span class="element-name">validate</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/ClassLoader.html" title="class or interface in java.lang" class="external-link">ClassLoader</a>&nbsp;loader)</span>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RulesBuilder.html" title="class in org.cojen.boxtin">RulesBuilder</a></span>&nbsp;<span class="element-name">validate</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/ModuleLayer.html" title="class or interface in java.lang" class="external-link">ModuleLayer</a>&nbsp;layer)</span>
                       throws <span class="exceptions"><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/ClassNotFoundException.html" title="class or interface in java.lang" class="external-link">ClassNotFoundException</a>,
 <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/NoSuchMethodException.html" title="class or interface in java.lang" class="external-link">NoSuchMethodException</a></span></div>
 <div class="block">Validates that all classes are loadable, and that all class members are found. An
  exception is thrown if validation fails.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>loader</code> - required</dd>
+<dd><code>layer</code> - required</dd>
 <dt>Returns:</dt>
 <dd>this</dd>
 <dt>Throws:</dt>
@@ -306,6 +311,10 @@ loadScripts(document, 'script');</script>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a></span>&nbsp;<span class="element-name">build</span>()</div>
 <div class="block">Returns an immutable set of rules based on what's been defined so far.</div>
+<dl class="notes">
+<dt>Throws:</dt>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/IllegalStateException.html" title="class or interface in java.lang" class="external-link">IllegalStateException</a></code> - if a package is defined in multiple modules</dd>
+</dl>
 </div>
 </section>
 </li>

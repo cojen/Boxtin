@@ -66,6 +66,8 @@ loadScripts(document, 'script');</script>
 <li><a href="#method-detail" tabindex="0">Method Details</a>
 <ol class="toc-list">
 <li><a href="#premain(java.lang.String,java.lang.instrument.Instrumentation)" tabindex="0">premain(String, Instrumentation)</a></li>
+<li><a href="#activate(org.cojen.boxtin.Controller)" tabindex="0">activate(Controller)</a></li>
+<li><a href="#tryActivate(org.cojen.boxtin.Controller)" tabindex="0">tryActivate(Controller)</a></li>
 <li><a href="#transform(java.lang.Module,java.lang.ClassLoader,java.lang.String,java.lang.Class,java.security.ProtectionDomain,byte%5B%5D)" tabindex="0">transform(Module, ClassLoader, String, Class, ProtectionDomain, byte[])</a></li>
 </ol>
 </li>
@@ -98,9 +100,9 @@ implements <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.inst
  <pre>
  java -javaagent:Boxtin.jar=my.app.SecurityController ...
  </pre>
-
- If no controller is specified, then a default one is selected which only allows limited
- access to the <a href="RulesApplier.html#java_base()"><code>java.base</code></a> module.
+ 
+ <p>If the controller is specified as "default", then a default one is selected which only
+ allows limited access to the <a href="RulesApplier.html#java_base()"><code>java.base</code></a> module.
 
  <p>The controller must have a public constructor which has no arguments, or it must have a
  public constructor which accepts a single <code>String</code> argument. To supply a string value,
@@ -108,7 +110,10 @@ implements <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.inst
 
  <pre>
  java -javaagent:Boxtin.jar=my.app.SecurityController=custom.value ...
- </pre></div>
+ </pre>
+
+ <p>If no controller is specified, then then the <a href="#activate(org.cojen.boxtin.Controller)"><code>activate</code></a> method must be
+ called later, preferably from the main method.</div>
 </div>
 </section>
 <section class="summary">
@@ -125,20 +130,30 @@ implements <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.inst
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#premain(java.lang.String,java.lang.instrument.Instrumentation)" class="member-name-link">premain</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;agentArgs,
- <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.instrument/java/lang/instrument/Instrumentation.html" title="class or interface in java.lang.instrument" class="external-link">Instrumentation</a>&nbsp;inst)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#activate(org.cojen.boxtin.Controller)" class="member-name-link">activate</a><wbr>(<a href="Controller.html" title="interface in org.cojen.boxtin">Controller</a>&nbsp;controller)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Activate the security agent if not already done so.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#premain(java.lang.String,java.lang.instrument.Instrumentation)" class="member-name-link">premain</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;agentArgs,
+ <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.instrument/java/lang/instrument/Instrumentation.html" title="class or interface in java.lang.instrument" class="external-link">Instrumentation</a>&nbsp;inst)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">The premain method should only be called by the instrumentation layer, when the JVM
  starts.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>byte[]</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#transform(java.lang.Module,java.lang.ClassLoader,java.lang.String,java.lang.Class,java.security.ProtectionDomain,byte%5B%5D)" class="member-name-link">transform</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Module.html" title="class or interface in java.lang" class="external-link">Module</a>&nbsp;module,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>byte[]</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#transform(java.lang.Module,java.lang.ClassLoader,java.lang.String,java.lang.Class,java.security.ProtectionDomain,byte%5B%5D)" class="member-name-link">transform</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Module.html" title="class or interface in java.lang" class="external-link">Module</a>&nbsp;module,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/ClassLoader.html" title="class or interface in java.lang" class="external-link">ClassLoader</a>&nbsp;loader,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;className,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;?&gt;&nbsp;classBeingRedefined,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/security/ProtectionDomain.html" title="class or interface in java.security" class="external-link">ProtectionDomain</a>&nbsp;protectionDomain,
  byte[]&nbsp;classBuffer)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static boolean</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#tryActivate(org.cojen.boxtin.Controller)" class="member-name-link">tryActivate</a><wbr>(<a href="Controller.html" title="interface in org.cojen.boxtin">Controller</a>&nbsp;controller)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Activate the security agent if not already done so.</div>
+</div>
 </div>
 </div>
 </div>
@@ -164,13 +179,47 @@ implements <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.inst
 <h3>premain</h3>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">premain</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;agentArgs,
- <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.instrument/java/lang/instrument/Instrumentation.html" title="class or interface in java.lang.instrument" class="external-link">Instrumentation</a>&nbsp;inst)</span>
-                    throws <span class="exceptions"><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Exception.html" title="class or interface in java.lang" class="external-link">Exception</a></span></div>
+ <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.instrument/java/lang/instrument/Instrumentation.html" title="class or interface in java.lang.instrument" class="external-link">Instrumentation</a>&nbsp;inst)</span></div>
 <div class="block">The premain method should only be called by the instrumentation layer, when the JVM
  starts.</div>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="activate(org.cojen.boxtin.Controller)">
+<h3>activate</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">activate</span><wbr><span class="parameters">(<a href="Controller.html" title="interface in org.cojen.boxtin">Controller</a>&nbsp;controller)</span></div>
+<div class="block">Activate the security agent if not already done so. Activation should be done as early
+ as possible, because some classes which have already been loaded might not be
+ transformable.</div>
 <dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>controller</code> - if null, a default one is used which only allows limited access to the
+ <a href="RulesApplier.html#java_base()"><code>java.base</code></a> module</dd>
 <dt>Throws:</dt>
-<dd><code><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Exception.html" title="class or interface in java.lang" class="external-link">Exception</a></code></dd>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/IllegalStateException.html" title="class or interface in java.lang" class="external-link">IllegalStateException</a></code> - if the SecurityAgent wasn't loaded</dd>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/SecurityException.html" title="class or interface in java.lang" class="external-link">SecurityException</a></code> - if already activated</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="tryActivate(org.cojen.boxtin.Controller)">
+<h3>tryActivate</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">tryActivate</span><wbr><span class="parameters">(<a href="Controller.html" title="interface in org.cojen.boxtin">Controller</a>&nbsp;controller)</span></div>
+<div class="block">Activate the security agent if not already done so. Activation should be done as early
+ as possible, because some classes which have already been loaded might not be
+ transformable.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>controller</code> - if null, a default one is used which only allows limited access to the
+ <a href="RulesApplier.html#java_base()"><code>java.base</code></a> module</dd>
+<dt>Returns:</dt>
+<dd>false if already activated</dd>
+<dt>Throws:</dt>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/IllegalStateException.html" title="class or interface in java.lang" class="external-link">IllegalStateException</a></code> - if the SecurityAgent wasn't loaded</dd>
 </dl>
 </div>
 </section>
