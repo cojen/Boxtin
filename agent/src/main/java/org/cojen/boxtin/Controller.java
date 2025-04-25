@@ -65,31 +65,7 @@ public interface Controller {
      * Returns a Checker which is used to apply changes to classes which have deniable
      * operations.
      *
-     * @param module the target's module
      * @return a checker instance, which can be null if all operations are allowed
      */
-    public Checker checkerForTarget(Module module);
-
-    /**
-     * Returns a Checker which is used to apply changes to classes which have deniable
-     * operations.
-     *
-     * @param module the target's module, which is named
-     * @param className the target's class name, using '/' separators for packages
-     * @return a checker instance, which can be null if all operations are allowed
-     */
-    public default Checker checkerForTarget(Module module, String className) {
-        return checkerForTarget(module);
-    }
-
-    /**
-     * Returns a Checker which is used to apply changes to classes which have deniable
-     * operations.
-     *
-     * @param clazz the target class, which comes from a named module
-     * @return a checker instance, which can be null if all operations are allowed
-     */
-    public default Checker checkerForTarget(Class<?> clazz) {
-        return checkerForTarget(clazz.getModule());
-    }
+    public Checker checkerForTarget();
 }

@@ -134,7 +134,7 @@ public final class TestController implements Controller {
     }
 
     @Override
-    public Checker checkerForTarget(Module module) {
+    public Checker checkerForTarget() {
         return mRules;
     }
 }

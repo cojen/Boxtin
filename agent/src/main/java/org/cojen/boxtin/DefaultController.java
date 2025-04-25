@@ -71,7 +71,7 @@ final class DefaultController implements Controller {
     }
 
     @Override
-    public Checker checkerForTarget(Module module) {
+    public Checker checkerForTarget() {
         return mRules;
     }
 }

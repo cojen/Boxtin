@@ -291,7 +291,7 @@ public final class SecurityAgent implements ClassFileTransformer {
         return Utils.isAccessible(clazz)
             && (module = clazz.getModule()).isNamed()
             && module.isExported(clazz.getPackageName())
-            && (checker = mController.checkerForTarget(clazz)) != null
+            && (checker = mController.checkerForTarget()) != null
             && checker.forClass(clazz).isTargetChecked();
     }
 
@@ -348,9 +348,7 @@ public final class SecurityAgent implements ClassFileTransformer {
         // they're not expected to implement sensitive operations.
 
         Checker forTarget;
-        if (!module.isNamed() ||
-            (forTarget = mController.checkerForTarget(module, className)) == null)
-        {
+        if (!module.isNamed() || (forTarget = mController.checkerForTarget()) == null) {
             forTarget = Rule.ALLOW;
         }
 
