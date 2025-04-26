@@ -20,12 +20,10 @@ import java.io.FileInputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 
-import java.lang.reflect.AccessFlag;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.RecordComponent;
-
-import java.util.Set;
 
 import org.junit.*;
 import static org.junit.Assert.*;
@@ -58,9 +56,9 @@ public class ReflectionTest {
         assertEquals(0, SecurityAgent.class.getConstructors().length);
 
         Method m = SecurityAgent.class.getDeclaredMethod("testActivate", Controller.class);
-        Set<AccessFlag> flags = m.accessFlags();
-        assertFalse(flags.contains(AccessFlag.PUBLIC));
-        assertFalse(flags.contains(AccessFlag.PROTECTED));
+        int modifiers = m.getModifiers();
+        assertFalse(Modifier.isPublic(modifiers));
+        assertFalse(Modifier.isProtected(modifiers));
     }
 
     @Test
