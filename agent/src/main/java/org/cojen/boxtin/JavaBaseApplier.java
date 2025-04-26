@@ -231,6 +231,7 @@ final class JavaBaseApplier implements RulesApplier {
             .allowMethod("ofVirtual")
             .allowMethod("onSpinWait")
             .allowMethod("run")
+            .allowMethod("setDaemon")
             .allowMethod("sleep")
             .allowMethod("start")
             .allowMethod("startVirtualThread")
