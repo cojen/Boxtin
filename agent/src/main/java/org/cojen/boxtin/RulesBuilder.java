@@ -262,31 +262,34 @@ public final class RulesBuilder {
     /**
      * Tries to find a method by name, ignoring the parameter types.
      */
-    private static Method tryFindAnyMethod(Class<?> clazz, String name) {
-        return tryFindMethod(clazz, name, (Class<?>[]) null);
+    private static Method tryFindAnyMethod(boolean allowAbstract, Class<?> clazz, String name) {
+        return tryFindMethod(allowAbstract, clazz, name, (Class<?>[]) null);
     }
 
-    private static Method tryFindMethod(final Class<?> clazz, final String name,
+    private static Method tryFindMethod(final boolean allowAbstract,
+                                        final Class<?> clazz, final String name,
                                         final Class<?>... paramTypes)
     {
         for (Method m : clazz.getDeclaredMethods()) {
-            if (isAccessible(m) && m.getName().equals(name)) {
-                if (paramTypes == null || Arrays.equals(m.getParameterTypes(), paramTypes)) {
-                    return m;
+            if (allowAbstract || !Modifier.isAbstract(m.getModifiers())) {
+                if (isAccessible(m) && m.getName().equals(name)) {
+                    if (paramTypes == null || Arrays.equals(m.getParameterTypes(), paramTypes)) {
+                        return m;
+                    }
                 }
             }
         }
 
         Class<?> superclass = clazz.getSuperclass();
         if (superclass != null) {
-            Method m = tryFindMethod(superclass, name, paramTypes);
+            Method m = tryFindMethod(allowAbstract, superclass, name, paramTypes);
             if (m != null) {
                 return m;
             }
         }
 
         for (Class<?> iface : clazz.getInterfaces()) {
-            Method m = tryFindMethod(iface, name, paramTypes);
+            Method m = tryFindMethod(allowAbstract, iface, name, paramTypes);
             if (m != null) {
                 return m;
             }
@@ -1094,7 +1097,12 @@ public final class RulesBuilder {
             throws ClassNotFoundException, NoSuchMethodException
         {
             if (isEmpty(mVariants)) {
-                Method method = tryFindAnyMethod(clazz, name);
+                Method method = tryFindAnyMethod(false, clazz, name);
+                if (method != null) {
+                    validateMethod(method, mDefaultRule);
+                    return;
+                }
+                method = tryFindAnyMethod(true, clazz, name);
                 if (method != null) {
                     validateMethod(method, mDefaultRule);
                     return;
@@ -1109,7 +1117,7 @@ public final class RulesBuilder {
                     Method method = clazz.getMethod(name, paramTypes);
                     validateMethod(method, e.getValue());
                 } catch (NoSuchMethodException ex) {
-                    Method method = tryFindMethod(clazz, name, paramTypes);
+                    Method method = tryFindMethod(true, clazz, name, paramTypes);
                     if (method == null) {
                         throw ex;
                     }
