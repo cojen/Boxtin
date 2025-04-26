@@ -391,7 +391,7 @@ final class RuleSet implements Rules {
         }
 
         private Rule findRule(CharSequence descriptor) {
-            Map.Entry<CharSequence, Rule> e = mVariants.lowerEntry(descriptor);
+            Map.Entry<CharSequence, Rule> e = mVariants.floorEntry(descriptor);
             return (e != null && startsWith(descriptor, e.getKey())) ? e.getValue() : null;
         }
 
