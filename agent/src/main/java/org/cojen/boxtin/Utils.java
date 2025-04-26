@@ -91,31 +91,28 @@ final class Utils {
     }
 
     /**
-     * Returns a descriptor with no parens.
+     * Returns a method descriptor with parens and no return type.
      */
     static String partialDescriptorFor(Class<?>... paramTypes) {
         if (paramTypes.length == 0) {
-            return "";
+            return "()";
         }
-        if (paramTypes.length == 1) {
-            return paramTypes[0].descriptorString();
-        }
-        var b = new StringBuilder();
-        for (Class<?> c : paramTypes) {
-            b.append(c.descriptorString());
-        }
-        return b.toString();
+        return appendDescriptor(paramTypes).toString();
     }
 
     /**
-     * Returns a descriptor with parens and a return type.
+     * Returns a method descriptor with parens and a return type.
      */
     static String fullDescriptorFor(Class<?> returnType, Class<?>... paramTypes) {
+        return appendDescriptor(paramTypes).append(returnType.descriptorString()).toString();
+    }
+
+    static StringBuilder appendDescriptor(Class<?>... paramTypes) {
         var b = new StringBuilder().append('(');
         for (Class<?> c : paramTypes) {
             b.append(c.descriptorString());
         }
-        return b.append(')').append(returnType.descriptorString()).toString();
+        return b.append(')');
     }
 
     /**
@@ -128,5 +125,24 @@ final class Utils {
 
     static boolean isEmpty(Map<?, ?> map) {
         return map == null || map.isEmpty();
+    }
+
+    /**
+     * Returns true if the first part of str is exactly equal to prefix.
+     */
+    static boolean startsWith(CharSequence str, CharSequence prefix) {
+        if (str instanceof String s && prefix instanceof String p) {
+            return s.startsWith(p);
+        }
+        int plen = prefix.length();
+        if (str.length() <= plen) {
+            return false;
+        }
+        for (int i=0; i<plen; i++) {
+            if (str.charAt(i) != prefix.charAt(i)) {
+                return false;
+            }
+        }
+        return true;
     }
 }

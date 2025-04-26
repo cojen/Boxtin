@@ -54,7 +54,7 @@ public interface Checker {
          * Check if the constructor is fully allowed.
          */
         public default boolean isConstructorAllowed(Class<?>... paramTypes) {
-            return isConstructorAllowed(Utils.fullDescriptorFor(void.class, paramTypes));
+            return isConstructorAllowed(Utils.partialDescriptorFor(paramTypes));
         }
 
         /**
@@ -73,7 +73,7 @@ public interface Checker {
         public default boolean isMethodAllowed(Class<?> returnType,
                                                CharSequence name, Class<?>... paramTypes)
         {
-            return isMethodAllowed(name, Utils.fullDescriptorFor(returnType, paramTypes));
+            return isMethodAllowed(name, Utils.partialDescriptorFor(paramTypes));
         }
 
         /**

@@ -24,18 +24,18 @@ package org.cojen.boxtin;
  */
 public interface Controller {
     /**
-     * Returns a Checker which is used to determine if a calling module is allowed to perform
-     * an operation.
+     * Returns a Checker which determines if a calling module is allowed to perform an
+     * operation.
      *
-     * @param module the caller's module
+     * @param module the caller's module, which can be named or unnamed
      * @return a checker instance, which can be null if all operations are allowed
      */
     public Checker checkerForCaller(Module module);
 
     /**
-     * Returns a Checker which is used to determine if a calling module is allowed to perform
-     * an operation. This variant is provided only for testing and debugging. A class name can
-     * be spoofed, and so it shouldn't be used to determine what Checker to return.
+     * Returns a Checker which determines if a calling module is allowed to perform an
+     * operation. This variant is provided only for testing and debugging. A class name can be
+     * spoofed, and so it shouldn't be used to determine what Checker to return.
      *
      * @param module the caller's module, which can be named or unnamed
      * @param className the caller's class name, using '/' separators for packages
@@ -46,9 +46,9 @@ public interface Controller {
     }
 
     /**
-     * Returns a Checker which is used to determine if a calling module is allowed to perform
-     * an operation. This variant is provided only for testing and debugging. A class name can
-     * be spoofed, and so it shouldn't be used to determine what Checker to return.
+     * Returns a Checker which determines if a calling module is allowed to perform an
+     * operation. This variant is provided only for testing and debugging. A class name can be
+     * spoofed, and so it shouldn't be used to determine what Checker to return.
      *
      * @param clazz the calling class, which can come from a named or unnamed module
      * @return a checker instance, which can be null if all operations are allowed
@@ -62,8 +62,7 @@ public interface Controller {
     // other methods be provided? Define utilities for combining rule sets?
 
     /**
-     * Returns a Checker which is used to apply changes to classes which have deniable
-     * operations.
+     * Returns a Checker which determines if a target class has deniable operations.
      *
      * @return a checker instance, which can be null if all operations are allowed
      */

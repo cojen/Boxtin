@@ -52,12 +52,22 @@ enum Rule implements Checker, Checker.ForClass {
     }
 
     @Override
+    public boolean isConstructorAllowed(Class<?>... paramTypes) {
+        return this == ALLOW;
+    }
+
+    @Override
     public boolean isAnyMethodDeniable() {
         return this != ALLOW;
     }
 
     @Override
     public boolean isMethodAllowed(CharSequence name, CharSequence descriptor) {
+        return this == ALLOW;
+    }
+
+    @Override
+    public boolean isMethodAllowed(Class<?> returnType, CharSequence name, Class<?>... paramTypes) {
         return this == ALLOW;
     }
 

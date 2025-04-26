@@ -24,9 +24,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.NavigableMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 
 import static org.cojen.boxtin.Rule.*;
 import static org.cojen.boxtin.Utils.*;
@@ -178,6 +180,14 @@ public final class RulesBuilder {
         var paramTypes = new ArrayList<Class<?>>(4);
 
         for (int pos = 0; pos < descriptor.length(); ) {
+            char c = descriptor.charAt(pos);
+            if (c == '(') {
+                pos++;
+                c = descriptor.charAt(pos);
+            }
+            if (c == ')') {
+                break;
+            }
             pos = addParamType(paramTypes, loader, descriptor, pos);
         }
 
@@ -978,7 +988,7 @@ public final class RulesBuilder {
 
     private static final class MethodScope {
         // Can be null when empty.
-        Map<String, Rule> mVariants;
+        NavigableMap<CharSequence, Rule> mVariants;
 
         // Default is selected when no map entry is found.
         Rule mDefaultRule;
@@ -1031,15 +1041,24 @@ public final class RulesBuilder {
         }
 
         private MethodScope variantAction(String descriptor, Rule rule) {
-            descriptor = descriptor.replace('.', '/');
+            if (descriptor.isEmpty()) {
+                descriptor = "()";
+            } else {
+                descriptor = descriptor.replace('.', '/');
+                if (descriptor.charAt(0) != '(' &&
+                    descriptor.charAt(descriptor.length() - 1) != ')')
+                {
+                    descriptor = '(' + descriptor + ')';
+                }
+            }
 
-            Map<String, Rule> variants = mVariants;
+            NavigableMap<CharSequence, Rule> variants = mVariants;
 
             if (variants == null) {
                 if (rule == mDefaultRule) {
                     return this;
                 }
-                mVariants = variants = new HashMap<>();
+                mVariants = variants = new TreeMap<>(CharSequence::compare);
             }
 
             if (rule == mDefaultRule) {
@@ -1059,8 +1078,8 @@ public final class RulesBuilder {
                 return;
             }
 
-            for (String descriptor : mVariants.keySet()) {
-                Class<?>[] paramTypes = paramTypesFor(loader, descriptor);
+            for (CharSequence descriptor : mVariants.keySet()) {
+                Class<?>[] paramTypes = paramTypesFor(loader, descriptor.toString());
                 try {
                     clazz.getConstructor(paramTypes);
                 } catch (NoSuchMethodException e) {
@@ -1083,8 +1102,8 @@ public final class RulesBuilder {
                 throw new NoSuchMethodException(clazz + "." + name);
             }
 
-            for (Map.Entry<String, Rule> e : mVariants.entrySet()) {
-                Class<?>[] paramTypes = paramTypesFor(loader, e.getKey());
+            for (Map.Entry<CharSequence, Rule> e : mVariants.entrySet()) {
+                Class<?>[] paramTypes = paramTypesFor(loader, e.getKey().toString());
 
                 try {
                     Method method = clazz.getMethod(name, paramTypes);

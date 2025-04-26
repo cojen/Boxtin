@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
@@ -345,12 +346,12 @@ final class RuleSet implements Rules {
 
     static final class MethodScope {
         // Is null when empty.
-        private final Map<String, Rule> mVariants;
+        private final NavigableMap<CharSequence, Rule> mVariants;
 
         // Default is selected when no map entry is found.
         private final Rule mDefaultRule;
 
-        MethodScope(Map<String, Rule> variants, Rule defaultRule) {
+        MethodScope(NavigableMap<CharSequence, Rule> variants, Rule defaultRule) {
             if (variants != null && variants.isEmpty()) {
                 variants = null;
             }
@@ -367,7 +368,7 @@ final class RuleSet implements Rules {
 
         boolean isMethodAllowed(CharSequence descriptor) {
             Rule rule;
-            if (mVariants == null || (rule = mVariants.get(descriptor)) == null) {
+            if (mVariants == null || (rule = findRule(descriptor)) == null) {
                 rule = mDefaultRule;
             }
             return rule == Rule.ALLOW;
@@ -375,7 +376,7 @@ final class RuleSet implements Rules {
 
         boolean isCallerMethodChecked(CharSequence descriptor) {
             Rule rule;
-            if (mVariants == null || (rule = mVariants.get(descriptor)) == null) {
+            if (mVariants == null || (rule = findRule(descriptor)) == null) {
                 rule = mDefaultRule;
             }
             return rule.isCallerChecked();
@@ -383,19 +384,24 @@ final class RuleSet implements Rules {
 
         boolean isTargetMethodChecked(CharSequence descriptor) {
             Rule rule;
-            if (mVariants == null || (rule = mVariants.get(descriptor)) == null) {
+            if (mVariants == null || (rule = findRule(descriptor)) == null) {
                 rule = mDefaultRule;
             }
             return rule.isTargetChecked();
         }
 
+        private Rule findRule(CharSequence descriptor) {
+            Map.Entry<CharSequence, Rule> e = mVariants.lowerEntry(descriptor);
+            return (e != null && startsWith(descriptor, e.getKey())) ? e.getValue() : null;
+        }
+
         void printTo(Appendable a, String indent) throws IOException {
             if (mVariants != null) {
-                for (Map.Entry<String, Rule> e : sortedEntries(mVariants)) {
+                for (Map.Entry<CharSequence, Rule> e : mVariants.entrySet()) {
                     a.append(indent).append(allowOrDeny(e.getValue()));
-                    a.append(" variant (");
+                    a.append(" variant ");
 
-                    String descriptor = e.getKey();
+                    String descriptor = e.getKey().toString();
                     List<String> paramTypes = tryParseDescriptor(descriptor);
                     if (paramTypes == null) {
                         a.append(descriptor);
@@ -409,7 +415,7 @@ final class RuleSet implements Rules {
                         }
                     }
 
-                    a.append(')').append('\n');
+                    a.append('\n');
                 }
             }
         }

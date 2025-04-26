@@ -99,7 +99,7 @@ public final class Reflection {
         throws NoSuchMethodException
     {
         Constructor<T> ctor = clazz.getConstructor(paramTypes);
-        String desc = Utils.fullDescriptorFor(void.class, ctor.getParameterTypes());
+        String desc = Utils.partialDescriptorFor(ctor.getParameterTypes());
         SecurityAgent.check(mCaller, clazz, null, desc);
         return ctor;
     }
@@ -112,7 +112,7 @@ public final class Reflection {
         throws NoSuchMethodException
     {
         Constructor<T> ctor = clazz.getDeclaredConstructor(paramTypes);
-        String desc = Utils.fullDescriptorFor(void.class, ctor.getParameterTypes());
+        String desc = Utils.partialDescriptorFor(ctor.getParameterTypes());
         SecurityAgent.check(mCaller, clazz, null, desc);
         return ctor;
     }
@@ -125,7 +125,7 @@ public final class Reflection {
         throws NoSuchMethodException
     {
         Method method = clazz.getDeclaredMethod(name, paramTypes);
-        String desc = Utils.fullDescriptorFor(method.getReturnType(), method.getParameterTypes());
+        String desc = Utils.partialDescriptorFor(method.getParameterTypes());
         SecurityAgent.check(mCaller, clazz, name, desc);
         return method;
     }
@@ -136,14 +136,14 @@ public final class Reflection {
 
     public Constructor<?> Class_getEnclosingConstructor(Class<?> clazz) {
         Constructor<?> ctor = clazz.getEnclosingConstructor();
-        String desc = Utils.fullDescriptorFor(void.class, ctor.getParameterTypes());
+        String desc = Utils.partialDescriptorFor(ctor.getParameterTypes());
         SecurityAgent.check(mCaller, ctor.getDeclaringClass(), null, desc);
         return ctor;
     }
 
     public Method Class_getEnclosingMethod(Class<?> clazz) {
         Method method = clazz.getEnclosingMethod();
-        String desc = Utils.fullDescriptorFor(method.getReturnType(), method.getParameterTypes());
+        String desc = Utils.partialDescriptorFor(method.getParameterTypes());
         SecurityAgent.check(mCaller, method.getDeclaringClass(), method.getName(), desc);
         return method;
     }
@@ -152,7 +152,7 @@ public final class Reflection {
         throws NoSuchMethodException
     {
         Method method = clazz.getMethod(name, paramTypes);
-        String desc = Utils.fullDescriptorFor(method.getReturnType(), method.getParameterTypes());
+        String desc = Utils.partialDescriptorFor(method.getParameterTypes());
         SecurityAgent.check(mCaller, method.getDeclaringClass(), name, desc);
         return method;
     }
@@ -174,7 +174,7 @@ public final class Reflection {
         for (int i=0; i<components.length; i++) {
             RecordComponent rc = components[i];
             Method m = rc.getAccessor();
-            String desc = Utils.fullDescriptorFor(m.getReturnType(), m.getParameterTypes());
+            String desc = Utils.partialDescriptorFor(m.getParameterTypes());
             if (SecurityAgent.isAllowed(mCaller, clazz, m.getName(), desc)) {
                 if (filtered != null) {
                     filtered[fpos++] = rc;
@@ -205,7 +205,7 @@ public final class Reflection {
 
         for (int i=0; i<ctors.length; i++) {
             Constructor<?> ctor = ctors[i];
-            String desc = Utils.fullDescriptorFor(void.class, ctor.getParameterTypes());
+            String desc = Utils.partialDescriptorFor(ctor.getParameterTypes());
             if (SecurityAgent.isAllowed(mCaller, clazz, null, desc)) {
                 if (filtered != null) {
                     filtered[fpos++] = ctor;
@@ -250,7 +250,7 @@ public final class Reflection {
                     }
                 }
 
-                String desc = Utils.fullDescriptorFor(m.getReturnType(), m.getParameterTypes());
+                String desc = Utils.partialDescriptorFor(m.getParameterTypes());
                 allowed = SecurityAgent.isAllowed(mCaller, target, m.getName(), desc);
             }
 
