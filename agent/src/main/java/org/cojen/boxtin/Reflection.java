@@ -136,15 +136,19 @@ public final class Reflection {
 
     public Constructor<?> Class_getEnclosingConstructor(Class<?> clazz) {
         Constructor<?> ctor = clazz.getEnclosingConstructor();
-        String desc = Utils.partialDescriptorFor(ctor.getParameterTypes());
-        SecurityAgent.check(mCaller, ctor.getDeclaringClass(), null, desc);
+        if (ctor != null) {
+            String desc = Utils.partialDescriptorFor(ctor.getParameterTypes());
+            SecurityAgent.check(mCaller, ctor.getDeclaringClass(), null, desc);
+        }
         return ctor;
     }
 
     public Method Class_getEnclosingMethod(Class<?> clazz) {
         Method method = clazz.getEnclosingMethod();
-        String desc = Utils.partialDescriptorFor(method.getParameterTypes());
-        SecurityAgent.check(mCaller, method.getDeclaringClass(), method.getName(), desc);
+        if (method != null) {
+            String desc = Utils.partialDescriptorFor(method.getParameterTypes());
+            SecurityAgent.check(mCaller, method.getDeclaringClass(), method.getName(), desc);
+        }
         return method;
     }
 

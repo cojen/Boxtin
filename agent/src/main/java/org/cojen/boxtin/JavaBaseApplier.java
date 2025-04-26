@@ -67,6 +67,7 @@ final class JavaBaseApplier implements RulesApplier {
             .denyAllConstructors()
             .allowVariant("Ljava/io/OutputStream;")
             .allowVariant("Ljava/io/OutputStream;Z")
+            .allowVariant("Ljava/io/OutputStream;ZLjava/lang/String;")
             .allowVariant("Ljava/io/OutputStream;ZLjava/nio/charset/Charset;")
 
             .forClass("PrintWriter")
@@ -240,7 +241,6 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forClass("Thread.Builder.OfPlatform")
             .callerCheck()
-            .denyMethod("daemon")
             .denyMethod("priority")
 
             .forClass("ThreadGroup")

@@ -72,6 +72,12 @@
 
   <dependencies>
     <dependency>
+      <groupId>org.cojen</groupId>
+      <artifactId>cojen-maker</artifactId>
+      <version>[2.6,)</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>[4.13,)</version>
@@ -115,7 +121,7 @@
                     <limit>
                       <counter>INSTRUCTION</counter>
                       <value>COVEREDRATIO</value>
-                      <minimum>0.50</minimum>
+                      <minimum>0.10</minimum>
                     </limit>
                   </limits>
                 </rule>

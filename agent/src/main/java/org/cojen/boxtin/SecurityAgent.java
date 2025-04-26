@@ -221,6 +221,13 @@ public final class SecurityAgent implements ClassFileTransformer {
     }
 
     /**
+     * Should only used by the tests. Pass null to deactivate.
+     */
+    static synchronized void testActivate(Controller controller) {
+        cAgent = controller == null ? null : new SecurityAgent(controller);
+    }
+
+    /**
      * Activate the security agent if not already done so. Activation should be done as early
      * as possible, because some classes which have already been loaded might not be
      * transformable.
@@ -425,7 +432,7 @@ public final class SecurityAgent implements ClassFileTransformer {
         var agent = (SecurityAgent) AGENT_H.getAcquire();
 
         if (agent == null) {
-            throw new SecurityException();
+            return false;
         }
 
         Module callerModule = caller.getModule();

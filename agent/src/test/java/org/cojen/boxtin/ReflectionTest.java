@@ -1,0 +1,357 @@
+/*
+ *  Copyright 2025 Cojen.org
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+package org.cojen.boxtin;
+
+import java.io.FileInputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
+
+import java.lang.reflect.AccessFlag;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.lang.reflect.RecordComponent;
+
+import java.util.Set;
+
+import org.junit.*;
+import static org.junit.Assert.*;
+
+import org.cojen.maker.ClassMaker;
+
+/**
+ * 
+ *
+ * @author Brian S. O'Neill
+ */
+public class ReflectionTest {
+    public static void main(String[] args) throws Exception {
+        org.junit.runner.JUnitCore.main(ReflectionTest.class.getName());
+    }
+
+    public ReflectionTest() {
+    }
+
+    @After
+    public void teardown() {
+        SecurityAgent.testActivate(null);
+    }
+
+    @Test
+    public void notPublic() throws Exception {
+        // Verify that special classes and methods don't have public access.
+
+        assertEquals(0, Reflection.class.getConstructors().length);
+        assertEquals(0, SecurityAgent.class.getConstructors().length);
+
+        Method m = SecurityAgent.class.getDeclaredMethod("testActivate", Controller.class);
+        Set<AccessFlag> flags = m.accessFlags();
+        assertFalse(flags.contains(AccessFlag.PUBLIC));
+        assertFalse(flags.contains(AccessFlag.PROTECTED));
+    }
+
+    @Test
+    public void sameModule() throws Exception {
+        Reflection r = SecurityAgent.reflection();
+        r.Class_getConstructor(ReflectionTest.class);
+
+        Method[] methods = r.Class_getMethods(ReflectionTest.class);
+
+        for (Method m : methods) {
+            assertEquals(getClass(), m.getDeclaringClass());
+        }
+    }
+
+    @Test
+    public void noAgent() throws Exception {
+        Reflection r = SecurityAgent.reflection();
+        try {
+            r.Class_getConstructor(StringBuilder.class);
+            fail();
+        } catch (SecurityException e) {
+            // Security agent hasn't been activated.
+        }
+    }
+
+    @Test
+    public void getConstructor() throws Exception {
+        SecurityAgent.testActivate(new DefaultController(false));
+        Reflection r = SecurityAgent.reflection();
+
+        r.Class_getConstructor(StringBuilder.class);
+
+        try {
+            r.Class_getConstructor(FileInputStream.class);
+            fail();
+        } catch (NoSuchMethodException e) {
+            // Expected.
+        }
+
+        try {
+            r.Class_getConstructor(FileInputStream.class, String.class);
+            fail();
+        } catch (SecurityException e) {
+            // Expected.
+        }
+    }
+
+    @Test
+    public void getConstructors() throws Exception {
+        SecurityAgent.testActivate(new DefaultController(false));
+        Reflection r = SecurityAgent.reflection();
+
+        Constructor[] ctors = r.Class_getConstructors(FileInputStream.class);
+        assertEquals(0, ctors.length);
+
+        ctors = r.Class_getConstructors(PrintStream.class);
+
+        for (Constructor ctor : ctors) {
+            assertEquals(OutputStream.class, ctor.getParameterTypes()[0]);
+        }
+    }
+
+    @Test
+    public void getDeclaredConstructor() throws Exception {
+        SecurityAgent.testActivate(new DefaultController(false));
+        Reflection r = SecurityAgent.reflection();
+
+        r.Class_getDeclaredConstructor(StringBuilder.class);
+
+        try {
+            r.Class_getDeclaredConstructor(FileInputStream.class);
+            fail();
+        } catch (NoSuchMethodException e) {
+            // Expected.
+        }
+
+        try {
+            r.Class_getDeclaredConstructor(FileInputStream.class, String.class);
+            fail();
+        } catch (SecurityException e) {
+            // Expected.
+        }
+    }
+
+    @Test
+    public void getDeclaredConstructors() throws Exception {
+        SecurityAgent.testActivate(new DefaultController(false));
+        Reflection r = SecurityAgent.reflection();
+
+        Constructor[] ctors = r.Class_getDeclaredConstructors(FileInputStream.class);
+        assertEquals(0, ctors.length);
+
+        ctors = r.Class_getDeclaredConstructors(PrintStream.class);
+
+        for (Constructor ctor : ctors) {
+            assertEquals(OutputStream.class, ctor.getParameterTypes()[0]);
+        }
+    }
+
+    @Test
+    public void getDeclaredMethod() throws Exception {
+        SecurityAgent.testActivate(new DefaultController(false));
+        Reflection r = SecurityAgent.reflection();
+
+        r.Class_getDeclaredMethod(StringBuilder.class, "append", Object.class);
+
+        try {
+            r.Class_getDeclaredMethod(StringBuilder.class, "xxx");
+            fail();
+        } catch (NoSuchMethodException e) {
+            // Expected.
+        }
+
+        try {
+            r.Class_getDeclaredMethod(Class.class, "getConstructors");
+            fail();
+        } catch (SecurityException e) {
+            // Expected.
+        }
+    }
+
+    @Test
+    public void getDeclaredMethods() throws Exception {
+        SecurityAgent.testActivate(new DefaultController(false));
+        Reflection r = SecurityAgent.reflection();
+
+        Method[] methods = r.Class_getDeclaredMethods(System.class);
+
+        for (Method m : methods) {
+            assertNotEquals("exit", m.getName());
+        }
+    }
+
+    @Test
+    public void getEnclosingConstructor() throws Exception {
+        SecurityAgent.testActivate(new DefaultController(false));
+        Reflection r = SecurityAgent.reflection();
+
+        class Outer {
+            public Outer() {
+                class Foo {
+                }
+
+                Constructor ctor = r.Class_getEnclosingConstructor(Foo.class);
+                assertNotNull(ctor);
+
+                assertNull(r.Class_getEnclosingMethod(Foo.class));
+            }
+        }
+
+        new Outer();
+    }
+
+    @Test
+    public void getEnclosingMethod() throws Exception {
+        SecurityAgent.testActivate(new DefaultController(false));
+        Reflection r = SecurityAgent.reflection();
+
+        class Foo {
+        }
+
+        Method m = r.Class_getEnclosingMethod(Foo.class);
+        assertEquals("getEnclosingMethod", m.getName());
+
+        assertNull(r.Class_getEnclosingConstructor(Foo.class));
+    }
+
+    @Test
+    public void getMethod() throws Exception {
+        SecurityAgent.testActivate(new DefaultController(false));
+        Reflection r = SecurityAgent.reflection();
+
+        r.Class_getMethod(StringBuilder.class, "append", Object.class);
+
+        try {
+            r.Class_getMethod(StringBuilder.class, "xxx");
+            fail();
+        } catch (NoSuchMethodException e) {
+            // Expected.
+        }
+
+        try {
+            r.Class_getMethod(Class.class, "getDeclaredMethods");
+            fail();
+        } catch (SecurityException e) {
+            // Expected.
+        }
+    }
+
+    @Test
+    public void getMethods() throws Exception {
+        SecurityAgent.testActivate(new DefaultController(false));
+        Reflection r = SecurityAgent.reflection();
+
+        Method[] methods = r.Class_getMethods(System.class);
+
+        for (Method m : methods) {
+            assertNotEquals("exit", m.getName());
+        }
+    }
+
+    @Test
+    public void getRecordComponents() throws Exception {
+        SecurityAgent.testActivate(new TestController());
+        Reflection r = SecurityAgent.reflection();
+
+        String name = "boxtin.ReflectionTest.TestRecord";
+
+        ClassMaker cm = ClassMaker.beginExternal(name).public_();
+
+        cm.addField(String.class, "a");
+        cm.addField(int.class, "b");
+
+        cm.asRecord();
+
+        Class<?> clazz = cm.finish();
+
+        RecordComponent[] components = r.Class_getRecordComponents(clazz);
+
+        for (RecordComponent rc : components) {
+            assertNotEquals("b", rc.getName());
+        }
+    }
+
+    static class TestController implements Controller, Checker, Checker.ForClass {
+        TestController() {
+        }
+
+        @Override
+        public Checker checkerForCaller(Module module) {
+            return this;
+        }
+
+        @Override
+        public Checker checkerForTarget() {
+            return this;
+        }
+
+        @Override
+        public ForClass forClass(CharSequence packageName, CharSequence className) {
+            return this;
+        }
+
+        @Override
+        public boolean isAnyConstructorDeniable() {
+            return false;
+        }
+
+        @Override
+        public boolean isConstructorAllowed(CharSequence descriptor) {
+            return true;
+        }
+
+        @Override
+        public boolean isAnyMethodDeniable() {
+            return true;
+        }
+
+        @Override
+        public boolean isMethodAllowed(CharSequence name, CharSequence descriptor) {
+            return name.equals("a");
+        }
+
+        @Override
+        public boolean isCallerChecked() {
+            return false;
+        }
+
+        @Override
+        public boolean isCallerConstructorChecked(CharSequence descriptor) {
+            return false;
+        }
+
+        @Override
+        public boolean isCallerMethodChecked(CharSequence name, CharSequence descriptor) {
+            return false;
+        }
+
+        @Override
+        public boolean isTargetChecked() {
+            return false;
+        }
+
+        @Override
+        public boolean isTargetConstructorChecked(CharSequence descriptor) {
+            return false;
+        }
+
+        @Override
+        public boolean isTargetMethodChecked(CharSequence name, CharSequence descriptor) {
+            return false;
+        }
+    }
+}
