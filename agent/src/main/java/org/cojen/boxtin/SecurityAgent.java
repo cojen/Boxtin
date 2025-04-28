@@ -102,8 +102,8 @@ public final class SecurityAgent {
     private static SecurityAgent cAgent;
 
     static {
-        CLASS_NAME = SecurityAgent.class.getName().replace('.', '/');
-        BOXTIN_PACKAGE = SecurityAgent.class.getPackageName().replace('.', '/');
+        CLASS_NAME = SecurityAgent.class.getName().replace('.', '/').intern();
+        BOXTIN_PACKAGE = SecurityAgent.class.getPackageName().replace('.', '/').intern();
 
         if (SecurityAgent.class.getClassLoader() == null) {
             ALT_LOADER = ClassLoader.getSystemClassLoader();
