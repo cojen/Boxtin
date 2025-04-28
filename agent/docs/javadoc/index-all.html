@@ -128,25 +128,14 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Checks access to constructors or methods, for a specific class.</div>
 </dd>
-<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html#checkerForCaller(java.lang.Class)" class="member-name-link">checkerForCaller(Class&lt;?&gt;)</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html" title="interface in org.cojen.boxtin">Controller</a></dt>
-<dd>
-<div class="block">Returns a Checker which is used to determine if a calling module is allowed to perform
- an operation.</div>
-</dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html#checkerForCaller(java.lang.Module)" class="member-name-link">checkerForCaller(Module)</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html" title="interface in org.cojen.boxtin">Controller</a></dt>
 <dd>
-<div class="block">Returns a Checker which is used to determine if a calling module is allowed to perform
- an operation.</div>
-</dd>
-<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html#checkerForCaller(java.lang.Module,java.lang.String)" class="member-name-link">checkerForCaller(Module, String)</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html" title="interface in org.cojen.boxtin">Controller</a></dt>
-<dd>
-<div class="block">Returns a Checker which is used to determine if a calling module is allowed to perform
- an operation.</div>
+<div class="block">Returns a Checker which determines if a calling module is allowed to perform an
+ operation.</div>
 </dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html#checkerForTarget()" class="member-name-link">checkerForTarget()</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html" title="interface in org.cojen.boxtin">Controller</a></dt>
 <dd>
-<div class="block">Returns a Checker which is used to apply changes to classes which have deniable
- operations.</div>
+<div class="block">Returns a Checker which determines if a target class has deniable operations.</div>
 </dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/ClassFormatException.html" class="type-name-link" title="class in org.cojen.boxtin">ClassFormatException</a> - Exception Class in <a href="org.cojen.boxtin/org/cojen/boxtin/package-summary.html">org.cojen.boxtin</a></dt>
 <dd>
@@ -445,8 +434,6 @@ loadScripts(document, 'script');</script>
 <div class="block">Indicate that access checking code should be generated in the target class, which is
  the default behavior.</div>
 </dd>
-<dt><a href="org.cojen.boxtin/org/cojen/boxtin/SecurityAgent.html#transform(java.lang.Module,java.lang.ClassLoader,java.lang.String,java.lang.Class,java.security.ProtectionDomain,byte%5B%5D)" class="member-name-link">transform(Module, ClassLoader, String, Class&lt;?&gt;, ProtectionDomain, byte[])</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/SecurityAgent.html" title="class in org.cojen.boxtin">SecurityAgent</a></dt>
-<dd>&nbsp;</dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/SecurityAgent.html#tryActivate(org.cojen.boxtin.Controller)" class="member-name-link">tryActivate(Controller)</a> - Static method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/SecurityAgent.html" title="class in org.cojen.boxtin">SecurityAgent</a></dt>
 <dd>
 <div class="block">Activate the security agent if not already done so.</div>
