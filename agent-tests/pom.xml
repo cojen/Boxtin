@@ -29,6 +29,7 @@
       <groupId>org.cojen</groupId>
       <artifactId>boxtin</artifactId>
       <version>[0.0.1]</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -50,7 +51,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>3.1.0</version>
+        <version>3.5.2</version>
         <configuration>
           <argLine>-javaagent:${project.basedir}/../agent/target/Boxtin.jar=org.cojen.boxtin.tests.TestController</argLine>
           <trimStackTrace>false</trimStackTrace>

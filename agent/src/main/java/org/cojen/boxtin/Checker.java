@@ -36,6 +36,8 @@ public interface Checker {
         return forClass(packageName.replace('.', '/'), Utils.className(packageName, clazz));
     }
 
+    // FIXME: Replace forClass with forCallerClass and forTargetClass?
+
     /**
      * Checks access to constructors or methods, for a specific class.
      */

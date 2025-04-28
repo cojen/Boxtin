@@ -140,7 +140,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>3.1.0</version>
+        <version>3.5.2</version>
         <configuration>
           <trimStackTrace>false</trimStackTrace>
           <useFile>false</useFile>
@@ -155,6 +155,7 @@
         <configuration>
           <archive>
             <manifestEntries>
+              <Automatic-Module-Name>org.cojen.boxtin</Automatic-Module-Name>
               <Premain-Class>org.cojen.boxtin.SecurityAgent</Premain-Class>
               <Can-Redefine-Classes>true</Can-Redefine-Classes>
               <Can-Retransform-Classes>true</Can-Retransform-Classes>

@@ -21,8 +21,9 @@ import java.lang.instrument.IllegalClassFormatException;
 import java.lang.instrument.Instrumentation;
 import java.lang.instrument.UnmodifiableClassException;
 
+import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
-import java.lang.invoke.VarHandle;
+import java.lang.invoke.MethodType;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -65,7 +66,7 @@ import static java.util.Collections.synchronizedMap;
  *
  * @author Brian S. O'Neill
  */
-public final class SecurityAgent implements ClassFileTransformer {
+public final class SecurityAgent {
     /**
      * @hidden
      */
@@ -94,22 +95,20 @@ public final class SecurityAgent implements ClassFileTransformer {
 
     static final String CLASS_NAME, BOXTIN_PACKAGE;
 
+    private static final ClassLoader ALT_LOADER;
+
     private static Instrumentation cInst;
 
-    private static volatile SecurityAgent cAgent;
-
-    private static final VarHandle AGENT_H;
+    private static SecurityAgent cAgent;
 
     static {
         CLASS_NAME = SecurityAgent.class.getName().replace('.', '/');
         BOXTIN_PACKAGE = SecurityAgent.class.getPackageName().replace('.', '/');
 
-
-        try {
-            AGENT_H = MethodHandles.lookup()
-                .findStaticVarHandle(SecurityAgent.class, "cAgent", SecurityAgent.class);
-        } catch (Throwable e) {
-            throw new ExceptionInInitializerError(e);
+        if (SecurityAgent.class.getClassLoader() == null) {
+            ALT_LOADER = ClassLoader.getSystemClassLoader();
+        } else {
+            ALT_LOADER = null;
         }
     }
 
@@ -256,8 +255,10 @@ public final class SecurityAgent implements ClassFileTransformer {
             cAgent = agent = new SecurityAgent(controller);
         }
 
-        inst.addTransformer(agent, true);
-        inst.setNativeMethodPrefix(agent, NATIVE_PREFIX);
+        ClassFileTransformer transformer = agent.newTransformer();
+
+        inst.addTransformer(transformer, true);
+        inst.setNativeMethodPrefix(transformer, NATIVE_PREFIX);
 
         var toRetransform = new ArrayList<Class<?>>();
 
@@ -286,7 +287,7 @@ public final class SecurityAgent implements ClassFileTransformer {
 
     private SecurityAgent(Controller controller) {
         mController = controller;
-        mCheckCache = synchronizedMap(new WeakHashMap<>());
+        mCheckCache = synchronizedMap(new WeakHashMap<>(4));
     }
 
     /**
@@ -307,27 +308,31 @@ public final class SecurityAgent implements ClassFileTransformer {
         return clazz == SecurityAgent.class || clazz == mController.getClass();
     }
 
-    @Override
-    public byte[] transform(Module module,
-                            ClassLoader loader,
-                            String className,
-                            Class<?> classBeingRedefined,
-                            ProtectionDomain protectionDomain,
-                            byte[] classBuffer)
-        throws IllegalClassFormatException
-    {
-        try {
-            return doTransform(module, className, classBeingRedefined, classBuffer);
-        } catch (Throwable e) {
-            // FIXME: Any exception thrown from this method is discarded! That's bad! Instead,
-            // return a new class which throws a SecurityException from every method and
-            // constructor.
-            e.printStackTrace();
-            if (e instanceof IllegalClassFormatException ex) {
-                throw ex;
+    private ClassFileTransformer newTransformer() {
+        return new ClassFileTransformer() {
+            @Override
+            public byte[] transform(Module module,
+                                    ClassLoader loader,
+                                    String className,
+                                    Class<?> classBeingRedefined,
+                                    ProtectionDomain protectionDomain,
+                                    byte[] classBuffer)
+                throws IllegalClassFormatException
+            {
+                try {
+                    return doTransform(module, className, classBeingRedefined, classBuffer);
+                } catch (Throwable e) {
+                    // FIXME: Any exception thrown from this method is discarded! That's bad!
+                    // Instead, return a new class which throws a SecurityException from every
+                    // method and constructor.
+                    e.printStackTrace();
+                    if (e instanceof IllegalClassFormatException ex) {
+                        throw ex;
+                    }
+                    throw new IllegalClassFormatException(e.toString());
+                }
             }
-            throw new IllegalClassFormatException(e.toString());
-        }
+        };
     }
 
     private byte[] doTransform(Module module, String className,
@@ -345,7 +350,7 @@ public final class SecurityAgent implements ClassFileTransformer {
             // Classes loaded by the bootstrap class loader are allowed to call anything.
             forCaller = Rule.ALLOW;
         } else {
-            forCaller = mController.checkerForCaller(module, className);
+            forCaller = mController.checkerForCaller(module);
             if (forCaller == null) {
                 forCaller = Rule.ALLOW;
             }
@@ -429,21 +434,114 @@ public final class SecurityAgent implements ClassFileTransformer {
      * Note: Module comparison should be performed as a prerequisite.
      */
     static boolean isAllowed(Class<?> caller, Class<?> target, String name, String desc) {
-        var agent = (SecurityAgent) AGENT_H.getAcquire();
+        return AllowCheck.isAllowed(caller, target, name, desc);
+    }
 
-        if (agent == null) {
-            return false;
+    /**
+     * Returns a Reflection instance corresponding to the current caller.
+     *
+     * @hidden
+     */
+    public static Reflection reflection() {
+        // The caller class cannot be passed in as a parameter, because this is a public
+        // method, and anything can be passed in. Use the WALKER to get the real caller.
+        return new Reflection(WALKER.getCallerClass());
+    }
+
+    /**
+     * The agent should be loaded by the bootstrap ClassLoader, as specified by the
+     * Boot-Class-Path option in the MANIFEST.MF file. The jar file can also be specified on
+     * the module path, in which case it will ALSO be loaded by the system ClassLoader. All the
+     * magic stuff going on in the static intializer of this class is intended to find the real
+     * SecurityAgent instance which should be invoked by the isAllowed method.
+     */
+    private static class AllowCheck {
+        private static final MethodHandle IS_ALLOWED_H;
+
+        static {
+            var lookup = MethodHandles.lookup();
+
+            var mt2 = MethodType.methodType
+                (boolean.class, Class.class, Class.class, String.class, String.class);
+
+            MethodHandle mh;
+
+            try {
+                Object agent = agent();
+
+                if (agent != null) {
+                    mh = lookup.findVirtual(SecurityAgent.class, "isAllowed2", mt2);
+                } else {
+                    try {
+                        Class<?> altClass = Class.forName
+                            (SecurityAgent.class.getName(), false, SecurityAgent.ALT_LOADER);
+
+                        lookup = lookup.in(altClass);
+
+                        agent = lookup.findStatic
+                            (altClass, "agent", MethodType.methodType(altClass))
+                            .invoke();
+
+                        if (agent != null) {
+                            mh = lookup.findVirtual(altClass, "isAllowed2", mt2);
+                        } else {
+                            mh = lookup.findStatic(altClass, "isAllowed3", mt2);
+                        }
+                    } catch (ClassNotFoundException e) {
+                        agent = null;
+                        mh = lookup.findStatic(SecurityAgent.class, "isAllowed3", mt2);
+                    }
+                }
+
+                if (agent != null) {
+                    mh = MethodHandles.insertArguments(mh, 0, agent);
+                }
+            } catch (ExceptionInInitializerError e) {
+                throw e;
+            } catch (Throwable e) {
+                throw new ExceptionInInitializerError(e);
+            }
+
+            IS_ALLOWED_H = mh;
         }
 
+        static boolean isAllowed(Class<?> caller, Class<?> target, String name, String desc) {
+            try {
+                return (boolean) IS_ALLOWED_H.invokeExact(caller, target, name, desc);
+            } catch (SecurityException e) {
+                throw e;
+            } catch (Throwable e) {
+                throw new SecurityException(e);
+            }
+        }
+    }
+
+    /**
+     * Note: Must be public because it can be accessed from a different ClassLoader.
+     *
+     * @hidden
+     */
+    public static synchronized SecurityAgent agent() {
+        return cAgent;
+    }
+
+    /**
+     * Note: Must be public because it can be accessed from a different ClassLoader.
+     *
+     * Note: Module comparison should be performed as a prerequisite.
+     *
+     * @hidden
+     */
+    public boolean isAllowed2(Class<?> caller, Class<?> target, String name, String desc) {
         Module callerModule = caller.getModule();
 
-        return agent.mCheckCache
+        return mCheckCache
             // weak ref to target
             .computeIfAbsent(callerModule, k -> synchronizedMap(new WeakHashMap<>(4)))
             .computeIfAbsent(target, k -> new ConcurrentHashMap<>(4))
             .computeIfAbsent(name == null ? "<init>" : name, k -> new ConcurrentHashMap<>(4))
             .computeIfAbsent(desc, k -> {
-                Checker checker = agent.mController.checkerForCaller(caller);
+                Checker checker = mController.checkerForCaller(callerModule);
                 if (checker == null) {
                     return true;
                 }
@@ -457,13 +555,22 @@ public final class SecurityAgent implements ClassFileTransformer {
     }
 
     /**
-     * Returns a Reflection instance corresponding to the current caller.
+     * Note: Module comparison should be performed as a prerequisite.
      *
      * @hidden
      */
-    public static Reflection reflection() {
-        // The caller class cannot be passed in as a parameter, because this is a public
-        // method, and anything can be passed in. Use the WALKER to get the real caller.
-        return new Reflection(WALKER.getCallerClass());
+    private static boolean isAllowed3(Class<?> caller, Class<?> target, String name, String desc) {
+        SecurityAgent agent = cAgent;
+
+        if (agent == null) {
+            synchronized (SecurityAgent.class) {
+                agent = cAgent;
+            }
+            if (agent == null) {
+                return false;
+            }
+        }
+
+        return agent.isAllowed2(caller, target, name, desc);
     }
 }

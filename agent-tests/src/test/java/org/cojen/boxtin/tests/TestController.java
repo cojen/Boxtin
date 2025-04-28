@@ -35,6 +35,24 @@ public final class TestController implements Controller {
         builder.allowAll()
             .forModule("java.base")
 
+            .forPackage("java.io")
+            .allowAll()
+
+            .forClass("File")
+            .denyAllMethods()
+            .allowMethod("compareTo")
+            .allowMethod("getName")
+            .allowMethod("getParent")
+            .allowMethod("getParentFile")
+            .allowMethod("getPath")
+            .allowMethod("toPath")
+
+            .forClass("FileInputStream")
+            .denyAllConstructors()
+
+            .forClass("FileOutputStream")
+            .denyAllConstructors()
+
             .forPackage("java.lang")
             .allowAll()
 
@@ -114,23 +132,10 @@ public final class TestController implements Controller {
 
     @Override
     public Checker checkerForCaller(Module module) {
-        return mRules;
-    }
-
-    @Override
-    public Checker checkerForCaller(Module module, String className) {
-        if (!className.startsWith("org/cojen/boxtin/tests")) {
-            return null;
+        if ("org.cojen.boxtin.tests".equals(module.getName())) {
+            return mRules;
         }
-        return checkerForCaller(module);
-    }
-
-    @Override
-    public Checker checkerForCaller(Class<?> caller) {
-        if (!caller.getPackageName().startsWith("org.cojen.boxtin.tests")) {
-            return null;
-        }
-        return checkerForCaller(caller.getModule());
+        return null;
     }
 
     @Override

@@ -32,34 +32,12 @@ public interface Controller {
      */
     public Checker checkerForCaller(Module module);
 
-    /**
-     * Returns a Checker which determines if a calling module is allowed to perform an
-     * operation. This variant is provided only for testing and debugging. A class name can be
-     * spoofed, and so it shouldn't be used to determine what Checker to return.
-     *
-     * @param module the caller's module, which can be named or unnamed
-     * @param className the caller's class name, using '/' separators for packages
-     * @return a checker instance, which can be null if all operations are allowed
-     */
-    public default Checker checkerForCaller(Module module, String className) {
-        return checkerForCaller(module);
-    }
-
-    /**
-     * Returns a Checker which determines if a calling module is allowed to perform an
-     * operation. This variant is provided only for testing and debugging. A class name can be
-     * spoofed, and so it shouldn't be used to determine what Checker to return.
-     *
-     * @param clazz the calling class, which can come from a named or unnamed module
-     * @return a checker instance, which can be null if all operations are allowed
-     */
-    public default Checker checkerForCaller(Class<?> clazz) {
-        return checkerForCaller(clazz.getModule());
-    }
-
     // FIXME: The checkerForTarget result is generally supposed to be the "union" of all
     // denials, of all rule sets. Does this mean that the method should be renamed? Should
     // other methods be provided? Define utilities for combining rule sets?
+    //
+    // FIXME: The merge rules must be target centric. A CALLER_DENY rule is interpreted as
+    // ALLOW. Only TARGET_DENY is kept as-is. Checker.mergeForTarget(...)?
 
     /**
      * Returns a Checker which determines if a target class has deniable operations.

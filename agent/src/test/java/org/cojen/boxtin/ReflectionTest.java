@@ -43,6 +43,13 @@ public class ReflectionTest {
     public ReflectionTest() {
     }
 
+    @BeforeClass
+    public static void setup() {
+        // Force the "isAllowed3" variant to be used, which checks if the agent is null or not
+        // each time.
+        SecurityAgent.isAllowed(Object.class, Object.class, "", "");
+    }
+
     @After
     public void teardown() {
         SecurityAgent.testActivate(null);
