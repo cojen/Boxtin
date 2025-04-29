@@ -66,12 +66,12 @@ final class DefaultController implements Controller {
     }
 
     @Override
-    public Checker checkerForCaller(Module module) {
+    public Rules rulesForCaller(Module module) {
         return mRules;
     }
 
     @Override
-    public Checker checkerForTarget() {
+    public Rules rulesForTarget() {
         return mRules;
     }
 }

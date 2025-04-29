@@ -60,6 +60,11 @@ final class RuleSet implements Rules {
     }
 
     @Override
+    public boolean isAllAllowed() {
+        return mPackages == null && mDefaultRule.isAllowed();
+    }
+
+    @Override
     public ForClass forClass(CharSequence packageName, CharSequence className) {
         PackageScope scope;
         if (mPackages == null || (scope = mPackages.get(packageName)) == null) {
@@ -79,7 +84,7 @@ final class RuleSet implements Rules {
     }
 
     @Override
-    public void printTo(Appendable a, String indent, String plusIndent) throws IOException {
+    public boolean printTo(Appendable a, String indent, String plusIndent) throws IOException {
         a.append(indent).append("rules").append(" {").append('\n');
 
         String scopeIndent = indent + plusIndent;
@@ -101,20 +106,18 @@ final class RuleSet implements Rules {
         }
 
         a.append(indent).append('}').append('\n');
+
+        return true;
     }
 
     private static <V> Set<Map.Entry<String, V>> sortedEntries(Map<String, V> map) {
         return (map instanceof SortedMap ? map : new TreeMap<>(map)).entrySet();
     }
 
-    private static String allowOrDeny(Rule rule) {
-        return rule.toString().replace('_', ' ').toLowerCase();
-    }
-
     private static Appendable printAllowOrDenyAll(Appendable a, String indent, Rule rule)
         throws IOException
     {
-        return a.append(indent).append(allowOrDeny(rule)).append(" all");
+        return a.append(indent).append(rule.toString()).append(" all");
     }
 
     static final class PackageScope {
@@ -166,7 +169,7 @@ final class RuleSet implements Rules {
         }
     }
 
-    static final class ClassScope implements Checker.ForClass {
+    static final class ClassScope implements Rules.ForClass {
         // Is null when empty.
         private final MethodScope mConstructors;
 
@@ -178,6 +181,9 @@ final class RuleSet implements Rules {
 
         // Default is selected when no method map entry is found.
         private final Rule mDefaultMethodRule;
+
+        // Bits 3..2 for caller, bits 1..0 for target. 0: unknown, 1: denied, 3: allowed
+        private int mWhereDenied;
 
         ClassScope(MethodScope constructors, Rule defaultConstructorRule,
                    Map<String, MethodScope> methods, Rule defaultMethodRule)
@@ -201,92 +207,107 @@ final class RuleSet implements Rules {
         }
 
         @Override
-        public boolean isAnyConstructorDeniable() {
-            return mConstructors != null || mDefaultConstructorRule != Rule.ALLOW;
+        public boolean isAllAllowed() {
+            return mConstructors == null && mDefaultConstructorRule == Rule.allow()
+                && mMethods == null && mDefaultMethodRule == Rule.allow();
         }
 
         @Override
-        public boolean isConstructorAllowed(CharSequence descriptor) {
+        public Rule ruleForConstructor(CharSequence descriptor) {
             MethodScope scope = mConstructors;
             if (scope == null) {
-                return mDefaultConstructorRule == Rule.ALLOW;
+                return mDefaultConstructorRule;
             }
-            return scope.isMethodAllowed(descriptor);
+            return scope.ruleForMethod(descriptor);
         }
 
         @Override
-        public boolean isAnyMethodDeniable() {
-            return mMethods != null || mDefaultMethodRule != Rule.ALLOW;
-        }
-
-        @Override
-        public boolean isMethodAllowed(CharSequence name, CharSequence descriptor) {
-            boolean allowed;
+        public Rule ruleForMethod(CharSequence name, CharSequence descriptor) {
+            Rule rule;
             MethodScope scope;
             if (mMethods == null || (scope = mMethods.get(name)) == null) {
-                allowed = mDefaultMethodRule == Rule.ALLOW;
+                rule = mDefaultMethodRule;
             } else {
-                allowed = scope.isMethodAllowed(descriptor);
-            } 
-            return allowed || isAlwaysAllowed(name, descriptor);
-        }
-
-
-        @Override
-        public boolean isCallerChecked() {
-            return mConstructors != null || mMethods != null
-                || mDefaultConstructorRule.isCallerChecked()
-                || mDefaultMethodRule.isCallerChecked();
-        }
-
-
-        @Override
-        public boolean isCallerConstructorChecked(CharSequence descriptor) {
-            MethodScope scope = mConstructors;
-            if (scope == null) {
-                return mDefaultConstructorRule.isCallerChecked();
+                rule = scope.ruleForMethod(descriptor);
             }
-            return scope.isCallerMethodChecked(descriptor);
-        }
-
-        @Override
-        public boolean isCallerMethodChecked(CharSequence name, CharSequence descriptor) {
-            boolean checked;
-            MethodScope scope;
-            if (mMethods == null || (scope = mMethods.get(name)) == null) {
-                checked = mDefaultMethodRule.isCallerChecked();
-            } else {
-                checked = scope.isCallerMethodChecked(descriptor);
+            if (!rule.isAllowed() && isAlwaysAllowed(name, descriptor)) {
+                rule = Rule.allow();
             }
-            return checked && !isAlwaysAllowed(name, descriptor);
+            return rule;
         }
 
         @Override
-        public boolean isTargetChecked() {
-            return mConstructors != null || mMethods != null
-                || mDefaultConstructorRule.isTargetChecked()
-                || mDefaultMethodRule.isTargetChecked();
+        public boolean isAnyConstructorDenied() {
+            return mConstructors != null || mDefaultConstructorRule.isDenied();
         }
 
         @Override
-        public boolean isTargetConstructorChecked(CharSequence descriptor) {
-            MethodScope scope = mConstructors;
-            if (scope == null) {
-                return mDefaultConstructorRule.isTargetChecked();
+        public boolean isAnyMethodDenied() {
+            return mMethods != null || mDefaultMethodRule.isDenied();
+        }
+
+        @Override
+        public boolean isAnyDeniedAtCaller() {
+            int where = mWhereDenied >> 2;
+
+            if (where == 0) {
+                examine: {
+                    if (mDefaultConstructorRule.isDeniedAtCaller() ||
+                        mDefaultMethodRule.isDeniedAtCaller() ||
+                        (mConstructors != null && mConstructors.isDeniedAtCaller()))
+                    {
+                        where = 1;
+                        break examine;
+                    }
+
+                    if (mMethods != null) {
+                        for (MethodScope scope : mMethods.values()) {
+                            if (scope.isDeniedAtCaller()) {
+                                where = 1;
+                                break examine;
+                            }
+                        }
+                    }
+
+                    where = 3;
+                }
+
+                mWhereDenied |= where << 2;
             }
-            return scope.isTargetMethodChecked(descriptor);
+
+            return where == 1;
         }
 
         @Override
-        public boolean isTargetMethodChecked(CharSequence name, CharSequence descriptor) {
-            boolean checked;
-            MethodScope scope;
-            if (mMethods == null || (scope = mMethods.get(name)) == null) {
-                checked = mDefaultMethodRule.isTargetChecked();
-            } else {
-                checked = scope.isTargetMethodChecked(descriptor);
+        public boolean isAnyDeniedAtTarget() {
+            int where = mWhereDenied & 0b11;
+
+            if (where == 0) {
+                examine: {
+                    if (mDefaultConstructorRule.isDeniedAtTarget() ||
+                        mDefaultMethodRule.isDeniedAtTarget() ||
+                        (mConstructors != null && mConstructors.isDeniedAtTarget()))
+                    {
+                        where = 1;
+                        break examine;
+                    }
+
+                    if (mMethods != null) {
+                        for (MethodScope scope : mMethods.values()) {
+                            if (scope.isDeniedAtTarget()) {
+                                where = 1;
+                                break examine;
+                            }
+                        }
+                    }
+
+                    where = 3;
+                }
+
+                mWhereDenied |= where;
             }
-            return checked && !isAlwaysAllowed(name, descriptor);
+
+            return where == 1;
         }
 
         void printTo(Appendable a, String indent, String plusIndent) throws IOException {
@@ -312,7 +333,7 @@ final class RuleSet implements Rules {
                 for (Map.Entry<String, MethodScope> e : entries) {
                     String name = e.getKey();
                     MethodScope scope = e.getValue();
-                    a.append(indent).append(allowOrDeny(scope.mDefaultRule)).append(' ')
+                    a.append(indent).append(scope.mDefaultRule.toString()).append(' ')
                         .append("method").append(' ').append(name).append('\n');
                     if (scope.mVariants != null) {
                         scope.printTo(a, indent + plusIndent);
@@ -366,28 +387,42 @@ final class RuleSet implements Rules {
                 && Objects.equals(mVariants, other.mVariants);
         }
 
-        boolean isMethodAllowed(CharSequence descriptor) {
+        Rule ruleForMethod(CharSequence descriptor) {
             Rule rule;
             if (mVariants == null || (rule = findRule(descriptor)) == null) {
-                rule = mDefaultRule;
+                return mDefaultRule;
             }
-            return rule == Rule.ALLOW;
+            return rule;
         }
 
-        boolean isCallerMethodChecked(CharSequence descriptor) {
-            Rule rule;
-            if (mVariants == null || (rule = findRule(descriptor)) == null) {
-                rule = mDefaultRule;
+        boolean isDeniedAtCaller() {
+            if (mVariants == null) {
+                return mDefaultRule.isDeniedAtCaller();
             }
-            return rule.isCallerChecked();
+
+            for (Rule rule : mVariants.values()) {
+                if (rule.isDeniedAtCaller()) {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
-        boolean isTargetMethodChecked(CharSequence descriptor) {
-            Rule rule;
-            if (mVariants == null || (rule = findRule(descriptor)) == null) {
-                rule = mDefaultRule;
+        boolean isDeniedAtTarget() {
+            if (mVariants == null) {
+                return mDefaultRule.isDeniedAtTarget();
             }
-            return rule.isTargetChecked();
+
+            if (mVariants != null) {
+                for (Rule rule : mVariants.values()) {
+                    if (rule.isDeniedAtTarget()) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         private Rule findRule(CharSequence descriptor) {
@@ -398,7 +433,7 @@ final class RuleSet implements Rules {
         void printTo(Appendable a, String indent) throws IOException {
             if (mVariants != null) {
                 for (Map.Entry<CharSequence, Rule> e : mVariants.entrySet()) {
-                    a.append(indent).append(allowOrDeny(e.getValue()));
+                    a.append(indent).append(e.getValue().toString());
                     a.append(" variant ");
 
                     String descriptor = e.getKey().toString();

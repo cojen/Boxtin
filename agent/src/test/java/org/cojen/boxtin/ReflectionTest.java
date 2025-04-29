@@ -290,18 +290,23 @@ public class ReflectionTest {
         }
     }
 
-    static class TestController implements Controller, Checker, Checker.ForClass {
+    static class TestController implements Controller, Rules, Rules.ForClass {
         TestController() {
         }
 
         @Override
-        public Checker checkerForCaller(Module module) {
+        public Rules rulesForCaller(Module module) {
             return this;
         }
 
         @Override
-        public Checker checkerForTarget() {
+        public Rules rulesForTarget() {
             return this;
+        }
+
+        @Override
+        public boolean isAllAllowed() {
+            return false;
         }
 
         @Override
@@ -310,53 +315,38 @@ public class ReflectionTest {
         }
 
         @Override
-        public boolean isAnyConstructorDeniable() {
+        public boolean printTo(Appendable a, String indent, String plusIndent) {
             return false;
         }
 
         @Override
-        public boolean isConstructorAllowed(CharSequence descriptor) {
+        public Rule ruleForConstructor(CharSequence descriptor) {
+            return Rule.allow();
+        }
+
+        @Override
+        public Rule ruleForMethod(CharSequence name, CharSequence descriptor) {
+            return name.equals("a") ? Rule.allow() : Rule.denyAtCaller();
+        }
+
+        @Override
+        public boolean isAnyConstructorDenied() {
+            return false;
+        }
+
+        @Override
+        public boolean isAnyMethodDenied() {
             return true;
         }
 
         @Override
-        public boolean isAnyMethodDeniable() {
+        public boolean isAnyDeniedAtCaller() {
             return true;
         }
 
         @Override
-        public boolean isMethodAllowed(CharSequence name, CharSequence descriptor) {
-            return name.equals("a");
-        }
-
-        @Override
-        public boolean isCallerChecked() {
-            return false;
-        }
-
-        @Override
-        public boolean isCallerConstructorChecked(CharSequence descriptor) {
-            return false;
-        }
-
-        @Override
-        public boolean isCallerMethodChecked(CharSequence name, CharSequence descriptor) {
-            return false;
-        }
-
-        @Override
-        public boolean isTargetChecked() {
-            return false;
-        }
-
-        @Override
-        public boolean isTargetConstructorChecked(CharSequence descriptor) {
-            return false;
-        }
-
-        @Override
-        public boolean isTargetMethodChecked(CharSequence name, CharSequence descriptor) {
-            return false;
+        public boolean isAnyDeniedAtTarget() {
+            return true;
         }
     }
 }

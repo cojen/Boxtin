@@ -16,20 +16,80 @@
 
 package org.cojen.boxtin;
 
+import java.io.IOException;
+
+import java.util.Objects;
+
 /**
  * 
  *
  * @author Brian S. O'Neill
  */
-enum Rule implements Checker, Checker.ForClass {
-    /** Operation is allowed. */
-    ALLOW,
+public sealed class Rule implements Rules, Rules.ForClass {
+    private static final Rule ALLOWED = new Rule();
 
-    /** Operation is denied, and the check is performed in the caller class. */
-    CALLER_DENY,
+    public static Rule allow() {
+        return ALLOWED;
+    }
 
-    /** Operation is denied, and the check is performed in the target class. */
-    TARGET_DENY;
+    public static Rule denyAtCaller() {
+        return AtCaller.STANDARD;
+    }
+
+    public static Rule denyAtCaller(DenyAction action) {
+        if (action == DenyAction.standard()) {
+            return AtCaller.STANDARD;
+        } else if (action == DenyAction.empty()) {
+            return AtCaller.EMPTY;
+        } else {
+            return new AtCaller(Objects.requireNonNull(action));
+        }
+    }
+
+    public static Rule denyAtTarget() {
+        return AtTarget.STANDARD;
+    }
+
+    public static Rule denyAtTarget(DenyAction action) {
+        if (action == DenyAction.standard()) {
+            return AtTarget.STANDARD;
+        } else if (action == DenyAction.empty()) {
+            return AtTarget.EMPTY;
+        } else {
+            return new AtTarget(Objects.requireNonNull(action));
+        }
+    }
+
+    private Rule() {
+    }
+
+    public final boolean isAllowed() {
+        return !isDenied();
+    }
+
+    public boolean isDenied() {
+        return false;
+    }
+
+    public boolean isDeniedAtCaller() {
+        return false;
+    }
+
+    public boolean isDeniedAtTarget() {
+        return false;
+    }
+
+    /**
+     * @return null if not denied
+     */
+    public DenyAction denyAction() {
+        return null;
+    }
+
+    @Override
+    public boolean isAllAllowed() {
+        return isAllowed();
+    }
 
     @Override
     public ForClass forClass(CharSequence packageName, CharSequence className) {
@@ -41,63 +101,149 @@ enum Rule implements Checker, Checker.ForClass {
         return this;
     }
 
-    @Override
-    public boolean isAnyConstructorDeniable() {
-        return this != ALLOW;
+    public boolean printTo(Appendable a, String indent, String plusIndent) throws IOException {
+        a.append(indent).append(toString());
+        return true;
     }
 
     @Override
-    public boolean isConstructorAllowed(CharSequence descriptor) {
-        return this == ALLOW;
+    public Rule ruleForConstructor(CharSequence descriptor) {
+        return this;
     }
 
     @Override
-    public boolean isConstructorAllowed(Class<?>... paramTypes) {
-        return this == ALLOW;
+    public Rule ruleForConstructor(Class<?>... paramTypes) {
+        return this;
     }
 
     @Override
-    public boolean isAnyMethodDeniable() {
-        return this != ALLOW;
+    public Rule ruleForMethod(CharSequence name, CharSequence descriptor) {
+        return this;
     }
 
     @Override
-    public boolean isMethodAllowed(CharSequence name, CharSequence descriptor) {
-        return this == ALLOW;
+    public Rule ruleForMethod(Class<?> returnType, CharSequence name, Class<?>... paramTypes) {
+        return this;
     }
 
     @Override
-    public boolean isMethodAllowed(Class<?> returnType, CharSequence name, Class<?>... paramTypes) {
-        return this == ALLOW;
+    public boolean isAnyConstructorDenied() {
+        return isDenied();
     }
 
     @Override
-    public boolean isCallerChecked() {
-        return this == CALLER_DENY;
+    public boolean isAnyMethodDenied() {
+        return isDenied();
     }
 
     @Override
-    public boolean isCallerConstructorChecked(CharSequence descriptor) {
-        return this == CALLER_DENY;
+    public boolean isAnyDeniedAtCaller() {
+        return isDeniedAtCaller();
+    }
+
+    public boolean isAnyDeniedAtTarget() {
+        return isDeniedAtTarget();
     }
 
     @Override
-    public boolean isCallerMethodChecked(CharSequence name, CharSequence descriptor) {
-        return this == CALLER_DENY;
+    public int hashCode() {
+        return 524764839;
     }
 
     @Override
-    public boolean isTargetChecked() {
-        return this == TARGET_DENY;
+    public String toString() {
+        return "allow";
     }
 
-    @Override
-    public boolean isTargetConstructorChecked(CharSequence descriptor) {
-        return this == TARGET_DENY;
+    private static final class AtCaller extends Rule {
+        private static final AtCaller STANDARD = new AtCaller(DenyAction.standard());
+        private static final AtCaller EMPTY = new AtCaller(DenyAction.empty());
+
+        private final DenyAction action;
+
+        private AtCaller(DenyAction action) {
+            this.action = action;
+        }
+
+        @Override
+        public boolean isDenied() {
+            return true;
+        }
+
+        @Override
+        public boolean isDeniedAtCaller() {
+            return true;
+        }
+
+        @Override
+        public boolean isDeniedAtTarget() {
+            return false;
+        }
+
+        @Override
+        public DenyAction denyAction() {
+            return action;
+        }
+
+        @Override
+        public int hashCode() {
+            return -655008625 ^ action.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return obj instanceof AtCaller other && action.equals(other.action);
+        }
+
+        @Override
+        public String toString() {
+            return "caller deny";
+        }
     }
 
-    @Override
-    public boolean isTargetMethodChecked(CharSequence name, CharSequence descriptor) {
-        return this == TARGET_DENY;
+    private static final class AtTarget extends Rule {
+        private static final AtTarget STANDARD = new AtTarget(DenyAction.standard());
+        private static final AtTarget EMPTY = new AtTarget(DenyAction.empty());
+
+        private final DenyAction action;
+
+        private AtTarget(DenyAction action) {
+            this.action = action;
+        }
+
+        @Override
+        public boolean isDenied() {
+            return true;
+        }
+
+        @Override
+        public boolean isDeniedAtCaller() {
+            return false;
+        }
+
+        @Override
+        public boolean isDeniedAtTarget() {
+            return true;
+        }
+
+        @Override
+        public DenyAction denyAction() {
+            return action;
+        }
+
+        @Override
+        public int hashCode() {
+            return 810018264 ^ action.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return obj instanceof AtTarget other && action.equals(other.action);
+        }
+
+        @Override
+        public String toString() {
+            return "target deny";
+        }
     }
 }

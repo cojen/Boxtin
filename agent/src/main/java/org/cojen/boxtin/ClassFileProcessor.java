@@ -129,19 +129,19 @@ final class ClassFileProcessor {
      * Examines the class to see if any constructors or methods need to be modified for
      * supporting runtime checks, and begins making modifications if so.
      *
-     * @param forCaller checker against the class when it's acting as a caller
-     * @param forTargetClass checker against the class when it's acting as a target
+     * @param forCaller rules against the class when it's acting as a caller
+     * @param forTargetClass rules against the class when it's acting as a target
      * @param reflectionChecks pass true to perform special caller-side reflection transforms
      * @return true if class requires modification
      */
-    public boolean check(Checker forCaller, Checker.ForClass forTargetClass,
+    public boolean check(Rules forCaller, Rules.ForClass forTargetClass,
                          boolean reflectionChecks)
         throws IOException, ClassFormatException
     {
-        final boolean targetClassChecked = forTargetClass.isTargetChecked()
-            || forTargetClass.isAnyConstructorDeniable(); // See isConstructor comment below.
+        final boolean targetClassChecked = forTargetClass.isAnyDeniedAtTarget()
+            || forTargetClass.isAnyConstructorDenied(); // See isConstructor comment below.
 
-        if (forCaller == Rule.ALLOW && (!isAccessible(mAccessFlags) || !targetClassChecked)) {
+        if (forCaller.isAllAllowed() && (!isAccessible(mAccessFlags) || !targetClassChecked)) {
             // No need to modify inaccessible classes, or those that aren't checked.
             return false;
         }
@@ -153,9 +153,9 @@ final class ClassFileProcessor {
         // FIXME: If reflectionChecks is true, MethodHandle constants should honor it too.
 
         mConstantPool.visitMethodHandleRefs(true, (kind, offset, methodRef) -> {
-            Checker.ForClass forClass = forClass(forCaller, methodRef);
+            Rules.ForClass forClass = forClass(forCaller, methodRef);
 
-            if (!forClass.isCallerChecked() && !forClass.isTargetChecked()) {
+            if (forClass.isAllAllowed()) {
                 return;
             }
 
@@ -165,7 +165,7 @@ final class ClassFileProcessor {
             byte proxyType;
 
             if (kind == REF_newInvokeSpecial) {
-                if (!forClass.isConstructorAllowed(nat.mTypeDesc)) {
+                if (forClass.ruleForConstructor(nat.mTypeDesc).isDenied()) {
                     op = NEW;
                     // Constructor check is always in the target.
                     proxyType = PT_PLAIN;
@@ -173,9 +173,10 @@ final class ClassFileProcessor {
                     return;
                 }
             } else {
-                if (forClass.isTargetMethodChecked(nat.mName, nat.mTypeDesc)) {
+                Rule rule = forClass.ruleForMethod(nat.mName, nat.mTypeDesc);
+                if (rule.isDeniedAtTarget()) {
                     proxyType = PT_PLAIN;
-                } else if (forClass.isCallerMethodChecked(nat.mName, nat.mTypeDesc)) {
+                } else if (rule.isDeniedAtCaller()) {
                     proxyType = PT_CALLER;
                 } else {
                     return;
@@ -226,14 +227,14 @@ final class ClassFileProcessor {
                     // modifications to make it work in the client class are too complicated.
                     // The problem is that uninitialized objects cannot be passed to other
                     // methods, in this case, the proxy method. See insertCallerChecks.
-                    targetCodeChecked = !forTargetClass.isConstructorAllowed(desc);
+                    targetCodeChecked = forTargetClass.ruleForConstructor(desc).isDenied();
                     name = null; // indicate that the method is a constructor
                 } else {
-                    targetCodeChecked = forTargetClass.isTargetMethodChecked(name, desc);
+                    targetCodeChecked = forTargetClass.ruleForMethod(name, desc).isDeniedAtTarget();
                 }
             }
 
-            if (!targetCodeChecked && forCaller == Rule.ALLOW) {
+            if (!targetCodeChecked && forCaller.isAllAllowed()) {
                 skipAttributes(decoder);
                 continue;
             }
@@ -293,7 +294,7 @@ final class ClassFileProcessor {
                 if (targetCodeChecked) {
                     replacement = insertChecks(forCaller, decoder, attrLength, name, desc);
                 } else {
-                    assert forCaller != Rule.ALLOW;
+                    assert !forCaller.isAllAllowed();
 
                     int max_stack = decoder.readUnsignedShort();
                     int max_locals = decoder.readUnsignedShort();
@@ -435,7 +436,7 @@ final class ClassFileProcessor {
      * @param name pass null if the method is a constructor
      * @return non-null Replacement instance
      */
-    private Replacement insertChecks(Checker forCaller, BufferDecoder decoder, long codeAttrLength,
+    private Replacement insertChecks(Rules forCaller, BufferDecoder decoder, long codeAttrLength,
                                      ConstantPool.C_UTF8 name, ConstantPool.C_UTF8 desc)
         throws IOException, ClassFormatException
     {
@@ -479,7 +480,7 @@ final class ClassFileProcessor {
             encoder.writeByte(NOP);
         }
 
-        if (forCaller == Rule.ALLOW) {
+        if (forCaller.isAllAllowed()) {
             // Copy the original code.
             decoder.transferTo(encoder, code_length);
         } else {
@@ -734,7 +735,7 @@ final class ClassFileProcessor {
      * @param encoder accepts the updated bytecode; can be null initially
      * @return the given encoder, or a new instance if necessary
      */
-    private Replacement insertCallerChecks(Checker forCaller,
+    private Replacement insertCallerChecks(Rules forCaller,
                                            BufferDecoder decoder, Replacement encoder,
                                            long code_length)
         throws IOException, ClassFormatException
@@ -773,9 +774,9 @@ final class ClassFileProcessor {
                     methodRef = mConstantPool.findConstant(methodRefIndex, C_MemberRef.class);
                     offset += op != INVOKEINTERFACE ? 2 : 4;
 
-                    Checker.ForClass forClass = forClass(forCaller, methodRef);
+                    Rules.ForClass forClass = forClass(forCaller, methodRef);
 
-                    if (!forClass.isCallerChecked()) {
+                    if (!forClass.isAnyDeniedAtCaller()) {
                         continue;
                     }
 
@@ -787,7 +788,7 @@ final class ClassFileProcessor {
                         continue;
                     }
 
-                    if (!forClass.isCallerMethodChecked(nat.mName, nat.mTypeDesc)) {
+                    if (!forClass.ruleForMethod(nat.mName, nat.mTypeDesc).isDeniedAtCaller()) {
                         continue;
                     }
                 }
@@ -944,12 +945,12 @@ final class ClassFileProcessor {
     }
 
     /**
-     * Returns a ForClass checker from the calling side, to a target.
+     * Returns ForClass rules from the calling side, to a target.
      */
-    private Checker.ForClass forClass(Checker forCaller, C_MemberRef methodRef) {
+    private Rules.ForClass forClass(Rules forCaller, C_MemberRef methodRef) {
         if (methodRef.mClass.mIndex == mThisClassIndex) {
             // Calling into the same class, which is always allowed.
-            return Rule.ALLOW;
+            return Rule.allow();
         }
 
         ConstantPool.C_UTF8 packageName = mPackageName;

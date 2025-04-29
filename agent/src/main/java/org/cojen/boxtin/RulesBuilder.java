@@ -67,9 +67,7 @@ public final class RulesBuilder {
      * @return this
      */
     public RulesBuilder denyAll() {
-        mModules = null;
-        mDefaultRule = TARGET_DENY;
-        return this;
+        return ruleForAll(denyAtTarget());
     }
 
     /**
@@ -79,8 +77,12 @@ public final class RulesBuilder {
      * @return this
      */
     public RulesBuilder allowAll() {
+        return ruleForAll(allow());
+    }
+
+    RulesBuilder ruleForAll(Rule rule) {
         mModules = null;
-        mDefaultRule = ALLOW;
+        mDefaultRule = rule;
         return this;
     }
 
@@ -96,8 +98,7 @@ public final class RulesBuilder {
             mModules = modules = new HashMap<>();
         }
         return modules.computeIfAbsent(name, k -> {
-            var scope = new ModuleScope(this, name);
-            return mDefaultRule == ALLOW ? scope.allowAll() : scope.denyAll(mDefaultRule);
+            return new ModuleScope(this, name).ruleForAll(mDefaultRule);
         });
     }
 
@@ -323,17 +324,7 @@ public final class RulesBuilder {
          * @return this
          */
         public ModuleScope denyAll() {
-            return denyAll(TARGET_DENY);
-        }
-
-        /**
-         * @param rule must be CALLER_DENY or TARGET_DENY
-         * @return this
-         */
-        ModuleScope denyAll(Rule rule) {
-            mPackages = null;
-            mDefaultRule = rule;
-            return this;
+            return ruleForAll(denyAtTarget());
         }
 
         /**
@@ -343,8 +334,15 @@ public final class RulesBuilder {
          * @return this
          */
         public ModuleScope allowAll() {
+            return ruleForAll(allow());
+        }
+
+        /**
+         * @return this
+         */
+        ModuleScope ruleForAll(Rule rule) {
             mPackages = null;
-            mDefaultRule = ALLOW;
+            mDefaultRule = rule;
             return this;
         }
 
@@ -361,8 +359,7 @@ public final class RulesBuilder {
                 mPackages = packages = new HashMap<>();
             }
             return packages.computeIfAbsent(dottedName, k -> {
-                var scope = new PackageScope(this, dottedName);
-                return mDefaultRule == ALLOW ? scope.allowAll() : scope.denyAll(mDefaultRule);
+                return new PackageScope(this, dottedName).ruleForAll(mDefaultRule);
             });
         }
 
@@ -475,17 +472,7 @@ public final class RulesBuilder {
          * @return this
          */
         public PackageScope denyAll() {
-            return denyAll(TARGET_DENY);
-        }
-
-        /**
-         * @param rule must be CALLER_DENY or TARGET_DENY
-         * @return this
-         */
-        PackageScope denyAll(Rule rule) {
-            mClasses = null;
-            mDefaultRule = rule;
-            return this;
+            return ruleForAll(denyAtTarget());
         }
 
         /**
@@ -495,8 +482,15 @@ public final class RulesBuilder {
          * @return this
          */
         public PackageScope allowAll() {
+            return ruleForAll(allow());
+        }
+
+        /**
+         * @return this
+         */
+        PackageScope ruleForAll(Rule rule) {
             mClasses = null;
-            mDefaultRule = ALLOW;
+            mDefaultRule = rule;
             return this;
         }
 
@@ -514,8 +508,7 @@ public final class RulesBuilder {
                 mClasses = classes = new HashMap<>();
             }
             return classes.computeIfAbsent(vmName, k -> {
-                var scope = new ClassScope(this, vmName);
-                return mDefaultRule == ALLOW ? scope.allowAll() : scope.denyAll(mDefaultRule);
+                return new ClassScope(this, vmName).ruleForAll(mDefaultRule);
             });
         }
 
@@ -604,7 +597,7 @@ public final class RulesBuilder {
          * @return null if redundant
          */
         private RuleSet.PackageScope build(Rule parentRule) {
-            if (isEmpty(mClasses) && parentRule == mDefaultRule) {
+            if (isEmpty(mClasses) && parentRule.equals(mDefaultRule)) {
                 return null;
             }
 
@@ -654,7 +647,7 @@ public final class RulesBuilder {
         private ClassScope(PackageScope parent, String name) {
             mParent = parent;
             mName = name;
-            mDenyRule = TARGET_DENY;
+            mDenyRule = denyAtTarget();
         }
 
         /**
@@ -666,7 +659,7 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope callerCheck() {
-            mDenyRule = CALLER_DENY;
+            mDenyRule = denyAtCaller();
             return this;
         }
 
@@ -678,7 +671,7 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope targetCheck() {
-            mDenyRule = TARGET_DENY;
+            mDenyRule = denyAtTarget();
             return this;
         }
 
@@ -689,20 +682,7 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope denyAll() {
-            return denyAll(mDenyRule);
-        }
-
-        /**
-         * @param rule must be CALLER_DENY or TARGET_DENY
-         * @return this
-         */
-        ClassScope denyAll(Rule rule) {
-            mConstructors = null;
-            mDefaultConstructorRule = rule;
-            mMethods = null;
-            mDefaultMethodRule = rule;
-            mVariantScope = null;
-            return this;
+            return ruleForAll(mDenyRule);
         }
 
         /**
@@ -713,7 +693,7 @@ public final class RulesBuilder {
         public ClassScope denyAllConstructors() {
             mConstructors = null;
             mDefaultConstructorRule = mDenyRule;
-            mVariantScope = mConstructors = new MethodScope().denyAll(mDenyRule);
+            mVariantScope = mConstructors = new MethodScope().ruleForAll(mDenyRule);
             return this;
         }
 
@@ -737,7 +717,7 @@ public final class RulesBuilder {
          */
         public ClassScope denyMethod(String name) {
             checkMethodName(name);
-            mVariantScope = forMethod(name).denyAll(mDenyRule);
+            mVariantScope = forMethod(name).ruleForAll(mDenyRule);
             return this;
         }
 
@@ -758,7 +738,7 @@ public final class RulesBuilder {
             if (mVariantScope.isAllAllowed()) {
                 throw new IllegalStateException("All variants are explicitly allowed");
             }
-            mVariantScope.allowVariant(descriptor);
+            mVariantScope.ruleForVariant(allow(), descriptor);
             return this;
         }
 
@@ -781,10 +761,17 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope allowAll() {
+            return ruleForAll(allow());
+        }
+
+        /**
+         * @return this
+         */
+        ClassScope ruleForAll(Rule rule) {
             mConstructors = null;
-            mDefaultConstructorRule = ALLOW;
+            mDefaultConstructorRule = rule;
             mMethods = null;
-            mDefaultMethodRule = ALLOW;
+            mDefaultMethodRule = rule;
             mVariantScope = null;
             return this;
         }
@@ -796,7 +783,7 @@ public final class RulesBuilder {
          */
         public ClassScope allowAllConstructors() {
             mConstructors = null;
-            mDefaultConstructorRule = ALLOW;
+            mDefaultConstructorRule = allow();
             mVariantScope = mConstructors = new MethodScope().allowAll();
             return this;
         }
@@ -808,7 +795,7 @@ public final class RulesBuilder {
          */
         public ClassScope allowAllMethods() {
             mMethods = null;
-            mDefaultMethodRule = ALLOW;
+            mDefaultMethodRule = allow();
             mVariantScope = null;
             return this;
         }
@@ -842,7 +829,7 @@ public final class RulesBuilder {
             if (mVariantScope.isAllDenied()) {
                 throw new IllegalStateException("All variants are explicitly denied");
             }
-            mVariantScope.denyVariant(mDenyRule, descriptor);
+            mVariantScope.ruleForVariant(mDenyRule, descriptor);
             return this;
         }
 
@@ -957,7 +944,7 @@ public final class RulesBuilder {
          */
         private RuleSet.ClassScope build(Rule parentRule) {
             if (mConstructors == null && isEmpty(mMethods) &&
-                parentRule == mDefaultConstructorRule && parentRule == mDefaultMethodRule)
+                parentRule.equals(mDefaultConstructorRule) && parentRule.equals(mDefaultMethodRule))
             {
                 return null;
             }
@@ -1000,32 +987,11 @@ public final class RulesBuilder {
         }
 
         boolean isAllDenied() {
-            return isEmpty(mVariants)
-                && (mDefaultRule == CALLER_DENY || mDefaultRule == TARGET_DENY);
-        }
-
-        /**
-         * Deny access to all variants, superseding all previous rules.
-         *
-         * @param rule must be CALLER_DENY or TARGET_DENY
-         * @return this
-         */
-        MethodScope denyAll(Rule rule) {
-            mVariants = null;
-            mDefaultRule = rule;
-            return this;
-        }
-
-        /**
-         * @param rule must be CALLER_DENY or TARGET_DENY
-         * @return this
-         */
-        MethodScope denyVariant(Rule rule, String descriptor) {
-            return variantAction(descriptor, rule);
+            return isEmpty(mVariants) && mDefaultRule.isDenied();
         }
 
         boolean isAllAllowed() {
-            return isEmpty(mVariants) && mDefaultRule == ALLOW;
+            return isEmpty(mVariants) && mDefaultRule.isAllowed();
         }
 
         /**
@@ -1034,16 +1000,24 @@ public final class RulesBuilder {
          * @return this
          */
         MethodScope allowAll() {
+            return ruleForAll(allow());
+        }
+
+        /**
+         * Apply a rule to all variants, superseding all previous rules.
+         *
+         * @return this
+         */
+        MethodScope ruleForAll(Rule rule) {
             mVariants = null;
-            mDefaultRule = ALLOW;
+            mDefaultRule = rule;
             return this;
         }
 
-        MethodScope allowVariant(String descriptor) {
-            return variantAction(descriptor, ALLOW);
-        }
-
-        private MethodScope variantAction(String descriptor, Rule rule) {
+        /**
+         * @return this
+         */
+        MethodScope ruleForVariant(Rule rule, String descriptor) {
             if (descriptor.isEmpty()) {
                 descriptor = "()";
             } else {
@@ -1058,13 +1032,13 @@ public final class RulesBuilder {
             NavigableMap<CharSequence, Rule> variants = mVariants;
 
             if (variants == null) {
-                if (rule == mDefaultRule) {
+                if (rule.equals(mDefaultRule)) {
                     return this;
                 }
                 mVariants = variants = new TreeMap<>(CharSequence::compare);
             }
 
-            if (rule == mDefaultRule) {
+            if (rule.equals(mDefaultRule)) {
                 variants.remove(descriptor);
             } else {
                 variants.put(descriptor.intern(), rule);
@@ -1127,7 +1101,7 @@ public final class RulesBuilder {
         }
 
         private static void validateMethod(Method method, Rule rule) {
-            if (rule == TARGET_DENY && Modifier.isAbstract(method.getModifiers())) {
+            if (rule.isDeniedAtTarget() && Modifier.isAbstract(method.getModifiers())) {
                 throw new IllegalArgumentException("Target method is abstract: " + method);
             }
         }
@@ -1136,7 +1110,7 @@ public final class RulesBuilder {
          * @return null if redundant
          */
         private RuleSet.MethodScope build(Rule parentRule) {
-            if (isEmpty(mVariants) && mDefaultRule == parentRule) {
+            if (isEmpty(mVariants) && mDefaultRule.equals(parentRule)) {
                 return null;
             }
             return new RuleSet.MethodScope(mVariants, mDefaultRule);

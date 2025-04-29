@@ -16,7 +16,6 @@
 
 package org.cojen.boxtin.tests;
 
-import org.cojen.boxtin.Checker;
 import org.cojen.boxtin.Controller;
 import org.cojen.boxtin.Rules;
 import org.cojen.boxtin.RulesBuilder;
@@ -131,7 +130,7 @@ public final class TestController implements Controller {
     }
 
     @Override
-    public Checker checkerForCaller(Module module) {
+    public Rules rulesForCaller(Module module) {
         if ("org.cojen.boxtin.tests".equals(module.getName())) {
             return mRules;
         }
@@ -139,7 +138,7 @@ public final class TestController implements Controller {
     }
 
     @Override
-    public Checker checkerForTarget() {
+    public Rules rulesForTarget() {
         return mRules;
     }
 }

@@ -295,12 +295,12 @@ public final class SecurityAgent {
      */
     private boolean isTargetChecked(Class<?> clazz) {
         Module module;
-        Checker checker;
+        Rules rules;
         return Utils.isAccessible(clazz)
             && (module = clazz.getModule()).isNamed()
             && module.isExported(clazz.getPackageName())
-            && (checker = mController.checkerForTarget()) != null
-            && checker.forClass(clazz).isTargetChecked();
+            && (rules = mController.rulesForTarget()) != null
+            && rules.forClass(clazz).isAnyDeniedAtTarget();
     }
 
     private boolean isSpecial(Class<?> clazz) {
@@ -345,26 +345,26 @@ public final class SecurityAgent {
 
         ClassLoader loader = module.getClassLoader();
 
-        Checker forCaller;
+        Rules forCaller;
         if (loader == null) {
             // Classes loaded by the bootstrap class loader are allowed to call anything.
-            forCaller = Rule.ALLOW;
+            forCaller = Rule.allow();
         } else {
-            forCaller = mController.checkerForCaller(module);
+            forCaller = mController.rulesForCaller(module);
             if (forCaller == null) {
-                forCaller = Rule.ALLOW;
+                forCaller = Rule.allow();
             }
         }
 
         // Note that unnamed modules cannot have target security checks applied to them, since
         // they're not expected to implement sensitive operations.
 
-        Checker forTarget;
-        if (!module.isNamed() || (forTarget = mController.checkerForTarget()) == null) {
-            forTarget = Rule.ALLOW;
+        Rules forTarget;
+        if (!module.isNamed() || (forTarget = mController.rulesForTarget()) == null) {
+            forTarget = Rule.allow();
         }
 
-        if (forCaller == Rule.ALLOW && forTarget == Rule.ALLOW) {
+        if (forCaller.isAllAllowed() && forTarget.isAllAllowed()) {
             return null;
         }
 
@@ -379,25 +379,25 @@ public final class SecurityAgent {
                 return null;
             }
 
-            if (forTarget != Rule.ALLOW && !module.isExported(packageName.replace('/', '.'))) {
+            if (!forTarget.isAllAllowed() && !module.isExported(packageName.replace('/', '.'))) {
                 // If the package isn't exported, then it cannot be called outside the module.
                 // The only calls will be from within the module, which are always allowed.
-                if (forCaller == Rule.ALLOW) {
+                if (forCaller.isAllAllowed()) {
                     // If no code changes are required as a caller, then no transformation is
                     // required at all.
                     return null;
                 }
-                forTarget = Rule.ALLOW;
+                forTarget = Rule.allow();
             }
 
             className = className.substring(index + 1);
         }
 
-        assert forCaller != Rule.ALLOW || forTarget != Rule.ALLOW;
+        assert !forCaller.isAllAllowed() || forTarget.isAllAllowed();
 
         var processor = ClassFileProcessor.begin(classBuffer);
 
-        Checker.ForClass forTargetClass = forTarget.forClass(packageName, className);
+        Rules.ForClass forTargetClass = forTarget.forClass(packageName, className);
 
         // Classes loaded by the bootstrap loader are allowed to perform reflection, and so
         // special transforms aren't needed. If enabled, it would likely cause issues anyhow.
@@ -414,7 +414,7 @@ public final class SecurityAgent {
 
     /**
      * Is called by modified target-side code. An exception is thrown if the caller and target
-     * modules differ, and also if the corresponding checker denies access.
+     * modules differ, and also if the corresponding rule set denies access.
      *
      * @param caller the class which is calling the target
      * @param target the class which has an operation which potentially denied for the caller
@@ -541,16 +541,18 @@ public final class SecurityAgent {
             .computeIfAbsent(target, k -> new ConcurrentHashMap<>(4))
             .computeIfAbsent(name == null ? "<init>" : name, k -> new ConcurrentHashMap<>(4))
             .computeIfAbsent(desc, k -> {
-                Checker checker = mController.checkerForCaller(callerModule);
-                if (checker == null) {
+                Rules rules = mController.rulesForCaller(callerModule);
+                if (rules == null) {
                     return true;
                 }
-                Checker.ForClass forClass = checker.forClass(target);
+                Rules.ForClass forClass = rules.forClass(target);
+                Rule rule;
                 if (name == null) {
-                    return forClass.isConstructorAllowed(desc);
+                    rule = forClass.ruleForConstructor(desc);
                 } else {
-                    return forClass.isMethodAllowed(name, desc);
+                    rule = forClass.ruleForMethod(name, desc);
                 }
+                return rule.isAllowed();
             });
     }
 

@@ -24,25 +24,24 @@ package org.cojen.boxtin;
  */
 public interface Controller {
     /**
-     * Returns a Checker which determines if a calling module is allowed to perform an
-     * operation.
+     * Returns rules which determine if a calling module is allowed to perform an operation.
      *
      * @param module the caller's module, which can be named or unnamed
-     * @return a checker instance, which can be null if all operations are allowed
+     * @return a Rules instance, which can be null if all operations are allowed
      */
-    public Checker checkerForCaller(Module module);
+    public Rules rulesForCaller(Module module);
 
-    // FIXME: The checkerForTarget result is generally supposed to be the "union" of all
+    // FIXME: The rulesForTarget result is generally supposed to be the "union" of all
     // denials, of all rule sets. Does this mean that the method should be renamed? Should
     // other methods be provided? Define utilities for combining rule sets?
     //
     // FIXME: The merge rules must be target centric. A CALLER_DENY rule is interpreted as
-    // ALLOW. Only TARGET_DENY is kept as-is. Checker.mergeForTarget(...)?
+    // ALLOW. Only TARGET_DENY is kept as-is. Rules.mergeForTarget(...)?
 
     /**
-     * Returns a Checker which determines if a target class has deniable operations.
+     * Returns rules which determine if a target class has deniable operations.
      *
-     * @return a checker instance, which can be null if all operations are allowed
+     * @return a Rules instance, which can be null if all operations are allowed
      */
-    public Checker checkerForTarget();
+    public Rules rulesForTarget();
 }
