@@ -446,12 +446,8 @@ final class ClassFileProcessor {
         final int name_index = name == null ? 0 : cp.addString(name).mIndex;
         final int desc_index = cp.addString(desc).mIndex;
 
-        // Growth must be divisible by four, because switch statements are aligned as such.
-        // Padding NOPs might need to be added.
-        final int codeGrowth = name_index == 0 ? 16 : 20;
-
         // The copy needs room for new operations and possibly an updated StackMapTable.
-        long capacity = codeAttrLength + codeGrowth + (4 + 2);
+        long capacity = codeAttrLength + 50;
         if (capacity > Integer.MAX_VALUE) {
             throw new ClassFormatException();
         }
@@ -463,22 +459,24 @@ final class ClassFileProcessor {
         int max_locals = decoder.readUnsignedShort();
         long code_length = decoder.readUnsignedInt();
 
-        if ((code_length + codeGrowth) > Integer.MAX_VALUE) {
-            throw new ClassFormatException();
-        }
-
         encoder.writeInt(0); // attribute_length; to be filled in properly later
         encoder.writeShort(Math.max(4, max_stack));
         encoder.writeShort(max_locals);
-        encoder.writeInt((int) (code_length + codeGrowth));
+        encoder.writeInt(0); // code_length; to be filled in properly later
 
         encodeAgentCheck(encoder, name_index, desc_index);
 
-        if (name_index != 0) {
-            // Add padding to reach 20 bytes of growth.
+        int codeGrowth = encoder.length() - 12;
+
+        // Growth must be divisible by four, because switch statements are aligned as such.
+        // Padding NOPs might need to be added.
+        while ((codeGrowth & 3) != 0) {
             encoder.writeByte(NOP);
-            encoder.writeByte(NOP);
+            codeGrowth++;
         }
+
+        // Fill in the proper code_length.
+        encodeIntBE(encoder.buffer(), 8, (int) (code_length + codeGrowth));
 
         if (forCaller.isAllAllowed()) {
             // Copy the original code.
