@@ -281,6 +281,10 @@ public final class SecurityAgent {
         return true;
     }
 
+    public static synchronized boolean isActivated() {
+        return cAgent != null;
+    }
+
     private final Controller mController;
 
     private final Map<Module, Map<Class<?>, Map<String, Map<String, Boolean>>>> mCheckCache;
