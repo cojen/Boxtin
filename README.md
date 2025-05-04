@@ -17,6 +17,7 @@ Boxtin is designed to restrict operations for "plugins", much like the original 
 - Rules are defined entirely by the host environment, and so the libraries it depends on aren't expected to require any modifications.
 - The rules strictly allow or deny access to a constructor or method, and they cannot perform any special "filtering" operations. If a plugin wishes to open a file, but the operation is generally denied, then the plugin must ask the host environment to open the file on its behalf. The host environment is responsible for performing the necessary path filtering checks.
 - Rules are selected by module, not by code source or protection domain.
+- The default deny action is to throw a `SecurityException`, but alternative actions can be defined. A different exception can be thrown, a constant value can be returned, an empty value can be returned, or a custom method can choose what to return.
 
 A _caller_ is the plugin code, represented by a [module](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Module.html), possibly unnamed. A _target_ is the code which is being called by the caller, represented by a rule. A rule logically maps target methods or constructors to an "allow" or "deny" outcome.
 
