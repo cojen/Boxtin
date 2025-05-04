@@ -18,6 +18,8 @@ package org.cojen.boxtin;
 
 import java.io.IOException;
 
+import java.lang.invoke.MethodHandle;
+
 import java.lang.reflect.Modifier;
 
 import java.util.HashMap;
@@ -161,11 +163,13 @@ final class ClassFileProcessor {
 
             C_NameAndType nat = methodRef.mNameAndType;
 
+            Rule rule;
             byte op;
             byte proxyType;
 
             if (kind == REF_newInvokeSpecial) {
-                if (forClass.ruleForConstructor(nat.mTypeDesc).isDenied()) {
+                rule = forClass.ruleForConstructor(nat.mTypeDesc);
+                if (rule.isDenied()) {
                     op = NEW;
                     // Constructor check is always in the target.
                     proxyType = PT_PLAIN;
@@ -173,7 +177,7 @@ final class ClassFileProcessor {
                     return;
                 }
             } else {
-                Rule rule = forClass.ruleForMethod(nat.mName, nat.mTypeDesc);
+                rule = forClass.ruleForMethod(nat.mName, nat.mTypeDesc);
                 if (rule.isDeniedAtTarget()) {
                     proxyType = PT_PLAIN;
                 } else if (rule.isDeniedAtCaller()) {
@@ -190,7 +194,7 @@ final class ClassFileProcessor {
                 };
             }
 
-            C_MemberRef proxyMethod = addProxyMethod(op, proxyType, methodRef);
+            C_MemberRef proxyMethod = addProxyMethod(rule, op, proxyType, methodRef);
 
             if (mReplacedMethodHandles == null) {
                 mReplacedMethodHandles = new HashMap<>();
@@ -211,12 +215,14 @@ final class ClassFileProcessor {
             int desc_index = decoder.readUnsignedShort();
 
             boolean targetCodeChecked;
+            Rule targetRule; // can be null when !targetCodeChecked
             ConstantPool.C_UTF8 name, desc; // both can be null when !targetCodeChecked
 
             if (!targetClassChecked || !isAccessible(access_flags) ||
                 (name = mConstantPool.findConstantUTF8(name_index)).isClinit())
             {
                 targetCodeChecked = false;
+                targetRule = null;
                 name = null;
                 desc = null;
             } else {
@@ -227,10 +233,12 @@ final class ClassFileProcessor {
                     // modifications to make it work in the client class are too complicated.
                     // The problem is that uninitialized objects cannot be passed to other
                     // methods, in this case, the proxy method. See insertCallerChecks.
-                    targetCodeChecked = forTargetClass.ruleForConstructor(desc).isDenied();
+                    targetRule = forTargetClass.ruleForConstructor(desc);
+                    targetCodeChecked = targetRule.isDenied();
                     name = null; // indicate that the method is a constructor
                 } else {
-                    targetCodeChecked = forTargetClass.ruleForMethod(name, desc).isDeniedAtTarget();
+                    targetRule = forTargetClass.ruleForMethod(name, desc);
+                    targetCodeChecked = targetRule.isDeniedAtTarget();
                 }
             }
 
@@ -264,7 +272,7 @@ final class ClassFileProcessor {
                 C_Class thisClass = mConstantPool.findConstant(mThisClassIndex, C_Class.class);
                 C_MemberRef methodRef = mConstantPool.addMethodRef(thisClass, newName, desc);
 
-                addProxyMethod(op, PT_NATIVE, methodRef,
+                addProxyMethod(targetRule, op, PT_NATIVE, methodRef,
                                access_flags & ~Modifier.NATIVE, name, desc);
             }
 
@@ -292,7 +300,8 @@ final class ClassFileProcessor {
                 Replacement replacement;
 
                 if (targetCodeChecked) {
-                    replacement = insertChecks(forCaller, decoder, attrLength, name, desc);
+                    DenyAction action = targetRule.denyAction();
+                    replacement = insertChecks(forCaller, decoder, attrLength, name, desc, action);
                 } else {
                     assert !forCaller.isAllAllowed();
 
@@ -437,14 +446,14 @@ final class ClassFileProcessor {
      * @return non-null Replacement instance
      */
     private Replacement insertChecks(Rules forCaller, BufferDecoder decoder, long codeAttrLength,
-                                     ConstantPool.C_UTF8 name, ConstantPool.C_UTF8 desc)
+                                     ConstantPool.C_UTF8 name, ConstantPool.C_UTF8 desc,
+                                     DenyAction action)
         throws IOException, ClassFormatException
     {
         ConstantPool cp = mConstantPool;
         cp.extend();
 
         final int name_index = name == null ? 0 : cp.addString(name).mIndex;
-        final int desc_index = cp.addString(desc).mIndex;
 
         // The copy needs room for new operations and possibly an updated StackMapTable.
         long capacity = codeAttrLength + 50;
@@ -464,7 +473,8 @@ final class ClassFileProcessor {
         encoder.writeShort(max_locals);
         encoder.writeInt(0); // code_length; to be filled in properly later
 
-        encodeAgentCheck(encoder, name_index, desc_index);
+        // FIXME: pushed; need to update max_stack
+        int first = encodeAgentCheck(encoder, name_index, desc, action);
 
         int codeGrowth = encoder.length() - 12;
 
@@ -499,6 +509,7 @@ final class ClassFileProcessor {
         // Write the attributes, some of which must be updated.
 
         int attrCount = decoder.readUnsignedShort();
+        int attrCountOffset = encoder.length();
         encoder.writeShort(attrCount);
 
         int numStackMapTables = 0; // at most one is expected
@@ -540,17 +551,22 @@ final class ClassFileProcessor {
             
                 case "StackMapTable" -> {
                     numStackMapTables++;
-                    updateStackMapTableOffsets(decoder, encoder, attrLength, codeGrowth);
+                    updateStackMapTableOffsets(decoder, encoder, attrLength, codeGrowth, first);
                 }
             }
         }
 
+        if (first != 0 && numStackMapTables == 0) {
+            // Need to create a StackMapTable attribute.
+            encoder.writeShort(cp.addUTF8("StackMapTable").mIndex);
+            encoder.writeInt(3);   // attribute_length
+            encoder.writeShort(1); // number_of_entries
+            encoder.writeByte(first); // same_frame
+            encodeShortBE(encoder.buffer(), attrCountOffset, attrCount + 1);
+        }
+
         // Fill in the proper attribute_length.
         encodeIntBE(encoder.buffer(), 0, encoder.length() - 4);
-
-        if (numStackMapTables <= 1 && encoder.length() > capacity) {
-            throw new ClassFormatException();
-        }
 
         return encoder;
     }
@@ -560,14 +576,30 @@ final class ClassFileProcessor {
     }
 
     /**
+     * With the standard DenyAction:
+     *
      * SecurityAgent.check(SecurityAgent.WALKER.getCallerClass(), thisClass, name, desc);
      *
+     * or else:
+     *
+     * if (!SecurityAgent.tryCheck(SecurityAgent.WALKER.getCallerClass(), thisClass, name, desc)) {
+     *     // One possible form.
+     *     throw new IOException();
+     * }
+     *
      * Requires at least 4 operand stack slots.
+     *
+     * @param name_index pass 0 for constructor
+     * @return a non-zero first offset if a StackMapTable attribute is required
      */
-    private void encodeAgentCheck(BufferEncoder encoder, int name_index, int desc_index)
+    private int encodeAgentCheck(BufferEncoder encoder, int name_index, ConstantPool.C_UTF8 desc,
+                                 DenyAction action)
         throws IOException
     {
+        int codeStartPos = encoder.length();
         ConstantPool cp = mConstantPool;
+
+        int desc_index = cp.addString(desc).mIndex;
 
         String agentName = SecurityAgent.CLASS_NAME;
         String walkerName = StackWalker.class.getName().replace('.', '/');
@@ -575,7 +607,8 @@ final class ClassFileProcessor {
         String classDesc = Class.class.descriptorString();
         String stringDesc = String.class.descriptorString();
         String callerDesc = "()" + classDesc;
-        String checkDesc = '(' + classDesc + classDesc + stringDesc + stringDesc + ")V";
+        String checkDesc = '(' + classDesc + classDesc + stringDesc + stringDesc + ')' +
+            (action == DenyAction.standard() ? 'V' : 'Z');
 
         encoder.writeByte(GETSTATIC);
         encoder.writeShort(cp.addFieldRef(agentName, "WALKER", walkerDesc).mIndex);
@@ -592,14 +625,411 @@ final class ClassFileProcessor {
         encoder.writeByte(LDC_W);
         encoder.writeShort(desc_index);
         encoder.writeByte(INVOKESTATIC);
-        encoder.writeShort(cp.addMethodRef(agentName, "check", checkDesc).mIndex);
+
+        boolean standard = action == DenyAction.standard();
+        String checkName = standard ? "check" : "tryCheck";
+        encoder.writeShort(cp.addMethodRef(agentName, checkName, checkDesc).mIndex);
+
+        if (standard) {
+            return 0;
+        }
+
+        encoder.writeByte(IFNE);
+
+        // FIXME: pushed
+        encodeDenyAction(encoder, action, desc, name_index == 0);
+
+        int first = encoder.length() - codeStartPos;
+
+        // Write a NOP, to ensure that a unique offset exists for the StackMapTable entry. This
+        // is simpler than attempting to update the first entry if it's at offset 0.
+        encoder.writeByte(NOP);
+
+        return first;
+    }
+
+    /**
+     * Caller has already written an IFNE or IF_ACMPEQ opcode, and this method encodes the
+     * branch offset.
+     *
+     * @param desc only the return type is examined
+     * @param mustThrow when true, the deny action must throw an exception
+     * @return stack slots pushed
+     */
+    private int encodeDenyAction(BufferEncoder encoder, DenyAction action,
+                                 ConstantPool.C_UTF8 desc, boolean mustThrow)
+        throws IOException
+    {
+        DenyAction.Exception exAction;
+
+        if (mustThrow) {
+            // FIXME: Allow a custom action, but also throw an exception just in case.
+            exAction = DenyAction.Standard.THE;
+        } else if (action instanceof DenyAction.Exception) {
+            exAction = (DenyAction.Exception) action;
+        } else if (action instanceof DenyAction.Value va) {
+            return encodeValueAndReturn(encoder, va.value, desc);
+        } else if (action instanceof DenyAction.Empty em) {
+            return encodeEmptyAndReturn(encoder, desc);
+        } else if (action instanceof DenyAction.Custom cu) {
+            return encodeCustomAndReturn(encoder, cu, desc);
+        } else {
+            // Handle unknown action as standard.
+            exAction = DenyAction.Standard.THE;
+        }
+
+        ConstantPool cp = mConstantPool;
+        int exClassIndex = cp.addClass(exAction.className).mIndex;
+        ConstantPool.C_MemberRef exInitRef;
+        int pushed;
+
+        if (exAction instanceof DenyAction.WithMessage wm) {
+            exInitRef = cp.addMethodRef(exAction.className, "<init>", "(Ljava/lang/String;)V");
+            encoder.writeShort(14); // offset past the ATHROW operation
+            encoder.writeByte(NEW);
+            encoder.writeShort(exClassIndex);
+            encoder.writeByte(DUP);
+            encoder.writeByte(LDC_W);
+            encoder.writeShort(cp.addString(wm.message).mIndex);
+            pushed = 3;
+        } else {
+            exInitRef = cp.addMethodRef(exAction.className, "<init>", "()V");
+            encoder.writeShort(11); // offset past the ATHROW operation
+            encoder.writeByte(NEW);
+            encoder.writeShort(exClassIndex);
+            encoder.writeByte(DUP);
+            pushed = 2;
+        }
+
+        encoder.writeByte(INVOKESPECIAL);
+        encoder.writeShort(exInitRef.mIndex);
+        encoder.writeByte(ATHROW);
+
+        return pushed;
+    }
+
+    /**
+     * @return stack slots pushed
+     */
+    private int encodeValueAndReturn(BufferEncoder encoder, Object value,
+                                      ConstantPool.C_UTF8 desc)
+        throws IOException
+    {
+        int offset = encoder.length();
+        encoder.writeShort(0); // branch offset; to be filled in properly later
+
+        int pushed = tryEncodeValueAndReturn(encoder, value, desc.charAt(desc.length() - 1));
+
+        if (pushed <= 0) {
+            // FIXME: Boxed primitives. Look for a valueOf method.
+            pushed = 1;
+            if (value == null || !(value instanceof String str) ||
+                !desc.tailMatches(")L/java/lang/String;"))
+            {
+                encoder.writeByte(ACONST_NULL);
+            } else {
+                encoder.writeByte(LDC_W);
+                encoder.writeShort(mConstantPool.addString(str).mIndex);
+            }
+            encoder.writeByte(ARETURN);
+        }
+
+        encodeShortBE(encoder.buffer(), offset, encoder.length() - offset + 1);
+
+        return pushed;
+    }
+
+    /**
+     * Try to encode a primitive value, but don't encode the branch offset.
+     *
+     * @return stack slots pushed; is zero if nothing was encoded
+     */
+    private int tryEncodeValueAndReturn(BufferEncoder encoder, Object value, char type)
+        throws IOException
+    {
+        switch (type) {
+        default -> {
+            return 0;
+        }
+
+        case 'V' -> {
+            encoder.writeByte(RETURN);
+        }
+
+        case 'Z' -> {
+            boolean v = (value instanceof Boolean b) ? b.booleanValue() : false;
+            encoder.writeByte(v ? ICONST_1 : ICONST_0);
+            encoder.writeByte(IRETURN);
+        }
+
+        case 'C' -> {
+            char v = (value instanceof Character c) ? c.charValue() : 0;
+            if (0 <= v && v <= 5) {
+                encoder.writeByte(ICONST_0 + v);
+            } else {
+                encoder.writeByte(LDC_W);
+                encoder.writeShort(mConstantPool.addInteger(v).mIndex);
+            }
+            encoder.writeByte(IRETURN);
+        }
+
+        case 'B' -> {
+            byte v = (value instanceof Number n) ? n.byteValue() : 0;
+            if (-1 <= v && v <= 5) {
+                encoder.writeByte(ICONST_0 + v);
+            } else {
+                encoder.writeByte(BIPUSH);
+                encoder.writeByte(v);
+            }
+            encoder.writeByte(IRETURN);
+        }
+
+        case 'S' -> {
+            short v = (value instanceof Number n) ? n.shortValue() : 0;
+            if (-1 <= v && v <= 5) {
+                encoder.writeByte(ICONST_0 + v);
+            } else {
+                encoder.writeByte(SIPUSH);
+                encoder.writeByte(v);
+            }
+            encoder.writeByte(IRETURN);
+        }
+
+        case 'I' -> {
+            int v = (value instanceof Number n) ? n.intValue() : 0;
+            if (-1 <= v && v <= 5) {
+                encoder.writeByte(ICONST_0 + v);
+            } else {
+                encoder.writeByte(LDC_W);
+                encoder.writeShort(mConstantPool.addInteger(v).mIndex);
+            }
+            encoder.writeByte(IRETURN);
+        }
+
+        case 'J' -> {
+            long v = (value instanceof Number n) ? n.longValue() : 0;
+            if (0 <= v && v <= 1) {
+                encoder.writeByte(LCONST_0 + (int) v);
+            } else {
+                encoder.writeByte(LDC_W);
+                encoder.writeShort(mConstantPool.addLong(v).mIndex);
+            }
+            encoder.writeByte(LRETURN);
+            return 2;
+        }
+
+        case 'F' -> {
+            float v = (value instanceof Number n) ? n.floatValue() : 0;
+            if (v == 0.0f || v == 1.0f || v == 2.0f) {
+                encoder.writeByte(FCONST_0 + (int) v);
+            } else {
+                encoder.writeByte(LDC_W);
+                encoder.writeShort(mConstantPool.addFloat(v).mIndex);
+            }
+            encoder.writeByte(FRETURN);
+        }
+
+        case 'D' -> {
+            double v = (value instanceof Number n) ? n.doubleValue() : 0;
+            if (v == 0.0d || v == 1.0d) {
+                encoder.writeByte(DCONST_0 + (int) v);
+            } else {
+                encoder.writeByte(LDC_W);
+                encoder.writeShort(mConstantPool.addDouble(v).mIndex);
+            }
+            encoder.writeByte(DRETURN);
+            return 2;
+        }
+        }
+
+        return 1;
+    }
+
+    /**
+     * @return stack slots pushed
+     */
+    private int encodeEmptyAndReturn(BufferEncoder encoder, ConstantPool.C_UTF8 desc)
+        throws IOException
+    {
+        int offset = encoder.length();
+        encoder.writeShort(0); // branch offset; to be filled in properly later
+
+        int pushed = 1;
+        char type = desc.charAt(desc.length() - 1);
+
+        switch (type) {
+        case 'V' -> {
+            encoder.writeByte(RETURN);
+        }
+
+        case 'Z', 'C', 'B', 'S', 'I' -> {
+            encoder.writeByte(ICONST_0);
+            encoder.writeByte(IRETURN);
+        }
+
+        case 'J' -> {
+            encoder.writeByte(LCONST_0);
+            encoder.writeByte(LRETURN);
+        }
+
+        case 'F' -> {
+            encoder.writeByte(FCONST_0);
+            encoder.writeByte(FRETURN);
+        }
+
+        case 'D' -> {
+            encoder.writeByte(DCONST_0);
+            encoder.writeByte(DRETURN);
+        }
+
+        default -> {
+            String descStr = desc.str();
+            int ix = descStr.indexOf(')') + 1;
+            if (ix < 2 || ix >= descStr.length() || type != ';') {
+                // Descriptor is broken.
+                encoder.writeByte(ACONST_NULL);
+            } else if (descStr.charAt(ix) == '[') {
+                // Empty array.
+
+                pushed = 2;
+                encoder.writeByte(ICONST_0);
+
+                type = descStr.charAt(ix + 1);
+
+                byte code = switch (type) {
+                    default -> 0;
+                    case 'Z' -> 4; case 'C' -> 5; case 'F' -> 6; case 'D' -> 7;
+                    case 'B' -> 8; case 'S' -> 9; case 'I' -> 10; case 'J' -> 11;
+                };
+
+                if (code != 0) {
+                    encoder.writeByte(NEWARRAY);
+                    encoder.writeByte(code);
+                } else {
+                    int start = ix + 2;
+                    int end = descStr.length() - 1;
+                    if (start < end) {
+                        String elementType = descStr.substring(start, end);
+                        encoder.writeByte(ANEWARRAY);
+                        encoder.writeShort(mConstantPool.addClass(elementType).mIndex);
+                    } else {
+                        // Descriptor is broken.
+                        encoder.writeByte(POP);
+                        encoder.writeByte(ACONST_NULL);
+                    }
+                }
+            } else {
+                pushed = 2;
+                ConstantPool cp = mConstantPool;
+                descStr = descStr.substring(ix + 1, descStr.length() - 1);
+                C_NameAndType nat = EmptyActions.findMethod(cp, descStr);
+                if (nat != null) {
+                    encoder.write(INVOKESTATIC);
+                    C_MemberRef ref = cp.addMethodRef(cp.addClass(EmptyActions.CLASS_NAME), nat);
+                    encoder.writeShort(ref.mIndex);
+                } else {
+                    C_Class clazz = cp.addClass(descStr);
+                    C_MemberRef init = cp.addMethodRef(clazz, "<init>", "()V");
+                    encoder.write(NEW);
+                    encoder.writeShort(clazz.mIndex);
+                    encoder.write(DUP);
+                    encoder.write(INVOKESPECIAL);
+                    encoder.writeShort(init.mIndex);
+                }
+            }
+
+            encoder.writeByte(ARETURN);
+        }
+        }
+
+        encodeShortBE(encoder.buffer(), offset, encoder.length() - offset + 1);
+
+        return pushed;
+    }
+
+    /**
+     * @return stack slots pushed
+     */
+    private int encodeCustomAndReturn(BufferEncoder encoder, DenyAction.Custom custom,
+                                       ConstantPool.C_UTF8 desc)
+        throws IOException
+    {
+        int offset = encoder.length();
+        encoder.writeShort(0); // branch offset; to be filled in properly later
+
+        int pushed = 1;
+
+        encoder.writeByte(LDC_W);
+        encoder.writeShort(mConstantPool.addMethodHandle(custom.mhi).mIndex);
+
+        int slot = 0;
+        String descString = desc.toString();
+
+        loop: for (int i=0; i<descString.length(); ) {
+            switch (descString.charAt(i++)) {
+                default -> {
+                    break loop;
+                }
+                case '(', 'V' -> {}
+                case 'Z', 'B', 'S', 'C', 'I' -> {
+                    encoder.writeByte(ILOAD);
+                    encoder.writeByte(slot++);
+                    pushed++;
+                }
+                case 'J' -> {
+                    encoder.writeByte(LLOAD);
+                    encoder.writeByte(slot); slot += 2;
+                    pushed += 2;
+                }
+                case 'F' -> {
+                    encoder.writeByte(FLOAD);
+                    encoder.writeByte(slot++);
+                    pushed++;
+                }
+                case 'D' -> {
+                    encoder.writeByte(DLOAD);
+                    encoder.writeByte(slot); slot += 2;
+                    pushed += 2;
+                }
+                case 'L' -> {
+                    encoder.writeByte(ALOAD);
+                    encoder.writeByte(slot++);
+                    pushed++;
+                    i = descString.indexOf(';', i) + 1;
+                    if (i <= 0) {
+                        break;
+                    }
+                }
+            }
+        }
+
+        encoder.writeByte(INVOKEVIRTUAL);
+        encoder.writeShort(mConstantPool.addMethodRef
+                           (MethodHandle.class.getName().replace('.', '/'), "invoke", desc).mIndex);
+
+        char type = desc.charAt(desc.length() - 1);
+
+        encoder.writeByte(switch (type) {
+            default -> ARETURN;
+            case 'V' -> RETURN;
+            case 'Z', 'C', 'B', 'S', 'I' -> IRETURN;
+            case 'J' -> LRETURN;
+            case 'F' -> FRETURN;
+            case 'D' -> DRETURN;
+        });
+
+        encodeShortBE(encoder.buffer(), offset, encoder.length() - offset + 1);
+
+        return pushed;
     }
 
     /**
      * Decodes a StackMapTable and re-encodes with all offsets incremented by the given delta.
+     *
+     * @param first pass a non-zero offset to insert a first entry at this offset
      */
     private static void updateStackMapTableOffsets(BufferDecoder decoder, Replacement encoder,
-                                                   long attrLength, int delta)
+                                                   long attrLength, int delta, int first)
         throws IOException
     {
         final int startOffset = encoder.length();
@@ -608,52 +1038,83 @@ final class ClassFileProcessor {
         int consumed;
 
         if (numEntries == 0) {
-            encoder.writeInt((int) attrLength);
-            encoder.writeShort(numEntries);
+            if (first == 0) {
+                encoder.writeInt((int) attrLength);
+                encoder.writeShort(numEntries);
+            } else {
+                // Insert a new first entry.
+                if (first < 64) {
+                    encoder.writeInt((int) attrLength + 3);
+                    encoder.writeShort(1); // number_of_entries
+                    encoder.writeByte(first); // same_frame
+                } else {
+                    encoder.writeInt((int) attrLength + 5);
+                    encoder.writeShort(1); // number_of_entries
+                    encoder.writeByte(251); // same_frame_extended
+                    encoder.writeShort(first);
+                }
+            }
             consumed = 2;
         } else {
-            // Update the first entry.
+            int attrLengthOffset = encoder.length();
+            int newAttrLength = (int) attrLength;
+            encoder.writeInt(0); // attribute_length; to be filled in properly later
+
+            int firstDelta;
+
+            if (first == 0) {
+                encoder.writeShort(numEntries);
+                firstDelta = delta;
+            } else {
+                // Insert a new first entry.
+                encoder.writeShort(numEntries + 1); // number_of_entries
+                if (first < 64) {
+                    newAttrLength++;
+                    encoder.writeByte(first); // same_frame
+                } else {
+                    newAttrLength += 3;
+                    encoder.writeByte(251); // same_frame_extended
+                    encoder.writeShort(first);
+                }
+                firstDelta = delta - (first + 1);
+            }
+
+            // Update the original first entry.
             int type = decoder.readUnsignedByte();
 
             if (type < 64) { // same_frame
-                if (type + delta < 64) {
-                    encoder.writeInt((int) attrLength);
-                    encoder.writeShort(numEntries);
-                    encoder.writeByte(type + delta);
+                if (type + firstDelta < 64) {
+                    encoder.writeByte(type + firstDelta);
                 } else {
                     // Convert to same_frame_extended.
-                    encoder.writeInt((int) attrLength + 2);
-                    encoder.writeShort(numEntries);
+                    newAttrLength += 2;
                     encoder.writeByte(251);
-                    encoder.writeShort(type + delta);
+                    encoder.writeShort(type + firstDelta);
                 }
                 consumed = 3;
             } else if (type < 128) { // same_locals_1_stack_item_frame
-                if (type + delta < 128) {
-                    encoder.writeInt((int) attrLength);
-                    encoder.writeShort(numEntries);
-                    encoder.writeByte(type + delta);
+                if (type + firstDelta < 128) {
+                    encoder.writeByte(type + firstDelta);
                 } else {
                     // Convert to same_locals_1_stack_item_frame_extended.
-                    encoder.writeInt((int) attrLength + 2);
-                    encoder.writeShort(numEntries);
+                    newAttrLength += 2;
                     encoder.writeByte(247);
-                    encoder.writeShort(type - 64 + delta);
+                    encoder.writeShort(type - 64 + firstDelta);
                 }
                 consumed = 3;
             } else if (type < 247) {
                 // Not legal, so just leave it alone.
-                encoder.writeInt((int) attrLength);
-                encoder.writeShort(numEntries);
                 encoder.writeByte(type);
                 consumed = 3;
             } else {
-                encoder.writeInt((int) attrLength);
-                encoder.writeShort(numEntries);
+                // chop_frame, same_frame_extended, append_frame, or full_frame
                 encoder.writeByte(type);
-                encoder.writeShort(decoder.readUnsignedShort() + delta);
+                encoder.writeShort(decoder.readUnsignedShort() + firstDelta);
                 consumed = 5;
             }
+
+            // Fill in the proper attribute_length.
+            encodeIntBE(encoder.buffer(), attrLengthOffset, newAttrLength);
         }
 
         decoder.transferTo(encoder, attrLength - consumed);
@@ -759,6 +1220,7 @@ final class ClassFileProcessor {
 
             int methodRefIndex;
             C_MemberRef methodRef;
+            Rule rule;
 
             switch (op) {
                 default -> {
@@ -786,7 +1248,9 @@ final class ClassFileProcessor {
                         continue;
                     }
 
-                    if (!forClass.ruleForMethod(nat.mName, nat.mTypeDesc).isDeniedAtCaller()) {
+                    rule = forClass.ruleForMethod(nat.mName, nat.mTypeDesc);
+
+                    if (!rule.isDeniedAtCaller()) {
                         continue;
                     }
                 }
@@ -893,7 +1357,7 @@ final class ClassFileProcessor {
                 }
             }
 
-            C_MemberRef proxyMethod = addProxyMethod(op, type, methodRef);
+            C_MemberRef proxyMethod = addProxyMethod(rule, op, type, methodRef);
 
             // Length of the attribute_length, max_stack, max_locals, and code_length fields.
             // They all appear immediately before the first bytecode operation.
@@ -997,24 +1461,27 @@ final class ClassFileProcessor {
      *     return r.Class_getMethod(clazz, name, paramTypes);
      * }
      *
+     * @param rule must be a deny rule
      * @param op must be an INVOKE* or NEW operation
      * @param type PT_*
      */
-    private C_MemberRef addProxyMethod(byte op, byte type, C_MemberRef methodRef)
+    private C_MemberRef addProxyMethod(Rule rule, byte op, byte type, C_MemberRef methodRef)
         throws IOException
     {
         int access_flags = Modifier.PRIVATE | Modifier.STATIC | 0x1000; // | synthetic
-        return addProxyMethod(op, type, methodRef, access_flags, null, null);
+        return addProxyMethod(rule, op, type, methodRef, access_flags, null, null);
     }
 
     /**
      * @return null when given a proxyName and proxyDesc
      */
-    private C_MemberRef addProxyMethod(byte op, byte type, C_MemberRef methodRef,
+    private C_MemberRef addProxyMethod(Rule rule, byte op, byte type, C_MemberRef methodRef,
                                        int access_flags,
                                        ConstantPool.C_UTF8 proxyName, ConstantPool.C_UTF8 proxyDesc)
         throws IOException
     {
+        assert rule.isDenied();
+
         ConstantPool cp = mConstantPool;
 
         if (mNewMethods == null) {
@@ -1084,9 +1551,6 @@ final class ClassFileProcessor {
 
                 int getModuleIndex = cp.addMethodRef
                     ("java/lang/Class", "getModule", "()Ljava/lang/Module;").mIndex;
-                String exClassName = "java/lang/SecurityException";
-                int exClassIndex = cp.addClass(exClassName).mIndex;
-                int exInitIndex = cp.addMethodRef(exClassName, "<init>", "()V").mIndex;
 
                 encoder.writeByte(LDC_W);
                 encoder.writeShort(mThisClassIndex);
@@ -1097,13 +1561,8 @@ final class ClassFileProcessor {
                 encoder.writeByte(INVOKEVIRTUAL);
                 encoder.writeShort(getModuleIndex);
                 encoder.writeByte(IF_ACMPEQ);
-                encoder.writeShort(11); // offset past the ATHROW operation
-                encoder.writeByte(NEW);
-                encoder.writeShort(exClassIndex);
-                encoder.writeByte(DUP);
-                encoder.writeByte(INVOKESPECIAL);
-                encoder.writeShort(exInitIndex);
-                encoder.writeByte(ATHROW);
+
+                pushed = encodeDenyAction(encoder, rule.denyAction(), proxyDesc, false);
 
                 labelOffset = encoder.length() - codeStartPos;
             }
@@ -1112,8 +1571,10 @@ final class ClassFileProcessor {
                 maxStack = 4;
                 labelOffset = -1;
 
+                // FIXME: will need labelOffset to create StackMapTable
+                // FIXME: Rule.denyAction; pushed
                 encodeAgentCheck(encoder, cp.addString(proxyName).mIndex,
-                                 cp.addString(proxyDesc).mIndex);
+                                 proxyDesc, DenyAction.standard());
 
                 if (op != INVOKESTATIC) {
                     encoder.writeByte(ALOAD_0);

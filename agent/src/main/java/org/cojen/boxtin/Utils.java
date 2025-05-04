@@ -20,6 +20,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 
 import java.lang.reflect.Member;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
 import java.nio.ByteOrder;
@@ -98,6 +99,13 @@ final class Utils {
             return "()";
         }
         return appendDescriptor(paramTypes).toString();
+    }
+
+    /**
+     * Returns a method descriptor with parens and a return type.
+     */
+    static String fullDescriptorFor(Method m) {
+        return fullDescriptorFor(m.getReturnType(), m.getParameterTypes());
     }
 
     /**

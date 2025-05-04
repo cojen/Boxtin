@@ -86,6 +86,13 @@ public sealed class Rule implements Rules, Rules.ForClass {
         return null;
     }
 
+    /**
+     * @throws IllegalStateException if this rule isn't denied
+     */
+    public Rule withDenyAction(DenyAction action) {
+        throw new IllegalStateException();
+    }
+
     @Override
     public boolean isAllAllowed() {
         return isAllowed();
@@ -155,6 +162,15 @@ public sealed class Rule implements Rules, Rules.ForClass {
         return "allow";
     }
 
+    private static String denyString(String which, DenyAction action) {
+        String deny = " deny";
+        if (action == DenyAction.standard()) {
+            return which + deny;
+        } else {
+            return which + deny + " action " + action;
+        }
+    }
+
     private static final class AtCaller extends Rule {
         private static final AtCaller STANDARD = new AtCaller(DenyAction.standard());
         private static final AtCaller EMPTY = new AtCaller(DenyAction.empty());
@@ -186,6 +202,11 @@ public sealed class Rule implements Rules, Rules.ForClass {
         }
 
         @Override
+        public Rule withDenyAction(DenyAction action) {
+            return this.action.equals(action) ? this : denyAtCaller(action);
+        }
+
+        @Override
         public int hashCode() {
             return -655008625 ^ action.hashCode();
         }
@@ -197,7 +218,7 @@ public sealed class Rule implements Rules, Rules.ForClass {
 
         @Override
         public String toString() {
-            return "caller deny";
+            return denyString("caller", action);
         }
     }
 
@@ -232,6 +253,11 @@ public sealed class Rule implements Rules, Rules.ForClass {
         }
 
         @Override
+        public Rule withDenyAction(DenyAction action) {
+            return this.action.equals(action) ? this : denyAtTarget(action);
+        }
+
+        @Override
         public int hashCode() {
             return 810018264 ^ action.hashCode();
         }
@@ -243,7 +269,7 @@ public sealed class Rule implements Rules, Rules.ForClass {
 
         @Override
         public String toString() {
-            return "target deny";
+            return denyString("target", action);
         }
     }
 }

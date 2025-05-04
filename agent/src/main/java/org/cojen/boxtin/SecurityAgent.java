@@ -418,7 +418,7 @@ public final class SecurityAgent {
 
     /**
      * Is called by modified target-side code. An exception is thrown if the caller and target
-     * modules differ, and also if the corresponding rule set denies access.
+     * modules differ, and the corresponding rule set denies access.
      *
      * @param caller the class which is calling the target
      * @param target the class which has an operation which potentially denied for the caller
@@ -429,9 +429,23 @@ public final class SecurityAgent {
     public static void check(Class<?> caller, Class<?> target, String name, String desc)
         throws SecurityException
     {
-        if (caller.getModule() != target.getModule() && !isAllowed(caller, target, name, desc)) {
+        if (!tryCheck(caller, target, name, desc)) {
             throw new SecurityException();
         }
+    }
+
+    /**
+     * Is called by modified target-side code. True is returned if the caller and target
+     * modules are the same or if the corresponding rule set allows access.
+     *
+     * @param caller the class which is calling the target
+     * @param target the class which has an operation which potentially denied for the caller
+     * @param name target method name, or null if a constructor
+     * @param desc target method or constructor descriptor
+     * @hidden
+     */
+    public static boolean tryCheck(Class<?> caller, Class<?> target, String name, String desc) {
+        return caller.getModule() == target.getModule() || isAllowed(caller, target, name, desc);
     }
 
     /**

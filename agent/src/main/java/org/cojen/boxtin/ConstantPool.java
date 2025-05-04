@@ -184,6 +184,16 @@ final class ConstantPool {
                 c = new C_UTF8(tag, decoder.buffer(), offset, length);
             }
 
+            // CONSTANT_Integer
+            case 3 -> {
+                c = new C_Integer(tag, decoder.readInt());
+            }
+
+            // CONSTANT_Float
+            case 4 -> {
+                c = new C_Float(tag, Float.intBitsToFloat(decoder.readInt()));
+            }
+
             // CONSTANT_Long
             case 5 -> {
                 c = new C_Long(tag, decoder.readLong());
@@ -214,6 +224,13 @@ final class ConstantPool {
                 int descriptor_index = decoder.readUnsignedShort();
                 c = new C_NameAndType(tag, (C_UTF8) findConstant(name_index),
                                       (C_UTF8) findConstant(descriptor_index));
+            }
+
+            // CONSTANT_MethodHandle
+            case 15 -> {
+                int kind = decoder.readUnsignedByte();
+                int reference_index = decoder.readUnsignedShort();
+                c = new C_MethodHandle(tag, kind, (C_MemberRef) findConstant(reference_index));
             }
         }
 
@@ -369,6 +386,14 @@ final class ConstantPool {
         return addMemberRef(10, className, name, desc);
     }
 
+    C_MemberRef addMethodRef(String className, String name, C_UTF8 desc) {
+        return addMemberRef(10, addClass(className), addUTF8(name), desc);
+    }
+
+    C_MemberRef addMethodRef(C_Class clazz, String name, String desc) {
+        return addMemberRef(10, clazz, addNameAndType(name, desc));
+    }
+
     C_MemberRef addMethodRef(C_Class clazz, C_UTF8 name, C_UTF8 desc) {
         return addMemberRef(10, clazz, name, desc);
     }
@@ -397,12 +422,38 @@ final class ConstantPool {
         return addConstant(new C_NameAndType(12, name, desc));
     }
 
+    C_MethodHandle addMethodHandle(MethodHandleInfo mhi) {
+        C_MemberRef ref = addMethodRef(mhi.getDeclaringClass().getName().replace('.', '/'),
+                                       mhi.getName(), mhi.getMethodType().descriptorString());
+        return addConstant(new C_MethodHandle(15, mhi.getReferenceKind(), ref));
+    }
+
     C_UTF8 addUTF8(String str) {
         return addConstant(new C_UTF8(str));
     }
 
     C_String addString(C_UTF8 value) {
         return addConstant(new C_String(8, value));
+    }
+
+    C_String addString(String str) {
+        return addString(addUTF8(str));
+    }
+
+    C_Integer addInteger(int value) {
+        return addConstant(new C_Integer(3, value));
+    }
+
+    C_Float addFloat(float value) {
+        return addConstant(new C_Float(4, value));
+    }
+
+    C_Long addLong(long value) {
+        return addConstant(new C_Long(5, value));
+    }
+
+    C_Double addDouble(double value) {
+        return addConstant(new C_Double(6, value));
     }
 
     /**
@@ -870,6 +921,68 @@ final class ConstantPool {
         }
     }
 
+    static final class C_Integer extends Constant {
+        final int mValue;
+
+        C_Integer(int tag, int value) {
+            super(tag);
+            mValue = value;
+        }
+
+        @Override
+        public int hashCode() {
+            return mValue * 31 + mTag;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return this == obj || obj instanceof C_Integer other
+                && mTag == other.mTag && mValue == other.mValue;
+        }
+
+        @Override
+        long size() {
+            return 1 + 4;
+        }
+
+        @Override
+        void writeTo(BufferEncoder encoder) throws IOException {
+            encoder.writeByte(mTag);
+            encoder.writeInt(mValue);
+        }
+    }
+
+    static final class C_Float extends Constant {
+        final float mValue;
+
+        C_Float(int tag, float value) {
+            super(tag);
+            mValue = value;
+        }
+
+        @Override
+        public int hashCode() {
+            return Float.hashCode(mValue) * 31 + mTag;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return this == obj || obj instanceof C_Float other
+                && mTag == other.mTag && mValue == other.mValue;
+        }
+
+        @Override
+        long size() {
+            return 1 + 4;
+        }
+
+        @Override
+        void writeTo(BufferEncoder encoder) throws IOException {
+            encoder.writeByte(mTag);
+            encoder.writeInt(Float.floatToRawIntBits(mValue));
+        }
+    }
+
     static final class C_Long extends Constant {
         final long mValue;
 
@@ -1045,6 +1158,41 @@ final class ConstantPool {
             encoder.writeByte(mTag);
             encoder.writeShort(mClass.mIndex);
             encoder.writeShort(mNameAndType.mIndex);
+        }
+    }
+
+    static final class C_MethodHandle extends Constant {
+        final int mKind;
+        final C_MemberRef mRef;
+
+        C_MethodHandle(int tag, int kind, C_MemberRef ref) {
+            super(tag);
+            mKind = kind;
+            mRef = ref;
+        }
+
+        @Override
+        public int hashCode() {
+            return (mRef.hashCode() + mKind) * 31 + mTag;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return this == obj || obj instanceof C_MethodHandle other
+                && mTag == other.mTag && mKind == other.mKind
+                && mRef.equals(other.mRef);
+        }
+
+        @Override
+        long size() {
+            return 1 + 3;
+        }
+
+        @Override
+        void writeTo(BufferEncoder encoder) throws IOException {
+            encoder.writeByte(mTag);
+            encoder.writeByte(mKind);
+            encoder.writeShort(mRef.mIndex);
         }
     }
 }

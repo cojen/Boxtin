@@ -37,6 +37,13 @@ public abstract sealed class DenyAction {
     }
 
     /**
+     * Returns a deny action which throws an exception without a message.
+     */
+    public static DenyAction exception(String className) {
+        return exception(className, null);
+    }
+
+    /**
      * Returns a deny action which throws an exception with an optional message.
      */
     public static DenyAction exception(String className, String message) {
@@ -44,6 +51,13 @@ public abstract sealed class DenyAction {
             return Standard.THE;
         }
         return message == null ? new Exception(className) : new WithMessage(className, message);
+    }
+
+    /**
+     * Returns a deny action which throws an exception without a message.
+     */
+    public static DenyAction exception(Class<?> clazz) {
+        return exception(clazz, null);
     }
 
     /**
@@ -59,38 +73,46 @@ public abstract sealed class DenyAction {
 
     /**
      * Returns a deny action which returns a specific value, possibly null. If the value is
-     * incompatible with the actual value type, then null, 0 or false is returned instead.
+     * incompatible with the actual value type, then null, 0, false, or void is returned
+     * instead.
      *
-     * @throws IllegalArgumentException if the given value isn't null, a boxed primitive or a
+     * <p>Note: This action has no effect for constructors, and if configured as such, the
+     * standard action is used instead.
+     *
+     * @throws IllegalArgumentException if the given value isn't null, a boxed primitive, or a
      * string
      */
     public static DenyAction value(Object value) {
-        if (value == null) {
-            return Value.NULL;
-        }
+        return value == null ? Value.NULL : new Value(checkValue(value));
+    }
 
-        check: {
-            if (value instanceof String || value instanceof Boolean || value instanceof Character) {
-                break check;
-            } else if (value instanceof Number n) {
-                if (value instanceof Integer || value instanceof Long || value instanceof Double ||
-                    value instanceof Float || value instanceof Short || value instanceof Byte)
-                {
-                    break check;
-                }
+    /**
+     * @param value must not be null
+     */
+    private static Object checkValue(Object value) {
+        if (value instanceof String || value instanceof Boolean || value instanceof Character) {
+            return value;
+        } else if (value instanceof Number n) {
+            if (value instanceof Integer || value instanceof Long || value instanceof Double ||
+                value instanceof Float || value instanceof Short || value instanceof Byte)
+            {
+                return value;
             }
-            throw new IllegalArgumentException();
         }
 
-        return new Value(value);
+        throw new IllegalArgumentException();
     }
 
     /**
      * Returns a deny action which returns an empty instance. Types supported are arrays,
-     * {@code String}, {@code Optional}, {@code Iterable}, {@code Collection}, and any of the
-     * empty variants supported by the {@code Collections} class. Otherwise, a new instance is
-     * created using a no-arg constructor, possibly resulting in a {@code LinkageError} at
-     * runtime. If the actual type is primitive, then 0 or false is returned instead.
+     * {@code String}, {@code Optional}, {@code Iterable}, {@code Collection}, {@code Stream},
+     * and any of the empty variants supported by the {@code Collections} class. Otherwise, a
+     * new instance is created using a no-arg constructor, possibly resulting in a {@code
+     * LinkageError} at runtime. If the actual type is primitive, then 0, false or void is
+     * returned instead.
+     *
+     * <p>Note: This action has no effect for constructors, and if configured as such, the
+     * standard action is used instead.
      */
     public static DenyAction empty() {
         return Empty.THE;
@@ -98,10 +120,12 @@ public abstract sealed class DenyAction {
 
     /**
      * Returns a deny action which performs a custom operation. The parameters given to the
-     * custom method is the caller module, followed by the target class, and then the original
-     * method parameters. Any number of tail parameters can be dropped. The return type must
-     * exactly match the original method's return type. If the custom method type is
-     * incompatible, then a {@code LinkageError} is thrown at runtime.
+     * custom method is original method parameters. The return type must exactly match the
+     * original method's return type. If the custom method type is incompatible, then a {@code
+     * LinkageError} is thrown at runtime.
+     *
+     * <p>Note: This action has no effect for constructors, unless the custom operation throws
+     * an exception. Otherwise, the standard action is used.
      */
     public static DenyAction custom(MethodHandleInfo mhi) {
         return new Custom(Objects.requireNonNull(mhi));
@@ -109,26 +133,31 @@ public abstract sealed class DenyAction {
 
     /**
      * @see DenyAction#select
-     */
+     * /
     @FunctionalInterface
     public static interface Selector {
         /**
          * Returns a deny action based on the actual deniable operation.
          *
-         * @param methodName is null for constructors
+         * @param packageName the target package name
+         * @param className the target class name, without a package qualifier
+         * @param methodName the target method name; is null for constructors
+         * @param descriptor the target method descriptor
          * @see MethodTypeDesc
-         */
-        public DenyAction select(String className, String methodName, String descriptor);
+         * /
+        public DenyAction select(String packageName, String className,
+                                 String methodName, String descriptor);
     }
 
     /**
      * Returns a deny action which selects the actual deny action based on the deniable
      * operation. If the selected action is actually a select action (or null), then the
      * standard action is used instead.
-     */
+     * /
     public static DenyAction select(Selector selector) {
         return new Select(Objects.requireNonNull(selector));
     }
+    */
 
     private DenyAction() {
     }
@@ -149,10 +178,15 @@ public abstract sealed class DenyAction {
         public boolean equals(Object obj) {
             return obj instanceof Exception other && className.equals(other.className);
         }
+
+        @Override
+        public String toString() {
+            return "exception(" + className + ')';
+        }
     }
 
     static final class Standard extends Exception {
-        private static final Standard THE = new Standard();
+        static final Standard THE = new Standard();
 
         private Standard() {
             super(SecurityException.class.getName());
@@ -168,6 +202,10 @@ public abstract sealed class DenyAction {
             return this == obj;
         }
 
+        @Override
+        public String toString() {
+            return "standard";
+        }
     }
 
     static final class WithMessage extends Exception {
@@ -187,6 +225,11 @@ public abstract sealed class DenyAction {
         public boolean equals(Object obj) {
             return obj instanceof WithMessage other && message.equals(other.message)
                 && super.equals(other);
+        }
+
+        @Override
+        public String toString() {
+            return "exception(" + className + ", " + message + ')';
         }
     }
 
@@ -208,6 +251,11 @@ public abstract sealed class DenyAction {
         public boolean equals(Object obj) {
             return obj instanceof Value other && Objects.equals(value, other.value);
         }
+
+        @Override
+        public String toString() {
+            return "value(" + value + ')';
+        }
     }
 
     static final class Empty extends DenyAction {
@@ -219,6 +267,11 @@ public abstract sealed class DenyAction {
         @Override
         public int hashCode() {
             return 1539211235;
+        }
+
+        @Override
+        public String toString() {
+            return "empty";
         }
     }
 
@@ -238,8 +291,14 @@ public abstract sealed class DenyAction {
         public boolean equals(Object obj) {
             return obj instanceof Custom other && mhi.equals(other.mhi);
         }
+
+        @Override
+        public String toString() {
+            return "custom(" + mhi + ')';
+        }
     }
 
+    /*
     static final class Select extends DenyAction {
         final Selector selector;
 
@@ -256,5 +315,11 @@ public abstract sealed class DenyAction {
         public boolean equals(Object obj) {
             return obj instanceof Select other && selector.equals(other.selector);
         }
+
+        @Override
+        public String toString() {
+            return "select(" + selector + ')';
+        }
     }
+    */
 }

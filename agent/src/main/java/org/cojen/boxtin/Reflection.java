@@ -44,8 +44,7 @@ public final class Reflection {
         var methods = new HashMap<String, String>(2);
 
         for (Method m : Reflection.class.getMethods()) {
-            String desc = Utils.fullDescriptorFor(m.getReturnType(), m.getParameterTypes());
-            methods.put(m.getName(), desc);
+            methods.put(m.getName(), Utils.fullDescriptorFor(m));
         }
 
         mMethods = methods;

@@ -16,6 +16,10 @@
 
 package org.cojen.boxtin;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodHandleInfo;
+import java.lang.invoke.MethodType;
+
 /**
  * Defines a set of rules to deny operations in the java.base module which could be considered
  * harmful.
@@ -24,8 +28,37 @@ package org.cojen.boxtin;
  * @see RulesApplier#java_base
  */
 final class JavaBaseApplier implements RulesApplier {
+    private static MethodType mt(Class<?> rtype, Class<?>... ptypes) {
+        return MethodType.methodType(rtype, ptypes);
+    }
+
     @Override
     public void applyRulesTo(RulesBuilder b) {
+        MethodHandleInfo iv1, iv2, lv1, lv2, sv1;
+
+        try {
+            MethodHandles.Lookup lookup = MethodHandles.lookup();
+
+            iv1 = lookup.revealDirect(lookup.findStatic(CustomActions.class, "intValue",
+                  mt(Integer.class, String.class, int.class)));
+
+            iv2 = lookup.revealDirect(lookup.findStatic(CustomActions.class, "intValue",
+                  mt(Integer.class, String.class, Integer.class)));
+
+            lv1 = lookup.revealDirect(lookup.findStatic(CustomActions.class, "longValue",
+                  mt(Long.class, String.class, long.class)));
+
+            lv2 = lookup.revealDirect(lookup.findStatic(CustomActions.class, "longValue",
+                  mt(Long.class, String.class, Long.class)));
+
+            sv1 = lookup.revealDirect(lookup.findStatic(CustomActions.class, "stringValue",
+                  mt(String.class, String.class, String.class)));
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
         b.forModule("java.base")
 
             .forPackage("java.io")
@@ -33,6 +66,34 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forClass("File")
             .denyAllMethods()
+            .denyMethod(DenyAction.empty(), "list")
+            .denyMethod(DenyAction.empty(), "listFiles")
+            .denyMethod(DenyAction.empty(), "listRoots")
+            .denyMethod(DenyAction.exception("java.io.FileNotFoundException"), "createNewFile")
+            .denyMethod(DenyAction.exception("java.io.FileNotFoundException"), "createTempFile")
+            .denyMethod(DenyAction.value(0L), "getFreeSpace")
+            .denyMethod(DenyAction.value(0L), "getTotalSpace")
+            .denyMethod(DenyAction.value(0L), "getUsableSpace")
+            .denyMethod(DenyAction.value(0L), "lastModified")
+            .denyMethod(DenyAction.value(0L), "length")
+            .denyMethod(DenyAction.value(false), "canExecute")
+            .denyMethod(DenyAction.value(false), "canRead")
+            .denyMethod(DenyAction.value(false), "canWrite")
+            .denyMethod(DenyAction.value(false), "delete")
+            .denyMethod(DenyAction.value(false), "exists")
+            .denyMethod(DenyAction.value(false), "isAbsolute")
+            .denyMethod(DenyAction.value(false), "isDirectory")
+            .denyMethod(DenyAction.value(false), "isFile")
+            .denyMethod(DenyAction.value(false), "isHidden")
+            .denyMethod(DenyAction.value(false), "isHidden")
+            .denyMethod(DenyAction.value(false), "mkdir")
+            .denyMethod(DenyAction.value(false), "mkdirs")
+            .denyMethod(DenyAction.value(false), "renameTo")
+            .denyMethod(DenyAction.value(false), "setExecutable")
+            .denyMethod(DenyAction.value(false), "setLastModified")
+            .denyMethod(DenyAction.value(false), "setReadOnly")
+            .denyMethod(DenyAction.value(false), "setReadable")
+            .denyMethod(DenyAction.value(false), "setWritable")
             .allowMethod("compareTo")
             .allowMethod("getName")
             .allowMethod("getParent")
@@ -41,10 +102,10 @@ final class JavaBaseApplier implements RulesApplier {
             .allowMethod("toPath")
 
             .forClass("FileInputStream")
-            .denyAllConstructors()
+            .denyAllConstructors(DenyAction.exception("java.io.FileNotFoundException"))
 
             .forClass("FileOutputStream")
-            .denyAllConstructors()
+            .denyAllConstructors(DenyAction.exception("java.io.FileNotFoundException"))
 
             .forClass("ObjectInputFilter.Config")
             .denyMethod("setSerialFilter")
@@ -64,14 +125,14 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("writeUnshared")
 
             .forClass("PrintStream")
-            .denyAllConstructors()
+            .denyAllConstructors(DenyAction.exception("java.io.FileNotFoundException"))
             .allowVariant("Ljava/io/OutputStream;")
             .allowVariant("Ljava/io/OutputStream;Z")
             .allowVariant("Ljava/io/OutputStream;ZLjava/lang/String;")
             .allowVariant("Ljava/io/OutputStream;ZLjava/nio/charset/Charset;")
 
             .forClass("PrintWriter")
-            .denyAllConstructors()
+            .denyAllConstructors(DenyAction.exception("java.io.FileNotFoundException"))
             .allowVariant("Ljava/io/OutputStream;")
             .allowVariant("Ljava/io/OutputStream;Z")
             .allowVariant("Ljava/io/OutputStream;ZLjava/nio/charset/Charset;")
@@ -79,13 +140,15 @@ final class JavaBaseApplier implements RulesApplier {
             .allowVariant("Ljava/io/Writer;Z")
 
             .forClass("RandomAccessFile")
-            .denyAllConstructors()
+            .denyAllConstructors(DenyAction.exception("java.io.FileNotFoundException"))
 
             .forPackage("java.lang")
             .allowAll()
 
             .forClass("Boolean")
-            .denyMethod("getBoolean")
+            .callerCheck()
+            // Always return false.
+            .denyMethod(DenyAction.value("false"), "getBoolean")
 
             // Note: The methods which return Constructors and Methods are treated specially,
             // and denying access here only denies access to those methods themselves. Checks
@@ -131,15 +194,26 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("clearAssertionStatus")
 
             .forClass("Integer")
+            .callerCheck()
             .denyMethod("getInteger")
+            // Always return null.
+            .denyVariant(DenyAction.value(null), "Ljava/lang/String;")
+            // Always return the default value.
+            .denyVariant(DenyAction.custom(iv1), "Ljava/lang/String;I")
+            .denyVariant(DenyAction.custom(iv2), "Ljava/lang/String;Ljava/lang/Integer;")
 
             .forClass("Long")
+            .callerCheck()
             .denyMethod("getLong")
+            // Always return null.
+            .denyVariant(DenyAction.value(null), "Ljava/lang/String;")
+            // Always return the default value.
+            .denyVariant(DenyAction.custom(lv1), "Ljava/lang/String;J")
+            .denyVariant(DenyAction.custom(lv2), "Ljava/lang/String;Ljava/lang/Long;")
 
             .forClass("Module")
             .callerCheck()
             .denyMethod("getClassLoader")
-
 
             .forClass("ModuleLayer")
             .denyMethod("defineModules")
@@ -197,6 +271,11 @@ final class JavaBaseApplier implements RulesApplier {
             .forClass("System")
             .callerCheck()
             .denyAll()
+            .denyMethod("getProperty")
+            // Always return null.
+            .denyVariant(DenyAction.value(null), "Ljava/lang/String;")
+            // Always return the default value.
+            .denyVariant(DenyAction.custom(sv1), "Ljava/lang/String;Ljava/lang/String;")
             .allowMethod("arraycopy")
             .allowMethod("currentTimeMillis")
             .allowMethod("gc")
@@ -696,10 +775,11 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forClass("ForkJoinPool")
             // These methods are denied because shared instances can be accessed by calling the
-            // ForkJoinTask.getPool() method.
-            .denyMethod("close")
-            .denyMethod("shutdown")
-            .denyMethod("shutdownNow")
+            // ForkJoinTask.getPool() method. Rather than throwing an exception, calling these
+            // methods has no effect, just like ForkJoinPool.commonPool.
+            .denyMethod(DenyAction.value(null), "close")
+            .denyMethod(DenyAction.value(null), "shutdown")
+            .denyMethod(DenyAction.value(null), "shutdownNow")
 
             .forPackage("java.util.concurrent.atomic").allowAll()
 

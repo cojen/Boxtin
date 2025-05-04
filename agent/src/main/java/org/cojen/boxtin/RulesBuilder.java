@@ -120,7 +120,7 @@ public final class RulesBuilder {
         throws ClassNotFoundException, NoSuchMethodException
     {
         // FIXME: Validate inheritance when using caller checks. Also check
-        // for @CallerSensitive methods, which must rely on caller checks.
+        // for @CallerSensitive methods, which must rely on caller checks. Validate DenyActions.
 
         Objects.requireNonNull(layer);
 
@@ -328,6 +328,16 @@ public final class RulesBuilder {
         }
 
         /**
+         * Deny access to all packages, superseding all previous rules. This action is
+         * recursive, denying access to all classes, constructors, etc.
+         *
+         * @return this
+         */
+        public ModuleScope denyAll(DenyAction action) {
+            return ruleForAll(denyAtTarget(action));
+        }
+
+        /**
          * Allow access to all packages, superseding all previous rules. This action is
          * recursive, allowing access to all classes, constructors, etc.
          *
@@ -473,6 +483,16 @@ public final class RulesBuilder {
          */
         public PackageScope denyAll() {
             return ruleForAll(denyAtTarget());
+        }
+
+        /**
+         * Deny access to all classes, superseding all previous rules. This action is
+         * recursive, denying access to all classes, constructors, etc.
+         *
+         * @return this
+         */
+        public PackageScope denyAll(DenyAction action) {
+            return ruleForAll(denyAtTarget(action));
         }
 
         /**
@@ -686,6 +706,16 @@ public final class RulesBuilder {
         }
 
         /**
+         * Deny access to all constructors and locally declared methods, superseding all
+         * previous rules.
+         *
+         * @return this
+         */
+        public ClassScope denyAll(DenyAction action) {
+            return ruleForAll(mDenyRule.withDenyAction(action));
+        }
+
+        /**
          * Deny access to all constructors, superseding all previous rules.
          *
          * @return this
@@ -694,6 +724,19 @@ public final class RulesBuilder {
             mConstructors = null;
             mDefaultConstructorRule = mDenyRule;
             mVariantScope = mConstructors = new MethodScope().ruleForAll(mDenyRule);
+            return this;
+        }
+
+        /**
+         * Deny access to all constructors, superseding all previous rules.
+         *
+         * @return this
+         */
+        public ClassScope denyAllConstructors(DenyAction action) {
+            mConstructors = null;
+            Rule rule = mDenyRule.withDenyAction(action);
+            mDefaultConstructorRule = rule;
+            mVariantScope = mConstructors = new MethodScope().ruleForAll(rule);
             return this;
         }
 
@@ -710,6 +753,18 @@ public final class RulesBuilder {
         }
 
         /**
+         * Deny access to all locally declared methods, superseding all previous rules.
+         *
+         * @return this
+         */
+        public ClassScope denyAllMethods(DenyAction action) {
+            mMethods = null;
+            mDefaultMethodRule = mDenyRule.withDenyAction(action);
+            mVariantScope = null;
+            return this;
+        }
+
+        /**
          * Deny access to all variants of the given method, superseding all previous rules.
          *
          * @return this
@@ -718,6 +773,18 @@ public final class RulesBuilder {
         public ClassScope denyMethod(String name) {
             checkMethodName(name);
             mVariantScope = forMethod(name).ruleForAll(mDenyRule);
+            return this;
+        }
+
+        /**
+         * Deny access to all variants of the given method, superseding all previous rules.
+         *
+         * @return this
+         * @throws IllegalArgumentException if not a valid method name
+         */
+        public ClassScope denyMethod(DenyAction action, String name) {
+            checkMethodName(name);
+            mVariantScope = forMethod(name).ruleForAll(mDenyRule.withDenyAction(action));
             return this;
         }
 
@@ -837,12 +904,41 @@ public final class RulesBuilder {
          * Deny access to a specific variant of the current constructor or method, superseding
          * all previous rules.
          *
+         * @param descriptor descriptor for the parameters, not including parenthesis or the
+         * return type
+         * @return this
+         * @throws IllegalStateException if no current constructor or method
+         */
+        public ClassScope denyVariant(DenyAction action, String descriptor) {
+            if (mVariantScope == null) {
+                throw new IllegalStateException("No current constructor or method");
+            }
+            mVariantScope.ruleForVariant(mDenyRule.withDenyAction(action), descriptor);
+            return this;
+        }
+
+        /**
+         * Deny access to a specific variant of the current constructor or method, superseding
+         * all previous rules.
+         *
          * @return this
          * @throws IllegalStateException if no current constructor or method, or if all
          * variants are explicitly denied
          */
         public ClassScope denyVariant(Class<?>... paramTypes) {
             return denyVariant(partialDescriptorFor(paramTypes));
+        }
+
+        /**
+         * Deny access to a specific variant of the current constructor or method, superseding
+         * all previous rules.
+         *
+         * @return this
+         * @throws IllegalStateException if no current constructor or method, or if all
+         * variants are explicitly denied
+         */
+        public ClassScope denyVariant(DenyAction action, Class<?>... paramTypes) {
+            return denyVariant(action, partialDescriptorFor(paramTypes));
         }
 
         /**
