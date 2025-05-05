@@ -65,8 +65,8 @@ loadScripts(document, 'script');</script>
 <li><a href="#method-summary" tabindex="0">Method Summary</a></li>
 <li><a href="#method-detail" tabindex="0">Method Details</a>
 <ol class="toc-list">
-<li><a href="#checkerForCaller(java.lang.Module)" tabindex="0">checkerForCaller(Module)</a></li>
-<li><a href="#checkerForTarget()" tabindex="0">checkerForTarget()</a></li>
+<li><a href="#rulesForCaller(java.lang.Module)" tabindex="0">rulesForCaller(Module)</a></li>
+<li><a href="#rulesForTarget()" tabindex="0">rulesForTarget()</a></li>
 </ol>
 </li>
 </ol>
@@ -97,16 +97,15 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="Checker.html" title="interface in org.cojen.boxtin">Checker</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#checkerForCaller(java.lang.Module)" class="member-name-link">checkerForCaller</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Module.html" title="class or interface in java.lang" class="external-link">Module</a>&nbsp;module)</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#rulesForCaller(java.lang.Module)" class="member-name-link">rulesForCaller</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Module.html" title="class or interface in java.lang" class="external-link">Module</a>&nbsp;module)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
-<div class="block">Returns a Checker which determines if a calling module is allowed to perform an
- operation.</div>
+<div class="block">Returns rules which determine if a calling module is allowed to perform an operation.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="Checker.html" title="interface in org.cojen.boxtin">Checker</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#checkerForTarget()" class="member-name-link">checkerForTarget</a>()</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#rulesForTarget()" class="member-name-link">rulesForTarget</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
-<div class="block">Returns a Checker which determines if a target class has deniable operations.</div>
+<div class="block">Returns rules which determine if a target class has deniable operations.</div>
 </div>
 </div>
 </div>
@@ -123,30 +122,29 @@ loadScripts(document, 'script');</script>
 <h2>Method Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="checkerForCaller(java.lang.Module)">
-<h3>checkerForCaller</h3>
+<section class="detail" id="rulesForCaller(java.lang.Module)">
+<h3>rulesForCaller</h3>
 <div class="horizontal-scroll">
-<div class="member-signature"><span class="return-type"><a href="Checker.html" title="interface in org.cojen.boxtin">Checker</a></span>&nbsp;<span class="element-name">checkerForCaller</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Module.html" title="class or interface in java.lang" class="external-link">Module</a>&nbsp;module)</span></div>
-<div class="block">Returns a Checker which determines if a calling module is allowed to perform an
- operation.</div>
+<div class="member-signature"><span class="return-type"><a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a></span>&nbsp;<span class="element-name">rulesForCaller</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Module.html" title="class or interface in java.lang" class="external-link">Module</a>&nbsp;module)</span></div>
+<div class="block">Returns rules which determine if a calling module is allowed to perform an operation.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>module</code> - the caller's module, which can be named or unnamed</dd>
 <dt>Returns:</dt>
-<dd>a checker instance, which can be null if all operations are allowed</dd>
+<dd>a Rules instance, which can be null if all operations are allowed</dd>
 </dl>
 </div>
 </section>
 </li>
 <li>
-<section class="detail" id="checkerForTarget()">
-<h3>checkerForTarget</h3>
+<section class="detail" id="rulesForTarget()">
+<h3>rulesForTarget</h3>
 <div class="horizontal-scroll">
-<div class="member-signature"><span class="return-type"><a href="Checker.html" title="interface in org.cojen.boxtin">Checker</a></span>&nbsp;<span class="element-name">checkerForTarget</span>()</div>
-<div class="block">Returns a Checker which determines if a target class has deniable operations.</div>
+<div class="member-signature"><span class="return-type"><a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a></span>&nbsp;<span class="element-name">rulesForTarget</span>()</div>
+<div class="block">Returns rules which determine if a target class has deniable operations.</div>
 <dl class="notes">
 <dt>Returns:</dt>
-<dd>a checker instance, which can be null if all operations are allowed</dd>
+<dd>a Rules instance, which can be null if all operations are allowed</dd>
 </dl>
 </div>
 </section>

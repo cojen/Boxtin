@@ -68,6 +68,7 @@ loadScripts(document, 'script');</script>
 <li><a href="#premain(java.lang.String,java.lang.instrument.Instrumentation)" tabindex="0">premain(String, Instrumentation)</a></li>
 <li><a href="#activate(org.cojen.boxtin.Controller)" tabindex="0">activate(Controller)</a></li>
 <li><a href="#tryActivate(org.cojen.boxtin.Controller)" tabindex="0">tryActivate(Controller)</a></li>
+<li><a href="#isActivated()" tabindex="0">isActivated()</a></li>
 </ol>
 </li>
 </ol>
@@ -128,16 +129,19 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Activate the security agent if not already done so.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#premain(java.lang.String,java.lang.instrument.Instrumentation)" class="member-name-link">premain</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;agentArgs,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static boolean</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#isActivated()" class="member-name-link">isActivated</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#premain(java.lang.String,java.lang.instrument.Instrumentation)" class="member-name-link">premain</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;agentArgs,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.instrument/java/lang/instrument/Instrumentation.html" title="class or interface in java.lang.instrument" class="external-link">Instrumentation</a>&nbsp;inst)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">The premain method should only be called by the instrumentation layer, when the JVM
  starts.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static boolean</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#tryActivate(org.cojen.boxtin.Controller)" class="member-name-link">tryActivate</a><wbr>(<a href="Controller.html" title="interface in org.cojen.boxtin">Controller</a>&nbsp;controller)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static boolean</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#tryActivate(org.cojen.boxtin.Controller)" class="member-name-link">tryActivate</a><wbr>(<a href="Controller.html" title="interface in org.cojen.boxtin">Controller</a>&nbsp;controller)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Activate the security agent if not already done so.</div>
 </div>
 </div>
@@ -204,6 +208,14 @@ loadScripts(document, 'script');</script>
 <dt>Throws:</dt>
 <dd><code><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/IllegalStateException.html" title="class or interface in java.lang" class="external-link">IllegalStateException</a></code> - if the SecurityAgent wasn't loaded</dd>
 </dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="isActivated()">
+<h3>isActivated</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">isActivated</span>()</div>
 </div>
 </section>
 </li>

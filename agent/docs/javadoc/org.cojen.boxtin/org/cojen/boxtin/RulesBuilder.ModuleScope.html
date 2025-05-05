@@ -67,6 +67,7 @@ loadScripts(document, 'script');</script>
 <li><a href="#method-detail" tabindex="0">Method Details</a>
 <ol class="toc-list">
 <li><a href="#denyAll()" tabindex="0">denyAll()</a></li>
+<li><a href="#denyAll(org.cojen.boxtin.DenyAction)" tabindex="0">denyAll(DenyAction)</a></li>
 <li><a href="#allowAll()" tabindex="0">allowAll()</a></li>
 <li><a href="#forPackage(java.lang.String)" tabindex="0">forPackage(String)</a></li>
 <li><a href="#forPackage(java.lang.Package)" tabindex="0">forPackage(Package)</a></li>
@@ -120,30 +121,35 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Deny access to all packages, superseding all previous rules.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.html" title="class in org.cojen.boxtin">RulesBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#end()" class="member-name-link">end</a>()</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.ModuleScope.html" title="class in org.cojen.boxtin">RulesBuilder.ModuleScope</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#denyAll(org.cojen.boxtin.DenyAction)" class="member-name-link">denyAll</a><wbr>(<a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Deny access to all packages, superseding all previous rules.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.html" title="class in org.cojen.boxtin">RulesBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#end()" class="member-name-link">end</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">End the current rules for this module and return to the outermost scope.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.ModuleScope.html" title="class in org.cojen.boxtin">RulesBuilder.ModuleScope</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#forModule(java.lang.Module)" class="member-name-link">forModule</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Module.html" title="class or interface in java.lang" class="external-link">Module</a>&nbsp;module)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">End the current rules for this module and begin a new module scope.</div>
-</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.ModuleScope.html" title="class in org.cojen.boxtin">RulesBuilder.ModuleScope</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#forModule(java.lang.String)" class="member-name-link">forModule</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#forModule(java.lang.Module)" class="member-name-link">forModule</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Module.html" title="class or interface in java.lang" class="external-link">Module</a>&nbsp;module)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">End the current rules for this module and begin a new module scope.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.PackageScope.html" title="class in org.cojen.boxtin">RulesBuilder.PackageScope</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#forPackage(java.lang.Package)" class="member-name-link">forPackage</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Package.html" title="class or interface in java.lang" class="external-link">Package</a>&nbsp;p)</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.ModuleScope.html" title="class in org.cojen.boxtin">RulesBuilder.ModuleScope</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#forModule(java.lang.String)" class="member-name-link">forModule</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">End the current rules for this module and begin a new module scope.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.PackageScope.html" title="class in org.cojen.boxtin">RulesBuilder.PackageScope</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#forPackage(java.lang.Package)" class="member-name-link">forPackage</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Package.html" title="class or interface in java.lang" class="external-link">Package</a>&nbsp;p)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Define specific rules against the given module, which can supersede all previous
  rules.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.PackageScope.html" title="class in org.cojen.boxtin">RulesBuilder.PackageScope</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#forPackage(java.lang.String)" class="member-name-link">forPackage</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.PackageScope.html" title="class in org.cojen.boxtin">RulesBuilder.PackageScope</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#forPackage(java.lang.String)" class="member-name-link">forPackage</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Define specific rules against the given package, which can supersede all previous
  rules.</div>
 </div>
@@ -169,6 +175,20 @@ loadScripts(document, 'script');</script>
 <h3>denyAll</h3>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RulesBuilder.ModuleScope.html" title="class in org.cojen.boxtin">RulesBuilder.ModuleScope</a></span>&nbsp;<span class="element-name">denyAll</span>()</div>
+<div class="block">Deny access to all packages, superseding all previous rules. This action is
+ recursive, denying access to all classes, constructors, etc.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>this</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="denyAll(org.cojen.boxtin.DenyAction)">
+<h3>denyAll</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RulesBuilder.ModuleScope.html" title="class in org.cojen.boxtin">RulesBuilder.ModuleScope</a></span>&nbsp;<span class="element-name">denyAll</span><wbr><span class="parameters">(<a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</span></div>
 <div class="block">Deny access to all packages, superseding all previous rules. This action is
  recursive, denying access to all classes, constructors, etc.</div>
 <dl class="notes">

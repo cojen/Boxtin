@@ -66,6 +66,9 @@ loadScripts(document, 'script');</script>
 <li><a href="#method-summary" tabindex="0">Method Summary</a></li>
 <li><a href="#method-detail" tabindex="0">Method Details</a>
 <ol class="toc-list">
+<li><a href="#isAllAllowed()" tabindex="0">isAllAllowed()</a></li>
+<li><a href="#forClass(java.lang.CharSequence,java.lang.CharSequence)" tabindex="0">forClass(CharSequence, CharSequence)</a></li>
+<li><a href="#forClass(java.lang.Class)" tabindex="0">forClass(Class)</a></li>
 <li><a href="#printTo(java.lang.Appendable,java.lang.String,java.lang.String)" tabindex="0">printTo(Appendable, String, String)</a></li>
 <li><a href="#printTo(java.io.PrintStream)" tabindex="0">printTo(PrintStream)</a></li>
 <li><a href="#printTo(java.io.PrintWriter)" tabindex="0">printTo(PrintWriter)</a></li>
@@ -79,15 +82,11 @@ loadScripts(document, 'script');</script>
 <h1 title="Interface Rules" class="title">Interface Rules</h1>
 </div>
 <section class="class-description" id="class-description">
-<dl class="notes">
-<dt>All Superinterfaces:</dt>
-<dd><code><a href="Checker.html" title="interface in org.cojen.boxtin">Checker</a></code></dd>
-</dl>
 <hr>
 <div class="horizontal-scroll">
-<div class="type-signature"><span class="modifiers">public interface </span><span class="element-name type-name-label">Rules</span><span class="extends-implements">
-extends <a href="Checker.html" title="interface in org.cojen.boxtin">Checker</a></span></div>
-<div class="block">A Checker which is defined by a set of rules, built using a <a href="RulesBuilder.html" title="class in org.cojen.boxtin"><code>RulesBuilder</code></a>.</div>
+<div class="type-signature"><span class="modifiers">public interface </span><span class="element-name type-name-label">Rules</span></div>
+<div class="block">Checks if acces to a class member is allowed or denied, defined by a set of rules, built
+ using a <a href="RulesBuilder.html" title="class in org.cojen.boxtin"><code>RulesBuilder</code></a>.</div>
 </div>
 </section>
 <section class="summary">
@@ -96,9 +95,17 @@ extends <a href="Checker.html" title="interface in org.cojen.boxtin">Checker</a>
 <li>
 <section class="nested-class-summary" id="nested-class-summary">
 <h2>Nested Class Summary</h2>
-<div class="inherited-list">
-<h3 id="nested-classes-inherited-from-class-org.cojen.boxtin.Checker">Nested classes/interfaces inherited from interface&nbsp;org.cojen.boxtin.<a href="Checker.html" title="interface in org.cojen.boxtin">Checker</a></h3>
-<code><a href="Checker.ForClass.html" title="interface in org.cojen.boxtin">Checker.ForClass</a></code></div>
+<div class="caption"><span>Nested Classes</span></div>
+<div class="summary-table three-column-summary">
+<div class="table-header col-first">Modifier and Type</div>
+<div class="table-header col-second">Interface</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><code>static interface&nbsp;</code></div>
+<div class="col-second even-row-color"><code><a href="Rules.ForClass.html" class="type-name-link" title="interface in org.cojen.boxtin">Rules.ForClass</a></code></div>
+<div class="col-last even-row-color">
+<div class="block">Checks access to constructors or methods, for a specific class.</div>
+</div>
+</div>
 </section>
 </li>
 <!-- ========== METHOD SUMMARY =========== -->
@@ -112,29 +119,38 @@ extends <a href="Checker.html" title="interface in org.cojen.boxtin">Checker</a>
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#printTo(java.io.PrintStream)" class="member-name-link">printTo</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/io/PrintStream.html" title="class or interface in java.io" class="external-link">PrintStream</a>&nbsp;ps)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
-<div class="block">Print a description of the rules to the given PrintStream.</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#forClass(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">forClass</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;packageName,
+ <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;className)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#forClass(java.lang.Class)" class="member-name-link">forClass</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;?&gt;&nbsp;clazz)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>boolean</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#isAllAllowed()" class="member-name-link">isAllAllowed</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="block">Returns true if all operations are allowed.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#printTo(java.io.PrintWriter)" class="member-name-link">printTo</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/io/PrintWriter.html" title="class or interface in java.io" class="external-link">PrintWriter</a>&nbsp;pw)</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default boolean</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#printTo(java.io.PrintStream)" class="member-name-link">printTo</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/io/PrintStream.html" title="class or interface in java.io" class="external-link">PrintStream</a>&nbsp;ps)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
 <div class="block">Print a description of the rules to the given PrintStream.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#printTo(java.lang.Appendable,java.lang.String,java.lang.String)" class="member-name-link">printTo</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Appendable.html" title="class or interface in java.lang" class="external-link">Appendable</a>&nbsp;a,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default boolean</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#printTo(java.io.PrintWriter)" class="member-name-link">printTo</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/io/PrintWriter.html" title="class or interface in java.io" class="external-link">PrintWriter</a>&nbsp;pw)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">Print a description of the rules to the given PrintStream.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>boolean</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#printTo(java.lang.Appendable,java.lang.String,java.lang.String)" class="member-name-link">printTo</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Appendable.html" title="class or interface in java.lang" class="external-link">Appendable</a>&nbsp;a,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;indent,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;plusIndent)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Print a description of the rules to the given Appendable object.</div>
 </div>
 </div>
 </div>
 </div>
-<div class="inherited-list">
-<h3 id="methods-inherited-from-class-org.cojen.boxtin.Checker">Methods inherited from interface&nbsp;org.cojen.boxtin.<a href="Checker.html" title="interface in org.cojen.boxtin">Checker</a></h3>
-<code><a href="Checker.html#forClass(java.lang.CharSequence,java.lang.CharSequence)">forClass</a>, <a href="Checker.html#forClass(java.lang.Class)">forClass</a></code></div>
 </section>
 </li>
 </ul>
@@ -147,18 +163,56 @@ extends <a href="Checker.html" title="interface in org.cojen.boxtin">Checker</a>
 <h2>Method Details</h2>
 <ul class="member-list">
 <li>
+<section class="detail" id="isAllAllowed()">
+<h3>isAllAllowed</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="return-type">boolean</span>&nbsp;<span class="element-name">isAllAllowed</span>()</div>
+<div class="block">Returns true if all operations are allowed.</div>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="forClass(java.lang.CharSequence,java.lang.CharSequence)">
+<h3>forClass</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="return-type"><a href="Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></span>&nbsp;<span class="element-name">forClass</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;packageName,
+ <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;className)</span></div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>packageName</code> - package name must have '/' characters as separators</dd>
+<dt>Returns:</dt>
+<dd>non-null ForClass instance</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="forClass(java.lang.Class)">
+<h3>forClass</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></span>&nbsp;<span class="element-name">forClass</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;?&gt;&nbsp;clazz)</span></div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>non-null ForClass instance</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
 <section class="detail" id="printTo(java.lang.Appendable,java.lang.String,java.lang.String)">
 <h3>printTo</h3>
 <div class="horizontal-scroll">
-<div class="member-signature"><span class="return-type">void</span>&nbsp;<span class="element-name">printTo</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Appendable.html" title="class or interface in java.lang" class="external-link">Appendable</a>&nbsp;a,
+<div class="member-signature"><span class="return-type">boolean</span>&nbsp;<span class="element-name">printTo</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Appendable.html" title="class or interface in java.lang" class="external-link">Appendable</a>&nbsp;a,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;indent,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;plusIndent)</span>
-      throws <span class="exceptions"><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/io/IOException.html" title="class or interface in java.io" class="external-link">IOException</a></span></div>
+         throws <span class="exceptions"><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/io/IOException.html" title="class or interface in java.io" class="external-link">IOException</a></span></div>
 <div class="block">Print a description of the rules to the given Appendable object.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>indent</code> - minimum indent for each line; pass an empty string for no indent</dd>
 <dd><code>plusIndent</code> - additional indent when entering a scope</dd>
+<dt>Returns:</dt>
+<dd>false if not supported</dd>
 <dt>Throws:</dt>
 <dd><code><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/io/IOException.html" title="class or interface in java.io" class="external-link">IOException</a></code></dd>
 </dl>
@@ -169,7 +223,7 @@ extends <a href="Checker.html" title="interface in org.cojen.boxtin">Checker</a>
 <section class="detail" id="printTo(java.io.PrintStream)">
 <h3>printTo</h3>
 <div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">printTo</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/io/PrintStream.html" title="class or interface in java.io" class="external-link">PrintStream</a>&nbsp;ps)</span></div>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">printTo</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/io/PrintStream.html" title="class or interface in java.io" class="external-link">PrintStream</a>&nbsp;ps)</span></div>
 <div class="block">Print a description of the rules to the given PrintStream.</div>
 </div>
 </section>
@@ -178,7 +232,7 @@ extends <a href="Checker.html" title="interface in org.cojen.boxtin">Checker</a>
 <section class="detail" id="printTo(java.io.PrintWriter)">
 <h3>printTo</h3>
 <div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">printTo</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/io/PrintWriter.html" title="class or interface in java.io" class="external-link">PrintWriter</a>&nbsp;pw)</span></div>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">printTo</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/io/PrintWriter.html" title="class or interface in java.io" class="external-link">PrintWriter</a>&nbsp;pw)</span></div>
 <div class="block">Print a description of the rules to the given PrintStream.</div>
 </div>
 </section>

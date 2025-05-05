@@ -120,23 +120,6 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Indicate that access checking code should be generated in the caller class.</div>
 </dd>
-<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Checker.html" class="type-name-link" title="interface in org.cojen.boxtin">Checker</a> - Interface in <a href="org.cojen.boxtin/org/cojen/boxtin/package-summary.html">org.cojen.boxtin</a></dt>
-<dd>
-<div class="block">Checks if access to a class member is allowed or denied.</div>
-</dd>
-<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Checker.ForClass.html" class="type-name-link" title="interface in org.cojen.boxtin">Checker.ForClass</a> - Interface in <a href="org.cojen.boxtin/org/cojen/boxtin/package-summary.html">org.cojen.boxtin</a></dt>
-<dd>
-<div class="block">Checks access to constructors or methods, for a specific class.</div>
-</dd>
-<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html#checkerForCaller(java.lang.Module)" class="member-name-link">checkerForCaller(Module)</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html" title="interface in org.cojen.boxtin">Controller</a></dt>
-<dd>
-<div class="block">Returns a Checker which determines if a calling module is allowed to perform an
- operation.</div>
-</dd>
-<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html#checkerForTarget()" class="member-name-link">checkerForTarget()</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html" title="interface in org.cojen.boxtin">Controller</a></dt>
-<dd>
-<div class="block">Returns a Checker which determines if a target class has deniable operations.</div>
-</dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/ClassFormatException.html" class="type-name-link" title="class in org.cojen.boxtin">ClassFormatException</a> - Exception Class in <a href="org.cojen.boxtin/org/cojen/boxtin/package-summary.html">org.cojen.boxtin</a></dt>
 <dd>
 <div class="block">Is thrown when a class being transformed is malformed, or if the transformation failed.</div>
@@ -154,9 +137,15 @@ loadScripts(document, 'script');</script>
 <div class="block">Decides what set of operations should be allowed or denied based on the caller's <code>
  Module</code>.</div>
 </dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/DenyAction.html#custom(java.lang.invoke.MethodHandleInfo)" class="member-name-link">custom(MethodHandleInfo)</a> - Static method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></dt>
+<dd>
+<div class="block">Returns a deny action which performs a custom operation.</div>
+</dd>
 </dl>
 <h2 class="title" id="I:D">D</h2>
 <dl class="index">
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/DenyAction.html" class="type-name-link" title="class in org.cojen.boxtin">DenyAction</a> - Class in <a href="org.cojen.boxtin/org/cojen/boxtin/package-summary.html">org.cojen.boxtin</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html#denyAll()" class="member-name-link">denyAll()</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></dt>
 <dd>
 <div class="block">Deny access to all constructors and locally declared methods, superseding all
@@ -174,7 +163,24 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Deny access to all classes, superseding all previous rules.</div>
 </dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html#denyAll(org.cojen.boxtin.DenyAction)" class="member-name-link">denyAll(DenyAction)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></dt>
+<dd>
+<div class="block">Deny access to all constructors and locally declared methods, superseding all
+ previous rules.</div>
+</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ModuleScope.html#denyAll(org.cojen.boxtin.DenyAction)" class="member-name-link">denyAll(DenyAction)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ModuleScope.html" title="class in org.cojen.boxtin">RulesBuilder.ModuleScope</a></dt>
+<dd>
+<div class="block">Deny access to all packages, superseding all previous rules.</div>
+</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.PackageScope.html#denyAll(org.cojen.boxtin.DenyAction)" class="member-name-link">denyAll(DenyAction)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.PackageScope.html" title="class in org.cojen.boxtin">RulesBuilder.PackageScope</a></dt>
+<dd>
+<div class="block">Deny access to all classes, superseding all previous rules.</div>
+</dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html#denyAllConstructors()" class="member-name-link">denyAllConstructors()</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></dt>
+<dd>
+<div class="block">Deny access to all constructors, superseding all previous rules.</div>
+</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html#denyAllConstructors(org.cojen.boxtin.DenyAction)" class="member-name-link">denyAllConstructors(DenyAction)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></dt>
 <dd>
 <div class="block">Deny access to all constructors, superseding all previous rules.</div>
 </dd>
@@ -182,7 +188,15 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Deny access to all locally declared methods, superseding all previous rules.</div>
 </dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html#denyAllMethods(org.cojen.boxtin.DenyAction)" class="member-name-link">denyAllMethods(DenyAction)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></dt>
+<dd>
+<div class="block">Deny access to all locally declared methods, superseding all previous rules.</div>
+</dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html#denyMethod(java.lang.String)" class="member-name-link">denyMethod(String)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></dt>
+<dd>
+<div class="block">Deny access to all variants of the given method, superseding all previous rules.</div>
+</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html#denyMethod(org.cojen.boxtin.DenyAction,java.lang.String)" class="member-name-link">denyMethod(DenyAction, String)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></dt>
 <dd>
 <div class="block">Deny access to all variants of the given method, superseding all previous rules.</div>
 </dd>
@@ -196,9 +210,23 @@ loadScripts(document, 'script');</script>
 <div class="block">Deny access to a specific variant of the current constructor or method, superseding
  all previous rules.</div>
 </dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html#denyVariant(org.cojen.boxtin.DenyAction,java.lang.Class...)" class="member-name-link">denyVariant(DenyAction, Class&lt;?&gt;...)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></dt>
+<dd>
+<div class="block">Deny access to a specific variant of the current constructor or method, superseding
+ all previous rules.</div>
+</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html#denyVariant(org.cojen.boxtin.DenyAction,java.lang.String)" class="member-name-link">denyVariant(DenyAction, String)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></dt>
+<dd>
+<div class="block">Deny access to a specific variant of the current constructor or method, superseding
+ all previous rules.</div>
+</dd>
 </dl>
 <h2 class="title" id="I:E">E</h2>
 <dl class="index">
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/DenyAction.html#empty()" class="member-name-link">empty()</a> - Static method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></dt>
+<dd>
+<div class="block">Returns a deny action which returns an empty instance.</div>
+</dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html#end()" class="member-name-link">end()</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></dt>
 <dd>
 <div class="block">End the current rules for this class and return to the package scope.</div>
@@ -211,12 +239,28 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">End the current rules for this package and return to the outermost scope.</div>
 </dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/DenyAction.html#exception(java.lang.Class)" class="member-name-link">exception(Class&lt;?&gt;)</a> - Static method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></dt>
+<dd>
+<div class="block">Returns a deny action which throws an exception without a message.</div>
+</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/DenyAction.html#exception(java.lang.Class,java.lang.String)" class="member-name-link">exception(Class&lt;?&gt;, String)</a> - Static method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></dt>
+<dd>
+<div class="block">Returns a deny action which throws an exception with an optional message.</div>
+</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/DenyAction.html#exception(java.lang.String)" class="member-name-link">exception(String)</a> - Static method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></dt>
+<dd>
+<div class="block">Returns a deny action which throws an exception without a message.</div>
+</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/DenyAction.html#exception(java.lang.String,java.lang.String)" class="member-name-link">exception(String, String)</a> - Static method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></dt>
+<dd>
+<div class="block">Returns a deny action which throws an exception with an optional message.</div>
+</dd>
 </dl>
 <h2 class="title" id="I:F">F</h2>
 <dl class="index">
-<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Checker.html#forClass(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">forClass(CharSequence, CharSequence)</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Checker.html" title="interface in org.cojen.boxtin">Checker</a></dt>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Rules.html#forClass(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">forClass(CharSequence, CharSequence)</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Rules.html" title="interface in org.cojen.boxtin">Rules</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Checker.html#forClass(java.lang.Class)" class="member-name-link">forClass(Class&lt;?&gt;)</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Checker.html" title="interface in org.cojen.boxtin">Checker</a></dt>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Rules.html#forClass(java.lang.Class)" class="member-name-link">forClass(Class&lt;?&gt;)</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Rules.html" title="interface in org.cojen.boxtin">Rules</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html#forClass(java.lang.Class)" class="member-name-link">forClass(Class&lt;?&gt;)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></dt>
 <dd>
@@ -299,57 +343,31 @@ loadScripts(document, 'script');</script>
 </dl>
 <h2 class="title" id="I:I">I</h2>
 <dl class="index">
-<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Checker.ForClass.html#isAnyConstructorDeniable()" class="member-name-link">isAnyConstructorDeniable()</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Checker.ForClass.html" title="interface in org.cojen.boxtin">Checker.ForClass</a></dt>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/SecurityAgent.html#isActivated()" class="member-name-link">isActivated()</a> - Static method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/SecurityAgent.html" title="class in org.cojen.boxtin">SecurityAgent</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Rules.ForClass.html#isAllAllowed()" class="member-name-link">isAllAllowed()</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></dt>
 <dd>
-<div class="block">Check if any constructor in the class can deny access.</div>
+<div class="block">Returns true if all operations are allowed.</div>
 </dd>
-<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Checker.ForClass.html#isAnyMethodDeniable()" class="member-name-link">isAnyMethodDeniable()</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Checker.ForClass.html" title="interface in org.cojen.boxtin">Checker.ForClass</a></dt>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Rules.html#isAllAllowed()" class="member-name-link">isAllAllowed()</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Rules.html" title="interface in org.cojen.boxtin">Rules</a></dt>
 <dd>
-<div class="block">Check if any method in the class can deny access.</div>
+<div class="block">Returns true if all operations are allowed.</div>
 </dd>
-<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Checker.ForClass.html#isCallerChecked()" class="member-name-link">isCallerChecked()</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Checker.ForClass.html" title="interface in org.cojen.boxtin">Checker.ForClass</a></dt>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Rules.ForClass.html#isAnyConstructorDenied()" class="member-name-link">isAnyConstructorDenied()</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></dt>
 <dd>
-<div class="block">Returns true if this class is a caller, and it might need to perform checks.</div>
+<div class="block">Check if at least one constructor in the class can deny access.</div>
 </dd>
-<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Checker.ForClass.html#isCallerConstructorChecked(java.lang.CharSequence)" class="member-name-link">isCallerConstructorChecked(CharSequence)</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Checker.ForClass.html" title="interface in org.cojen.boxtin">Checker.ForClass</a></dt>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Rules.ForClass.html#isAnyDeniedAtCaller()" class="member-name-link">isAnyDeniedAtCaller()</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></dt>
 <dd>
-<div class="block">Returns true if this class is a caller, and it needs to check if it can call a
- constructor.</div>
+<div class="block">Returns true if at least one operation is denied at the caller class.</div>
 </dd>
-<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Checker.ForClass.html#isCallerMethodChecked(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">isCallerMethodChecked(CharSequence, CharSequence)</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Checker.ForClass.html" title="interface in org.cojen.boxtin">Checker.ForClass</a></dt>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Rules.ForClass.html#isAnyDeniedAtTarget()" class="member-name-link">isAnyDeniedAtTarget()</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></dt>
 <dd>
-<div class="block">Returns true if this class is a caller, and it needs to check if it can a call a
- method.</div>
+<div class="block">Returns true if at least one operation is denied at the target class.</div>
 </dd>
-<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Checker.ForClass.html#isConstructorAllowed(java.lang.CharSequence)" class="member-name-link">isConstructorAllowed(CharSequence)</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Checker.ForClass.html" title="interface in org.cojen.boxtin">Checker.ForClass</a></dt>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Rules.ForClass.html#isAnyMethodDenied()" class="member-name-link">isAnyMethodDenied()</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></dt>
 <dd>
-<div class="block">Check if the constructor is fully allowed.</div>
-</dd>
-<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Checker.ForClass.html#isConstructorAllowed(java.lang.Class...)" class="member-name-link">isConstructorAllowed(Class&lt;?&gt;...)</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Checker.ForClass.html" title="interface in org.cojen.boxtin">Checker.ForClass</a></dt>
-<dd>
-<div class="block">Check if the constructor is fully allowed.</div>
-</dd>
-<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Checker.ForClass.html#isMethodAllowed(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">isMethodAllowed(CharSequence, CharSequence)</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Checker.ForClass.html" title="interface in org.cojen.boxtin">Checker.ForClass</a></dt>
-<dd>
-<div class="block">Check if the method is fully allowed.</div>
-</dd>
-<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Checker.ForClass.html#isMethodAllowed(java.lang.Class,java.lang.CharSequence,java.lang.Class...)" class="member-name-link">isMethodAllowed(Class&lt;?&gt;, CharSequence, Class&lt;?&gt;...)</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Checker.ForClass.html" title="interface in org.cojen.boxtin">Checker.ForClass</a></dt>
-<dd>
-<div class="block">Check if the method is fully allowed.</div>
-</dd>
-<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Checker.ForClass.html#isTargetChecked()" class="member-name-link">isTargetChecked()</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Checker.ForClass.html" title="interface in org.cojen.boxtin">Checker.ForClass</a></dt>
-<dd>
-<div class="block">Returns true if this class is a target, and it might need to perform checks.</div>
-</dd>
-<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Checker.ForClass.html#isTargetConstructorChecked(java.lang.CharSequence)" class="member-name-link">isTargetConstructorChecked(CharSequence)</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Checker.ForClass.html" title="interface in org.cojen.boxtin">Checker.ForClass</a></dt>
-<dd>
-<div class="block">Returns true if this class is a target, and it needs to perform a check from within
- its own constructor.</div>
-</dd>
-<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Checker.ForClass.html#isTargetMethodChecked(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">isTargetMethodChecked(CharSequence, CharSequence)</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Checker.ForClass.html" title="interface in org.cojen.boxtin">Checker.ForClass</a></dt>
-<dd>
-<div class="block">Returns true if this class is a target, and it needs to perform a check from within
- its own method.</div>
+<div class="block">Check if at least one method in the class can deny access.</div>
 </dd>
 </dl>
 <h2 class="title" id="I:J">J</h2>
@@ -391,9 +409,22 @@ loadScripts(document, 'script');</script>
 </dl>
 <h2 class="title" id="I:R">R</h2>
 <dl class="index">
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Rules.ForClass.html#ruleForConstructor(java.lang.CharSequence)" class="member-name-link">ruleForConstructor(CharSequence)</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Rules.ForClass.html#ruleForConstructor(java.lang.Class...)" class="member-name-link">ruleForConstructor(Class&lt;?&gt;...)</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Rules.ForClass.html#ruleForMethod(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">ruleForMethod(CharSequence, CharSequence)</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Rules.ForClass.html#ruleForMethod(java.lang.Class,java.lang.CharSequence,java.lang.Class...)" class="member-name-link">ruleForMethod(Class&lt;?&gt;, CharSequence, Class&lt;?&gt;...)</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/Rules.html" class="type-name-link" title="interface in org.cojen.boxtin">Rules</a> - Interface in <a href="org.cojen.boxtin/org/cojen/boxtin/package-summary.html">org.cojen.boxtin</a></dt>
 <dd>
-<div class="block">A Checker which is defined by a set of rules, built using a <a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html" title="class in org.cojen.boxtin"><code>RulesBuilder</code></a>.</div>
+<div class="block">Checks if acces to a class member is allowed or denied, defined by a set of rules, built
+ using a <a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html" title="class in org.cojen.boxtin"><code>RulesBuilder</code></a>.</div>
+</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Rules.ForClass.html" class="type-name-link" title="interface in org.cojen.boxtin">Rules.ForClass</a> - Interface in <a href="org.cojen.boxtin/org/cojen/boxtin/package-summary.html">org.cojen.boxtin</a></dt>
+<dd>
+<div class="block">Checks access to constructors or methods, for a specific class.</div>
 </dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesApplier.html" class="type-name-link" title="interface in org.cojen.boxtin">RulesApplier</a> - Interface in <a href="org.cojen.boxtin/org/cojen/boxtin/package-summary.html">org.cojen.boxtin</a></dt>
 <dd>
@@ -418,6 +449,14 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Builder of rules at the package level.</div>
 </dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html#rulesForCaller(java.lang.Module)" class="member-name-link">rulesForCaller(Module)</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html" title="interface in org.cojen.boxtin">Controller</a></dt>
+<dd>
+<div class="block">Returns rules which determine if a calling module is allowed to perform an operation.</div>
+</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html#rulesForTarget()" class="member-name-link">rulesForTarget()</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html" title="interface in org.cojen.boxtin">Controller</a></dt>
+<dd>
+<div class="block">Returns rules which determine if a target class has deniable operations.</div>
+</dd>
 </dl>
 <h2 class="title" id="I:S">S</h2>
 <dl class="index">
@@ -425,6 +464,11 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">The <code>SecurityAgent</code> is an instrumentation agent which transforms classes such that
  access checks are enforced.</div>
+</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/DenyAction.html#standard()" class="member-name-link">standard()</a> - Static method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></dt>
+<dd>
+<div class="block">Returns the standard deny action, which throws a <code>SecurityException</code> without a
+ message.</div>
 </dd>
 </dl>
 <h2 class="title" id="I:T">T</h2>
@@ -444,6 +488,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html#validate(java.lang.ModuleLayer)" class="member-name-link">validate(ModuleLayer)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html" title="class in org.cojen.boxtin">RulesBuilder</a></dt>
 <dd>
 <div class="block">Validates that all classes are loadable, and that all class members are found.</div>
+</dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/DenyAction.html#value(java.lang.Object)" class="member-name-link">value(Object)</a> - Static method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></dt>
+<dd>
+<div class="block">Returns a deny action which returns a specific value, possibly null.</div>
 </dd>
 </dl>
 <a href="#I:A">A</a>&nbsp;<a href="#I:B">B</a>&nbsp;<a href="#I:C">C</a>&nbsp;<a href="#I:D">D</a>&nbsp;<a href="#I:E">E</a>&nbsp;<a href="#I:F">F</a>&nbsp;<a href="#I:I">I</a>&nbsp;<a href="#I:J">J</a>&nbsp;<a href="#I:O">O</a>&nbsp;<a href="#I:P">P</a>&nbsp;<a href="#I:R">R</a>&nbsp;<a href="#I:S">S</a>&nbsp;<a href="#I:T">T</a>&nbsp;<a href="#I:V">V</a>&nbsp;<br><a href="allclasses-index.html">All&nbsp;Classes&nbsp;and&nbsp;Interfaces</a><span class="vertical-separator">|</span><a href="allpackages-index.html">All&nbsp;Packages</a><span class="vertical-separator">|</span><a href="serialized-form.html">Serialized&nbsp;Form</a>

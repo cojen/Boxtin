@@ -69,9 +69,13 @@ loadScripts(document, 'script');</script>
 <li><a href="#callerCheck()" tabindex="0">callerCheck()</a></li>
 <li><a href="#targetCheck()" tabindex="0">targetCheck()</a></li>
 <li><a href="#denyAll()" tabindex="0">denyAll()</a></li>
+<li><a href="#denyAll(org.cojen.boxtin.DenyAction)" tabindex="0">denyAll(DenyAction)</a></li>
 <li><a href="#denyAllConstructors()" tabindex="0">denyAllConstructors()</a></li>
+<li><a href="#denyAllConstructors(org.cojen.boxtin.DenyAction)" tabindex="0">denyAllConstructors(DenyAction)</a></li>
 <li><a href="#denyAllMethods()" tabindex="0">denyAllMethods()</a></li>
+<li><a href="#denyAllMethods(org.cojen.boxtin.DenyAction)" tabindex="0">denyAllMethods(DenyAction)</a></li>
 <li><a href="#denyMethod(java.lang.String)" tabindex="0">denyMethod(String)</a></li>
+<li><a href="#denyMethod(org.cojen.boxtin.DenyAction,java.lang.String)" tabindex="0">denyMethod(DenyAction, String)</a></li>
 <li><a href="#allowVariant(java.lang.String)" tabindex="0">allowVariant(String)</a></li>
 <li><a href="#allowVariant(java.lang.Class...)" tabindex="0">allowVariant(Class...)</a></li>
 <li><a href="#allowAll()" tabindex="0">allowAll()</a></li>
@@ -79,7 +83,9 @@ loadScripts(document, 'script');</script>
 <li><a href="#allowAllMethods()" tabindex="0">allowAllMethods()</a></li>
 <li><a href="#allowMethod(java.lang.String)" tabindex="0">allowMethod(String)</a></li>
 <li><a href="#denyVariant(java.lang.String)" tabindex="0">denyVariant(String)</a></li>
+<li><a href="#denyVariant(org.cojen.boxtin.DenyAction,java.lang.String)" tabindex="0">denyVariant(DenyAction, String)</a></li>
 <li><a href="#denyVariant(java.lang.Class...)" tabindex="0">denyVariant(Class...)</a></li>
+<li><a href="#denyVariant(org.cojen.boxtin.DenyAction,java.lang.Class...)" tabindex="0">denyVariant(DenyAction, Class...)</a></li>
 <li><a href="#end()" tabindex="0">end()</a></li>
 <li><a href="#forClass(java.lang.String)" tabindex="0">forClass(String)</a></li>
 <li><a href="#forClass(java.lang.Class)" tabindex="0">forClass(Class)</a></li>
@@ -169,7 +175,18 @@ loadScripts(document, 'script');</script>
  previous rules.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#denyAllConstructors()" class="member-name-link">denyAllConstructors</a>()</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#denyAll(org.cojen.boxtin.DenyAction)" class="member-name-link">denyAll</a><wbr>(<a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Deny access to all constructors and locally declared methods, superseding all
+ previous rules.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#denyAllConstructors()" class="member-name-link">denyAllConstructors</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Deny access to all constructors, superseding all previous rules.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#denyAllConstructors(org.cojen.boxtin.DenyAction)" class="member-name-link">denyAllConstructors</a><wbr>(<a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Deny access to all constructors, superseding all previous rules.</div>
 </div>
@@ -179,7 +196,18 @@ loadScripts(document, 'script');</script>
 <div class="block">Deny access to all locally declared methods, superseding all previous rules.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#denyMethod(java.lang.String)" class="member-name-link">denyMethod</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#denyAllMethods(org.cojen.boxtin.DenyAction)" class="member-name-link">denyAllMethods</a><wbr>(<a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Deny access to all locally declared methods, superseding all previous rules.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#denyMethod(java.lang.String)" class="member-name-link">denyMethod</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Deny access to all variants of the given method, superseding all previous rules.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#denyMethod(org.cojen.boxtin.DenyAction,java.lang.String)" class="member-name-link">denyMethod</a><wbr>(<a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action,
+ <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Deny access to all variants of the given method, superseding all previous rules.</div>
 </div>
@@ -191,6 +219,20 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#denyVariant(java.lang.String)" class="member-name-link">denyVariant</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;descriptor)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Deny access to a specific variant of the current constructor or method, superseding
+ all previous rules.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#denyVariant(org.cojen.boxtin.DenyAction,java.lang.Class...)" class="member-name-link">denyVariant</a><wbr>(<a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action,
+ <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;?&gt;...&nbsp;paramTypes)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Deny access to a specific variant of the current constructor or method, superseding
+ all previous rules.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#denyVariant(org.cojen.boxtin.DenyAction,java.lang.String)" class="member-name-link">denyVariant</a><wbr>(<a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action,
+ <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;descriptor)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Deny access to a specific variant of the current constructor or method, superseding
  all previous rules.</div>
@@ -301,10 +343,37 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
+<section class="detail" id="denyAll(org.cojen.boxtin.DenyAction)">
+<h3>denyAll</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></span>&nbsp;<span class="element-name">denyAll</span><wbr><span class="parameters">(<a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</span></div>
+<div class="block">Deny access to all constructors and locally declared methods, superseding all
+ previous rules.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>this</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
 <section class="detail" id="denyAllConstructors()">
 <h3>denyAllConstructors</h3>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></span>&nbsp;<span class="element-name">denyAllConstructors</span>()</div>
+<div class="block">Deny access to all constructors, superseding all previous rules.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>this</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="denyAllConstructors(org.cojen.boxtin.DenyAction)">
+<h3>denyAllConstructors</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></span>&nbsp;<span class="element-name">denyAllConstructors</span><wbr><span class="parameters">(<a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</span></div>
 <div class="block">Deny access to all constructors, superseding all previous rules.</div>
 <dl class="notes">
 <dt>Returns:</dt>
@@ -327,10 +396,39 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
+<section class="detail" id="denyAllMethods(org.cojen.boxtin.DenyAction)">
+<h3>denyAllMethods</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></span>&nbsp;<span class="element-name">denyAllMethods</span><wbr><span class="parameters">(<a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</span></div>
+<div class="block">Deny access to all locally declared methods, superseding all previous rules.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>this</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
 <section class="detail" id="denyMethod(java.lang.String)">
 <h3>denyMethod</h3>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></span>&nbsp;<span class="element-name">denyMethod</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name)</span></div>
+<div class="block">Deny access to all variants of the given method, superseding all previous rules.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>this</dd>
+<dt>Throws:</dt>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/IllegalArgumentException.html" title="class or interface in java.lang" class="external-link">IllegalArgumentException</a></code> - if not a valid method name</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="denyMethod(org.cojen.boxtin.DenyAction,java.lang.String)">
+<h3>denyMethod</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></span>&nbsp;<span class="element-name">denyMethod</span><wbr><span class="parameters">(<a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action,
+ <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name)</span></div>
 <div class="block">Deny access to all variants of the given method, superseding all previous rules.</div>
 <dl class="notes">
 <dt>Returns:</dt>
@@ -454,10 +552,48 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
+<section class="detail" id="denyVariant(org.cojen.boxtin.DenyAction,java.lang.String)">
+<h3>denyVariant</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></span>&nbsp;<span class="element-name">denyVariant</span><wbr><span class="parameters">(<a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action,
+ <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;descriptor)</span></div>
+<div class="block">Deny access to a specific variant of the current constructor or method, superseding
+ all previous rules.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>descriptor</code> - descriptor for the parameters, not including parenthesis or the
+ return type</dd>
+<dt>Returns:</dt>
+<dd>this</dd>
+<dt>Throws:</dt>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/IllegalStateException.html" title="class or interface in java.lang" class="external-link">IllegalStateException</a></code> - if no current constructor or method</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
 <section class="detail" id="denyVariant(java.lang.Class...)">
 <h3>denyVariant</h3>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></span>&nbsp;<span class="element-name">denyVariant</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;?&gt;...&nbsp;paramTypes)</span></div>
+<div class="block">Deny access to a specific variant of the current constructor or method, superseding
+ all previous rules.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>this</dd>
+<dt>Throws:</dt>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/IllegalStateException.html" title="class or interface in java.lang" class="external-link">IllegalStateException</a></code> - if no current constructor or method, or if all
+ variants are explicitly denied</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="denyVariant(org.cojen.boxtin.DenyAction,java.lang.Class...)">
+<h3>denyVariant</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></span>&nbsp;<span class="element-name">denyVariant</span><wbr><span class="parameters">(<a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action,
+ <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;?&gt;...&nbsp;paramTypes)</span></div>
 <div class="block">Deny access to a specific variant of the current constructor or method, superseding
  all previous rules.</div>
 <dl class="notes">
