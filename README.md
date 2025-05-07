@@ -148,10 +148,6 @@ Access is guarded when `Constructor` and `Method` instances are acquired, and no
 
 Special `MethodHandle` checks aren't implemented yet, but they'll likely follow the same strategy as for reflection.
 
-### IllegalCallerException
-
-When a thread is started by directly overriding the `run` method, no caller frame exists, and so an `IllegalCallerException` is thrown. Currently, the only way to prevent this from happening is to create a special rule for allowing the primordial method. One option is to capture the caller frame that invoked the start method, and save it in a special field. When the run method is called and it has no caller, check the caller of the start method. This technique requires special logic to determine if the class extends Thread, but the transform won't work if the class is already loaded -- the special field cannot be added.
-
 ## Object methods
 
 The common `hashCode`, `equals`, and `toString` methods cannot be denied, even when done so explicitly. Access cannot be denied with a caller-side check, because a cast to `Object` will circumvent it. A target-side check might work, but it's still very odd to deny access to these common methods.
