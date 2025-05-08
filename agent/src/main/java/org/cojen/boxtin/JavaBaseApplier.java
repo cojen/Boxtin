@@ -261,13 +261,6 @@ final class JavaBaseApplier implements RulesApplier {
             .allowMethod("totalMemory")
             .allowMethod("version")
 
-            .forClass("SecurityManager")
-            .denyAll()
-
-            .forClass("StackWalker")
-            .denyMethod("getInstance")
-            .allowVariant() // no args
-
             .forClass("System")
             .callerCheck()
             .denyAll()
