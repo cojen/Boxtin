@@ -146,7 +146,13 @@ Access is guarded when `Constructor` and `Method` instances are acquired, and no
 
 ### MethodHandles
 
-Special `MethodHandle` checks aren't implemented yet, but they'll likely follow the same strategy as for reflection.
+Methods which return `MethodHandle` instances are checked using the same strategy as for reflection. A caller-side transformation checks the result from these `Lookup` methods to see if access is allowed:
+
+- `bind`
+- `findConstructor`
+- `findSpecial`
+- `findStatic`
+- `findVirtual`
 
 ### IllegalCallerException
 
