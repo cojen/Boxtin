@@ -378,7 +378,6 @@ final class JavaBaseApplier implements RulesApplier {
             .allowMethod("findClass")
             .allowMethod("findGetter")
             .allowMethod("findSetter")
-            .allowMethod("findSpecial") // requires private access; no other checks are needed
             .allowMethod("findStaticGetter")
             .allowMethod("findStaticSetter")
             .allowMethod("findStaticVarHandle")

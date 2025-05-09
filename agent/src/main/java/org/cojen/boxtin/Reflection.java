@@ -16,6 +16,11 @@
 
 package org.cojen.boxtin;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandleInfo;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.RecordComponent;
@@ -193,6 +198,57 @@ public final class Reflection {
         }
 
         return components;
+    }
+
+    public MethodHandle MethodHandles$Lookup_bind(MethodHandles.Lookup lookup,
+                                                  Object receiver, String name, MethodType mt)
+        throws NoSuchMethodException, IllegalAccessException
+    {
+        MethodHandle mh = lookup.bind(receiver, name, mt);
+        return check(mh, receiver.getClass(), name, mh.type());
+    }
+
+    public MethodHandle MethodHandles$Lookup_findConstructor(MethodHandles.Lookup lookup,
+                                                             Class<?> clazz, MethodType mt)
+        throws NoSuchMethodException, IllegalAccessException
+    {
+        return check(lookup, lookup.findConstructor(clazz, mt));
+    }
+
+    public MethodHandle MethodHandles$Lookup_findSpecial(MethodHandles.Lookup lookup,
+                                                         Class<?> clazz, String name, MethodType mt,
+                                                         Class<?> specialCaller)
+        throws NoSuchMethodException, IllegalAccessException
+    {
+        return check(lookup, lookup.findSpecial(clazz, name, mt, specialCaller));
+    }
+
+    public MethodHandle MethodHandles$Lookup_findStatic(MethodHandles.Lookup lookup,
+                                                        Class<?> clazz, String name, MethodType mt)
+        throws NoSuchMethodException, IllegalAccessException
+    {
+        return check(lookup, lookup.findStatic(clazz, name, mt));
+    }
+
+    public MethodHandle MethodHandles$Lookup_findVirtual(MethodHandles.Lookup lookup,
+                                                         Class<?> clazz, String name, MethodType mt)
+        throws NoSuchMethodException, IllegalAccessException
+    {
+        return check(lookup, lookup.findVirtual(clazz, name, mt));
+    }
+
+    private MethodHandle check(MethodHandle mh, Class<?> clazz, String name, MethodType mt) {
+        SecurityAgent.check(mCaller, clazz, name, Utils.partialDescriptorFor(mt));
+        return mh;
+    }
+
+    private MethodHandle check(MethodHandles.Lookup lookup, MethodHandle mh) {
+        MethodHandleInfo info = lookup.revealDirect(mh);
+        String name = info.getName();
+        if ("<init>".equals(name)) {
+            name = null;
+        }
+        return check(mh, info.getDeclaringClass(), name, info.getMethodType());
     }
 
     /**

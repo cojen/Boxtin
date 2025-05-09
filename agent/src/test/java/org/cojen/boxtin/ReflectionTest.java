@@ -16,9 +16,14 @@
 
 package org.cojen.boxtin;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -287,6 +292,146 @@ public class ReflectionTest {
 
         for (RecordComponent rc : components) {
             assertNotEquals("b", rc.getName());
+        }
+    }
+
+    @Test
+    public void bind() throws Exception {
+        SecurityAgent.testActivate(new DefaultController(false));
+        Reflection r = SecurityAgent.reflection();
+
+        MethodHandles.Lookup lookup = MethodHandles.lookup();
+
+        MethodType mt = MethodType.methodType(StringBuilder.class, int.class);
+        r.MethodHandles$Lookup_bind(lookup, new StringBuilder(), "append", mt);
+
+        try {
+            r.MethodHandles$Lookup_bind(lookup, new StringBuilder(), "xxx", mt);
+            fail();
+        } catch (NoSuchMethodException e) {
+            // Expected.
+        }
+
+        try {
+            mt = MethodType.methodType(Method[].class);
+            r.MethodHandles$Lookup_bind(lookup, String.class, "getDeclaredMethods", mt);
+            fail();
+        } catch (SecurityException e) {
+            // Expected.
+        }
+    }
+
+    @Test
+    public void findConstructor() throws Exception {
+        SecurityAgent.testActivate(new DefaultController(false));
+        Reflection r = SecurityAgent.reflection();
+
+        MethodHandles.Lookup lookup = MethodHandles.lookup();
+
+        MethodType mt = MethodType.methodType(void.class);
+        r.MethodHandles$Lookup_findConstructor(lookup, StringBuilder.class, mt);
+
+        try {
+            r.MethodHandles$Lookup_findConstructor(lookup, FileInputStream.class, mt);
+            fail();
+        } catch (NoSuchMethodException e) {
+            // Expected.
+        }
+
+        try {
+            mt = MethodType.methodType(void.class, String.class);
+            r.MethodHandles$Lookup_findConstructor(lookup, FileInputStream.class, mt);
+            fail();
+        } catch (SecurityException e) {
+            // Expected.
+        }
+    }
+
+    @Test
+    public void findSpecial() throws Throwable {
+        SecurityAgent.testActivate(new DefaultController(false));
+        Reflection r = SecurityAgent.reflection();
+
+        class SubFile extends File {
+            static MethodHandles.Lookup lookup = MethodHandles.lookup();
+
+            SubFile(String path) {
+                super(path);
+            }
+
+            @Override
+            public boolean delete() {
+                // do nothing, but return true anyhow
+                return true;
+            }
+        }
+
+        MethodHandles.Lookup lookup = SubFile.lookup;
+
+        MethodType mt = MethodType.methodType(boolean.class);
+
+        try {
+            r.MethodHandles$Lookup_findSpecial(lookup, File.class, "delete", mt, SubFile.class);
+            fail();
+        } catch (SecurityException e) {
+            // Expected.
+        }
+
+        MethodHandle mh = r.MethodHandles$Lookup_findSpecial
+            (lookup, SubFile.class, "delete", mt, SubFile.class);
+
+        assertTrue((boolean) mh.invoke(new SubFile("xxx")));
+    }
+
+    @Test
+    public void findStatic() throws Exception {
+        SecurityAgent.testActivate(new DefaultController(false));
+        Reflection r = SecurityAgent.reflection();
+
+        MethodHandles.Lookup lookup = MethodHandles.lookup();
+
+        MethodType mt = MethodType.methodType(String.class, int.class);
+        r.MethodHandles$Lookup_findStatic(lookup, String.class, "valueOf", mt);
+
+        try {
+            r.MethodHandles$Lookup_findStatic(lookup, String.class, "xxx", mt);
+            fail();
+        } catch (NoSuchMethodException e) {
+            // Expected.
+        }
+
+        try {
+            mt = MethodType.methodType(String.class, String.class);
+            r.MethodHandles$Lookup_findStatic(lookup, System.class, "getProperty", mt);
+            fail();
+        } catch (SecurityException e) {
+            // Expected.
+        }
+    }
+
+    @Test
+    public void findVirtual() throws Exception {
+        SecurityAgent.testActivate(new DefaultController(false));
+        Reflection r = SecurityAgent.reflection();
+
+        MethodHandles.Lookup lookup = MethodHandles.lookup();
+
+        MethodType mt = MethodType.methodType(StringBuilder.class, Object.class);
+        r.MethodHandles$Lookup_findVirtual(lookup, StringBuilder.class, "append", mt);
+
+        try {
+            r.MethodHandles$Lookup_findVirtual(lookup, StringBuilder.class, "xxx", mt);
+            fail();
+        } catch (NoSuchMethodException e) {
+            // Expected.
+        }
+
+        try {
+            mt = MethodType.methodType(Method[].class);
+            r.MethodHandles$Lookup_findVirtual(lookup, Class.class, "getDeclaredMethods", mt);
+            fail();
+        } catch (SecurityException e) {
+            // Expected.
         }
     }
 

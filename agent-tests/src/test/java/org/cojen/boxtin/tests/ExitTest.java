@@ -16,6 +16,10 @@
 
 package org.cojen.boxtin.tests;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
@@ -105,9 +109,27 @@ public class ExitTest {
     }
 
     @Test
+    public void reflectMH() throws Exception {
+        try {
+            MethodType mt = MethodType.methodType(void.class, int.class);
+            MethodHandles.lookup().findStatic(System.class, "exit", mt);
+            fail();
+        } catch (SecurityException e) {
+            // Expected.
+        }
+    }
+
+    @Test
     public void reflectPass() throws Exception {
         Object x = ExitTest.class.getDeclaredMethod("okay", int.class).invoke(null, 10);
         assertEquals(10, (int) x);
+    }
+
+    @Test
+    public void reflectPassMH() throws Throwable {
+        MethodType mt = MethodType.methodType(int.class, int.class);
+        MethodHandle mh = MethodHandles.lookup().findStatic(ExitTest.class, "okay", mt);
+        assertEquals(10, (int) mh.invokeExact(10));
     }
 
     @Test

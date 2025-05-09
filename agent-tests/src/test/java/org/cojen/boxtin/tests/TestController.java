@@ -124,6 +124,39 @@ public final class TestController implements Controller {
             .allowMethod("nanoTime")
             .allowMethod("runFinalization")
 
+            .forPackage("java.lang.invoke")
+            .allowAll()
+
+            .forClass("MethodHandles.Lookup")
+            .callerCheck()
+            .denyAllMethods()
+            .allowMethod("accessClass")
+            .allowMethod("dropLookupMode")
+            .allowMethod("ensureInitialized")
+            .allowMethod("findClass")
+            .allowMethod("findGetter")
+            .allowMethod("findSetter")
+            .allowMethod("findStaticGetter")
+            .allowMethod("findStaticSetter")
+            .allowMethod("findStaticVarHandle")
+            .allowMethod("findVarHandle")
+            .allowMethod("hasFullPrivilegeAccess")
+            .allowMethod("hasPrivateAccess")
+            .allowMethod("in")
+            .allowMethod("lookupClass")
+            .allowMethod("lookupModes")
+            .allowMethod("previousLookupClass")
+            .allowMethod("revealDirect")
+            .allowMethod("unreflect")
+            .allowMethod("unreflectConstructor")
+            .allowMethod("unreflectGetter")
+            .allowMethod("unreflectSetter")
+            .allowMethod("unreflectSpecial")
+            .allowMethod("unreflectVarHandle")
+
+            .forClass("MethodType")
+            .denyMethod("fromMethodDescriptorString")
+
             ;
 
         mRules = builder.build();

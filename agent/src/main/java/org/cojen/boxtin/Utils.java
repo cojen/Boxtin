@@ -17,6 +17,7 @@
 package org.cojen.boxtin;
 
 import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.invoke.VarHandle;
 
 import java.lang.reflect.Member;
@@ -99,6 +100,21 @@ final class Utils {
             return "()";
         }
         return appendDescriptor(paramTypes).toString();
+    }
+
+    /**
+     * Returns a method descriptor with parens and no return type.
+     */
+    static String partialDescriptorFor(MethodType mt) {
+        int count = mt.parameterCount();
+        if (count == 0) {
+            return "()";
+        }
+        var b = new StringBuilder().append('(');
+        for (int i=0; i<count; i++) {
+            b.append(mt.parameterType(i).descriptorString());
+        }
+        return b.append(')').toString();
     }
 
     /**

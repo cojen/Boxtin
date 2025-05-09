@@ -152,8 +152,6 @@ final class ClassFileProcessor {
 
         // Check the MethodHandle constants.
 
-        // FIXME: If reflectionChecks is true, MethodHandle constants should honor it too.
-
         mConstantPool.visitMethodHandleRefs(true, (kind, offset, methodRef) -> {
             Rules.ForClass forClass = forClass(forCaller, methodRef);
 
@@ -1348,12 +1346,19 @@ final class ClassFileProcessor {
 
             byte type = PT_CALLER;
 
-            if (mReflectionChecks && methodRef.mClass.mValue.equals("java/lang/Class")) {
-                C_NameAndType nat = Reflection.findMethod(mConstantPool, methodRef);
-                if (nat != null) {
-                    type = PT_REFLECTION;
-                    methodRef = mConstantPool.addMethodRef
-                        (mConstantPool.addClass(Reflection.CLASS_NAME), nat);
+            if (mReflectionChecks) {
+                ConstantPool.C_UTF8 className = methodRef.mClass.mValue;
+
+                if (className.equals("java/lang/Class") ||
+                    className.equals("java/lang/invoke/MethodHandles$Lookup"))
+                {
+                    C_NameAndType nat = Reflection.findMethod(mConstantPool, methodRef);
+
+                    if (nat != null) {
+                        type = PT_REFLECTION;
+                        methodRef = mConstantPool.addMethodRef
+                            (mConstantPool.addClass(Reflection.CLASS_NAME), nat);
+                    }
                 }
             }
 
