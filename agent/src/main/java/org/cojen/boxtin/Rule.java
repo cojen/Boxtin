@@ -25,7 +25,7 @@ import java.util.Objects;
  *
  * @author Brian S. O'Neill
  */
-sealed class Rule implements Rules, Rules.ForClass {
+public sealed class Rule implements Rules, Rules.ForClass {
     private static final Rule ALLOWED = new Rule();
 
     public static Rule allow() {
