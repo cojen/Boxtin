@@ -422,7 +422,7 @@ public final class SecurityAgent {
      *
      * @param caller the class which is calling the target
      * @param target the class which has an operation which potentially denied for the caller
-     * @param name target method name, or null if a constructor
+     * @param name target method name, or null/"<init>" if a constructor
      * @param desc target method or constructor descriptor
      * @hidden
      */
@@ -440,7 +440,7 @@ public final class SecurityAgent {
      *
      * @param caller the class which is calling the target
      * @param target the class which has an operation which potentially denied for the caller
-     * @param name target method name, or null if a constructor
+     * @param name target method name, or null/"<init>" if a constructor
      * @param desc target method or constructor descriptor
      * @hidden
      */
@@ -552,12 +552,13 @@ public final class SecurityAgent {
      */
     public boolean isAllowed2(Class<?> caller, Class<?> target, String name, String desc) {
         Module callerModule = caller.getModule();
+        String fname = name == null ? "<init>" : name;
 
         return mCheckCache
             // weak ref to target
             .computeIfAbsent(callerModule, k -> synchronizedMap(new WeakHashMap<>(4)))
             .computeIfAbsent(target, k -> new ConcurrentHashMap<>(4))
-            .computeIfAbsent(name == null ? "<init>" : name, k -> new ConcurrentHashMap<>(4))
+            .computeIfAbsent(fname, k -> new ConcurrentHashMap<>(4))
             .computeIfAbsent(desc, k -> {
                 Rules rules = mController.rulesForCaller(callerModule);
                 if (rules == null) {
@@ -565,7 +566,7 @@ public final class SecurityAgent {
                 }
                 Rules.ForClass forClass = rules.forClass(target);
                 Rule rule;
-                if (name == null) {
+                if (fname.equals("<init>")) {
                     rule = forClass.ruleForConstructor(desc);
                 } else {
                     rule = forClass.ruleForMethod(name, desc);

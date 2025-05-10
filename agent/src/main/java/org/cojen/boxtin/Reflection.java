@@ -244,11 +244,7 @@ public final class Reflection {
 
     private MethodHandle check(MethodHandles.Lookup lookup, MethodHandle mh) {
         MethodHandleInfo info = lookup.revealDirect(mh);
-        String name = info.getName();
-        if ("<init>".equals(name)) {
-            name = null;
-        }
-        return check(mh, info.getDeclaringClass(), name, info.getMethodType());
+        return check(mh, info.getDeclaringClass(), info.getName(), info.getMethodType());
     }
 
     /**
