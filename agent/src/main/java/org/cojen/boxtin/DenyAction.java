@@ -120,9 +120,9 @@ public abstract sealed class DenyAction {
 
     /**
      * Returns a deny action which performs a custom operation. The parameters given to the
-     * custom method is original method parameters. The return type must exactly match the
-     * original method's return type. If the custom method type is incompatible, then a {@code
-     * LinkageError} is thrown at runtime.
+     * custom method is instance (if applicable), and the original method parameters. The
+     * return type must exactly match the original method's return type. If the custom method
+     * type is incompatible, then a {@code LinkageError} is thrown at runtime.
      *
      * <p>Note: This action has no effect for constructors, unless the custom operation throws
      * an exception. Otherwise, the standard action is used.

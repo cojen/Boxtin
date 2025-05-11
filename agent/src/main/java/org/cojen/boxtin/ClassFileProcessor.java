@@ -59,7 +59,7 @@ final class ClassFileProcessor {
         int minor = decoder.readUnsignedShort();
         int major = decoder.readUnsignedShort();
 
-        if (major < 49) { // require Java 5+
+        if (major < 49) { // require Java 5+ (for supporting ldc of classes)
             throw new ClassFormatException("" + major);
         }
 
@@ -650,7 +650,6 @@ final class ClassFileProcessor {
      * Caller has already written an IFNE or IF_ACMPEQ opcode, and this method encodes the
      * branch offset.
      *
-     * @param desc only the return type is examined
      * @param mustThrow when true, the deny action must throw an exception
      * @return stack slots pushed
      */
@@ -949,7 +948,7 @@ final class ClassFileProcessor {
      * @return stack slots pushed
      */
     private int encodeCustomAndReturn(BufferEncoder encoder, DenyAction.Custom custom,
-                                       ConstantPool.C_UTF8 desc)
+                                      ConstantPool.C_UTF8 desc)
         throws IOException
     {
         int offset = encoder.length();
@@ -961,10 +960,10 @@ final class ClassFileProcessor {
         encoder.writeShort(mConstantPool.addMethodHandle(custom.mhi).mIndex);
 
         int slot = 0;
-        String descString = desc.toString();
+        String customDesc = custom.mhi.getMethodType().descriptorString();
 
-        loop: for (int i=0; i<descString.length(); ) {
-            switch (descString.charAt(i++)) {
+        loop: for (int i=0; i<customDesc.length(); ) {
+            switch (customDesc.charAt(i++)) {
                 default -> {
                     break loop;
                 }
@@ -993,7 +992,7 @@ final class ClassFileProcessor {
                     encoder.writeByte(ALOAD);
                     encoder.writeByte(slot++);
                     pushed++;
-                    i = descString.indexOf(';', i) + 1;
+                    i = customDesc.indexOf(';', i) + 1;
                     if (i <= 0) {
                         break;
                     }
@@ -1001,11 +1000,13 @@ final class ClassFileProcessor {
             }
         }
 
-        encoder.writeByte(INVOKEVIRTUAL);
-        encoder.writeShort(mConstantPool.addMethodRef
-                           (MethodHandle.class.getName().replace('.', '/'), "invoke", desc).mIndex);
+        C_MemberRef customRef = mConstantPool.addMethodRef
+            (MethodHandle.class.getName().replace('.', '/'), "invoke", customDesc);
 
-        char type = desc.charAt(desc.length() - 1);
+        encoder.writeByte(INVOKEVIRTUAL);
+        encoder.writeShort(customRef.mIndex);
+
+        char type = customDesc.charAt(customDesc.length() - 1);
 
         encoder.writeByte(switch (type) {
             default -> ARETURN;
