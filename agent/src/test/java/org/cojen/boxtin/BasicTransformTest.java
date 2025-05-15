@@ -16,6 +16,17 @@
 
 package org.cojen.boxtin;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
+import java.io.PrintStream;
+
+import java.util.Optional;
+
 import org.junit.*;
 import static org.junit.Assert.*;
 
@@ -44,5 +55,109 @@ public class BasicTransformTest extends TransformTest {
         } catch (SecurityException e) {
             // Expected.
         }
+    }
+
+    @Test
+    public void lambda() throws Exception {
+        if (runWith(RULES)) {
+            return;
+        }
+
+        try {
+            Optional.of(System.out).ifPresent(System::setOut);
+            fail();
+        } catch (SecurityException e) {
+            // Expected.
+        }
+    }
+
+    @Test
+    public void reflect() throws Exception {
+        if (runWith(RULES)) {
+            return;
+        }
+
+        try {
+            System.class.getMethod("setOut", PrintStream.class);
+            fail();
+        } catch (SecurityException e) {
+            // Expected.
+        }
+    }
+
+    @Test
+    public void reflect2() throws Exception {
+        if (runWith(RULES)) {
+            return;
+        }
+
+        Method m = BasicTransformTest.class.getDeclaredMethod("setOut");
+
+        try {
+            m.invoke(null);
+            fail();
+        } catch (InvocationTargetException e) {
+            assertTrue(e.getCause() instanceof SecurityException);
+        }
+    }
+
+    @Test
+    public void reflectMH() throws Exception {
+        if (runWith(RULES)) {
+            return;
+        }
+
+        try {
+            MethodType mt = MethodType.methodType(void.class, PrintStream.class);
+            MethodHandles.lookup().findStatic(System.class, "setOut", mt);
+            fail();
+        } catch (SecurityException e) {
+            // Expected.
+        }
+    }
+
+    @Test
+    public void reflectPass() throws Exception {
+        if (runWith(RULES)) {
+            return;
+        }
+
+        Object x = BasicTransformTest.class.getDeclaredMethod("okay", int.class).invoke(null, 10);
+        assertEquals(10, (int) x);
+    }
+
+    @Test
+    public void reflectPassMH() throws Throwable {
+        if (runWith(RULES)) {
+            return;
+        }
+
+        MethodType mt = MethodType.methodType(int.class, int.class);
+        MethodHandle mh = MethodHandles.lookup().findStatic(BasicTransformTest.class, "okay", mt);
+        assertEquals(10, (int) mh.invokeExact(10));
+    }
+
+    @Test
+    public void doubleReflect() throws Exception {
+        if (runWith(RULES)) {
+            return;
+        }
+
+        // Cannot get access to the reflection methods via reflection.
+
+        try {
+            Class.class.getMethod("getMethod", String.class, Class[].class);
+            fail();
+        } catch (SecurityException e) {
+            // Expected.
+        }
+    }
+
+    private static void setOut() {
+        System.setOut(System.out);
+    }
+
+    private static int okay(int x) {
+        return x;
     }
 }

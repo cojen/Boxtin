@@ -150,8 +150,8 @@ public class ExitTest {
             fail();
         } catch (SecurityException e) {
             // Expected.
-        } 
-   }
+        }
+    }
 
     private static void exit() {
         System.exit(1);
