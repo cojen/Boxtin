@@ -518,17 +518,12 @@ final class JavaBaseApplier implements RulesApplier {
             .denyAllConstructors()
             .denyMethod("accept")
             .denyMethod("bind")
-            .denyMethod("getInetAddress")
-            .denyMethod("getOption")
-            .denyMethod("setOption")
             .denyMethod("setSocketFactory")
 
             .forClass("Socket")
             .denyAllConstructors()
             .denyMethod("bind")
-            .denyMethod("getLocalAddress")
-            .denyMethod("getOption")
-            .denyMethod("setOption")
+            .denyMethod("connect")
             .denyMethod("setSocketImplFactory")
 
             .forClass("URL")
