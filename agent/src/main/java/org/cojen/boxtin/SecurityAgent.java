@@ -222,8 +222,8 @@ public final class SecurityAgent {
     /**
      * Should only used by the tests. Pass null to deactivate.
      */
-    static synchronized void testActivate(Controller controller) {
-        cAgent = controller == null ? null : new SecurityAgent(controller);
+    static synchronized SecurityAgent testActivate(Controller controller) {
+        return cAgent = controller == null ? null : new SecurityAgent(controller);
     }
 
     /**
@@ -339,8 +339,9 @@ public final class SecurityAgent {
         };
     }
 
-    private byte[] doTransform(Module module, String className,
-                               Class<?> classBeingRedefined, byte[] classBuffer)
+    // Is package-private for testing.
+    byte[] doTransform(Module module, String className,
+                       Class<?> classBeingRedefined, byte[] classBuffer)
         throws Throwable
     {
         if (isSpecial(classBeingRedefined)) {
