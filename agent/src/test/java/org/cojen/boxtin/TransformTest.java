@@ -73,7 +73,8 @@ public abstract class TransformTest {
         try {
             if (transformed == null) {
                 try {
-                    transformed = doTransform(original, agent);
+                    var injector = new Injector(original.getClassLoader(), agent, c);
+                    transformed = injector.inject(original);
                 } catch (RuntimeException e) {
                     throw e;
                 } catch (Throwable e) {
@@ -107,27 +108,82 @@ public abstract class TransformTest {
         }
     }
 
-    private Class<?> doTransform(Class<?> original, SecurityAgent agent) throws Throwable {
-        byte[] bytes;
-        try (InputStream in = original.getResourceAsStream
-             ('/' + original.getName().replace('.', '/') + ".class"))
-        {
-            bytes = in.readAllBytes();
-        }
-
-        bytes = agent.doTransform(original.getModule(), original.getName(), null, bytes);
-
-        return Injector.inject(original, bytes);
-    }
-
     private static class Injector extends ClassLoader {
-        static Class<?> inject(Class<?> original, byte[] bytes) {
-            return new Injector(original.getClassLoader())
-                .defineClass(original.getName(), bytes, 0, bytes.length);
+        private final SecurityAgent mAgent;
+        private final Controller mController;
+
+        private Injector(ClassLoader parent, SecurityAgent agent, Controller c) {
+            super(parent);
+            mAgent = agent;
+            mController = c;
         }
 
-        private Injector(ClassLoader parent) {
-            super(parent);
+        @Override
+        protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+            // Check if the class name starts with a special prefix which indicates that it
+            // should be transformed, but with target rules only.
+            if (!name.startsWith("org.cojen.boxtin.T_")) {
+                return super.loadClass(name, resolve);
+            }
+            try {
+                return loadAndTransformClass(name, true);
+            } catch (ClassNotFoundException e) {
+                throw e;
+            } catch (Throwable e) {
+                throw new ClassNotFoundException(e.getMessage(), e);
+            }
+        }
+
+        Class<?> inject(Class<?> original) throws Throwable {
+            return loadAndTransformClass(original.getName(), false);
+        }
+
+        private Class<?> loadAndTransformClass(String className, boolean isTarget)
+            throws Throwable
+        {
+            String pathName = className.replace('.', '/');
+
+            byte[] bytes;
+            try (InputStream in = getParent().getResourceAsStream(pathName + ".class")) {
+                bytes = in.readAllBytes();
+            }
+
+            byte[] xbytes;
+            if (!isTarget) {
+                xbytes = mAgent.doTransform(getClass().getModule(), className, null, bytes);
+            } else {
+                // If the class is explicitly designated as a target, force it to have target
+                // rules applied, and don't apply caller rules.
+
+                Rules forTarget = mController.rulesForTarget();
+
+                int index = pathName.lastIndexOf('/');
+                String packageName = index < 0 ? "" : pathName.substring(0, index);
+                String justClassName = pathName.substring(index + 1);
+                
+                Rules.ForClass forTargetClass = forTarget.forClass(packageName, justClassName);
+
+                var processor = ClassFileProcessor.begin(bytes);
+
+                if (processor.check(Rule.allow(), forTargetClass, true)) {
+                    xbytes = processor.redefine();
+
+                    // Must be in a different module in order for checks to be applied.
+                    return new ClassLoader(this) {
+                        Class<?> inject(byte[] b) {
+                            return defineClass(className, b, 0, b.length);
+                        }
+                    }.inject(xbytes);
+                }
+
+                xbytes = null;
+            }
+
+            if (xbytes == null) {
+                xbytes = bytes;
+            }
+
+            return defineClass(className, xbytes, 0, xbytes.length);
         }
     }
 }

@@ -1121,7 +1121,7 @@ final class ClassFileProcessor {
         // Update the offsets of all Uninitialized_variable_infos.
 
         byte[] buffer = encoder.buffer();
-        int offset = startOffset + 2;
+        int offset = startOffset + 4 + 2;
 
         for (int i=0; i<numEntries; i++) {
             int type = buffer[offset++] & 0xff;
