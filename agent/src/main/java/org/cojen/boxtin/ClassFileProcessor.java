@@ -1312,7 +1312,7 @@ final class ClassFileProcessor {
                 // Unchecked operation with three or five operand bytes.
 
                 case WIDE -> {
-                    op = buffer[++offset];
+                    op = buffer[offset++];
                     offset += 2;
                     if (op == IINC) {
                         offset += 2;
