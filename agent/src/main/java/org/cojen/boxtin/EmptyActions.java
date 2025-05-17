@@ -51,6 +51,9 @@ public final class EmptyActions {
         return cp.addNameAndType(name, Utils.fullDescriptorFor(m));
     }
 
+    private EmptyActions() {
+    }
+
     public static Boolean java_lang_Boolean() {
         return false;
     }
@@ -111,7 +114,7 @@ public final class EmptyActions {
         return Collections.emptyList();
     }
 
-    public static Stream java_util_Stream() {
+    public static Stream java_util_stream_Stream() {
         return Stream.empty();
     }
 

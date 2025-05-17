@@ -825,8 +825,11 @@ final class ConstantPool {
          * @return number of stack slots popped
          */
         int returnValue(BufferEncoder encoder) throws IOException {
-            int c = mBuffer[mOffset + mLength - 1] & 0xff;
-            switch (c) {
+            int type = Utils.decodeUnsignedShortBE(mBuffer, mOffset + mLength - 2);
+
+            type = (type >> 8) == '[' ? ';' : type & 0xff;
+
+            switch (type) {
                 default -> {
                     encoder.writeByte(RETURN);
                     return 0;

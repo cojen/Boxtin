@@ -853,6 +853,11 @@ final class ClassFileProcessor {
 
         int pushed = 1;
         char type = desc.charAt(desc.length() - 1);
+        char prefix = desc.charAt(desc.length() - 2);
+
+        if (prefix == '[') {
+            type = prefix;
+        }
 
         switch (type) {
         case 'V' -> {
@@ -882,7 +887,7 @@ final class ClassFileProcessor {
         default -> {
             String descStr = desc.str();
             int ix = descStr.indexOf(')') + 1;
-            if (ix < 2 || ix >= descStr.length() || type != ';') {
+            if (ix < 2 || ix >= descStr.length()) {
                 // Descriptor is broken.
                 encoder.writeByte(ACONST_NULL);
             } else if (descStr.charAt(ix) == '[') {
@@ -903,8 +908,14 @@ final class ClassFileProcessor {
                     encoder.writeByte(NEWARRAY);
                     encoder.writeByte(code);
                 } else {
-                    int start = ix + 2;
-                    int end = descStr.length() - 1;
+                    int start, end;
+                    if (descStr.charAt(++ix) == '[') {
+                        start = ix;
+                        end = descStr.length();
+                    } else {
+                        start = ix + 1;
+                        end = descStr.length() - 1;
+                    }
                     if (start < end) {
                         String elementType = descStr.substring(start, end);
                         encoder.writeByte(ANEWARRAY);
