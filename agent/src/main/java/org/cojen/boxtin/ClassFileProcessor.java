@@ -634,7 +634,7 @@ final class ClassFileProcessor {
 
         encoder.writeByte(IFNE);
 
-        // FIXME: pushed
+        // FIXME: pushed (might need to increase max_stack)
         encodeDenyAction(encoder, action, desc, name_index == 0);
 
         int first = encoder.length() - codeStartPos;
@@ -651,7 +651,7 @@ final class ClassFileProcessor {
      * branch offset.
      *
      * @param mustThrow when true, the deny action must throw an exception
-     * @return stack slots pushed
+     * @return number of stack slots pushed
      */
     private int encodeDenyAction(BufferEncoder encoder, DenyAction action,
                                  ConstantPool.C_UTF8 desc, boolean mustThrow)
@@ -706,7 +706,7 @@ final class ClassFileProcessor {
     }
 
     /**
-     * @return stack slots pushed
+     * @return number of stack slots pushed
      */
     private int encodeValueAndReturn(BufferEncoder encoder, Object value,
                                       ConstantPool.C_UTF8 desc)
@@ -721,7 +721,7 @@ final class ClassFileProcessor {
             // FIXME: Boxed primitives. Look for a valueOf method.
             pushed = 1;
             if (value == null || !(value instanceof String str) ||
-                !desc.tailMatches(")L/java/lang/String;"))
+                !desc.str().endsWith(")Ljava/lang/String;"))
             {
                 encoder.writeByte(ACONST_NULL);
             } else {
@@ -760,7 +760,8 @@ final class ClassFileProcessor {
         }
 
         case 'C' -> {
-            char v = (value instanceof Character c) ? c.charValue() : 0;
+            char v = (value instanceof Character c) ? c.charValue() :
+                ((value instanceof Number n) ? ((char) n.intValue()) : 0);
             if (0 <= v && v <= 5) {
                 encoder.writeByte(ICONST_0 + v);
             } else {
@@ -787,7 +788,7 @@ final class ClassFileProcessor {
                 encoder.writeByte(ICONST_0 + v);
             } else {
                 encoder.writeByte(SIPUSH);
-                encoder.writeByte(v);
+                encoder.writeShort(v);
             }
             encoder.writeByte(IRETURN);
         }
@@ -808,7 +809,7 @@ final class ClassFileProcessor {
             if (0 <= v && v <= 1) {
                 encoder.writeByte(LCONST_0 + (int) v);
             } else {
-                encoder.writeByte(LDC_W);
+                encoder.writeByte(LDC2_W);
                 encoder.writeShort(mConstantPool.addLong(v).mIndex);
             }
             encoder.writeByte(LRETURN);
@@ -831,7 +832,7 @@ final class ClassFileProcessor {
             if (v == 0.0d || v == 1.0d) {
                 encoder.writeByte(DCONST_0 + (int) v);
             } else {
-                encoder.writeByte(LDC_W);
+                encoder.writeByte(LDC2_W);
                 encoder.writeShort(mConstantPool.addDouble(v).mIndex);
             }
             encoder.writeByte(DRETURN);
