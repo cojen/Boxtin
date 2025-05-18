@@ -561,9 +561,7 @@ final class ClassFileProcessor {
         if (first != 0 && numStackMapTables == 0) {
             // Need to create a StackMapTable attribute.
             encoder.writeShort(cp.addUTF8("StackMapTable").mIndex);
-            encoder.writeInt(3);   // attribute_length
-            encoder.writeShort(1); // number_of_entries
-            encoder.writeByte(first); // same_frame
+            encodeOneStackMapEntry(encoder, 2, first);
             encodeShortBE(encoder.buffer(), attrCountOffset, attrCount + 1);
         }
 
@@ -1076,16 +1074,7 @@ final class ClassFileProcessor {
                 encoder.writeShort(numEntries);
             } else {
                 // Insert a new first entry.
-                if (first < 64) {
-                    encoder.writeInt((int) attrLength + 3);
-                    encoder.writeShort(1); // number_of_entries
-                    encoder.writeByte(first); // same_frame
-                } else {
-                    encoder.writeInt((int) attrLength + 5);
-                    encoder.writeShort(1); // number_of_entries
-                    encoder.writeByte(251); // same_frame_extended
-                    encoder.writeShort(first);
-                }
+                encodeOneStackMapEntry(encoder, attrLength, first);
             }
             consumed = 2;
         } else {
@@ -1184,6 +1173,25 @@ final class ClassFileProcessor {
             }
 
             offset = updateTypeInfos(buffer, offset, delta, numItems);
+        }
+    }
+
+    /**
+     * @param attrLength existing attribute length; pass 2 if creating a new attribute
+     * @param offset the one code offset to encode (must not be zero)
+     */
+    private static void encodeOneStackMapEntry(BufferEncoder encoder, long attrLength, int offset)
+        throws IOException
+    {
+        if (offset < 64) {
+            encoder.writeInt((int) attrLength + 1);
+            encoder.writeShort(1); // number_of_entries
+            encoder.writeByte(offset); // same_frame
+        } else {
+            encoder.writeInt((int) attrLength + 3);
+            encoder.writeShort(1); // number_of_entries
+            encoder.writeByte(251); // same_frame_extended
+            encoder.writeShort(offset);
         }
     }
 
@@ -1627,7 +1635,7 @@ final class ClassFileProcessor {
                 maxStack = 1;
                 labelOffset = -1;
 
-                // FIXME: As an optimization, use a static final instance, captured by the
+                // TODO: As an optimization, use a static final instance, captured by the
                 // clinit method.
                 encoder.writeByte(INVOKESTATIC);
                 String agentName = SecurityAgent.CLASS_NAME;
@@ -1665,16 +1673,14 @@ final class ClassFileProcessor {
 
         encoder.writeShort(0); // exception_table_length
 
-        if (labelOffset < 0) {
+        if (labelOffset <= 0) {
             encoder.writeShort(0); // attributes_count
         } else {
             encoder.writeShort(1); // attributes_count
 
             // Encode the StackMapTable attribute.
             encoder.writeShort(cp.addUTF8("StackMapTable").mIndex);
-            encoder.writeInt(3);   // attribute_length
-            encoder.writeShort(1); // number_of_entries
-            encoder.writeByte(labelOffset); // same_frame
+            encodeOneStackMapEntry(encoder, 2, labelOffset);
         }
 
         // Update attribute_length.
