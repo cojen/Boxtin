@@ -1619,10 +1619,10 @@ final class ClassFileProcessor {
                 maxStack = 4;
                 labelOffset = -1;
 
-                // FIXME: will need labelOffset to create StackMapTable
-                // FIXME: Rule.denyAction; pushed
-                encodeAgentCheck(encoder, cp.addString(proxyName).mIndex,
-                                 proxyDesc, DenyAction.standard());
+                long result = encodeAgentCheck(encoder, cp.addString(proxyName).mIndex,
+                                               proxyDesc, rule.denyAction());
+                maxStack = Math.max(maxStack, (int) result);
+                labelOffset = (int) (result >> 32);
 
                 if (op != INVOKESTATIC) {
                     encoder.writeByte(ALOAD_0);

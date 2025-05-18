@@ -61,4 +61,11 @@ public class T_CustomOperations {
     public static int[] op8(String[] a, int[] b) {
         throw null;
     }
+
+    public static native long op9(String a);
+
+    public static native int op10(long a1, long a2, long a3, long a4, long a5, long a6,
+                                  long a7, long a8, long a9, long a10, long a11, long a12,
+                                  long a13, long a14, long a15, long a16, long a17, long a18,
+                                  long a19, long a20, long a21, long a22, long a23, long a24);
 }
