@@ -64,7 +64,6 @@ public class ValueTransformTest extends TransformTest {
             .denyMethod(DenyAction.value(null), "op26")
             .denyMethod(DenyAction.value("hello"), "op27")
             ;
-        
 
         RULES = b.build();
     }

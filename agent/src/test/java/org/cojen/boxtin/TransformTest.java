@@ -160,7 +160,7 @@ public abstract class TransformTest {
                 int index = pathName.lastIndexOf('/');
                 String packageName = index < 0 ? "" : pathName.substring(0, index);
                 String justClassName = pathName.substring(index + 1);
-                
+
                 Rules.ForClass forTargetClass = forTarget.forClass(packageName, justClassName);
 
                 var processor = ClassFileProcessor.begin(bytes);

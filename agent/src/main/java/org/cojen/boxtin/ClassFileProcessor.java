@@ -467,12 +467,16 @@ final class ClassFileProcessor {
         long code_length = decoder.readUnsignedInt();
 
         encoder.writeInt(0); // attribute_length; to be filled in properly later
-        encoder.writeShort(Math.max(4, max_stack));
+        encoder.writeShort(0); // max_stack; to be filled in properly later
         encoder.writeShort(max_locals);
         encoder.writeInt(0); // code_length; to be filled in properly later
 
-        // FIXME: pushed; need to update max_stack
-        int first = encodeAgentCheck(encoder, name_index, desc, action);
+        long result = encodeAgentCheck(encoder, name_index, desc, action);
+        int pushed = (int) result;
+        int first = (int) (result >> 32);
+
+        // Fill in the proper max_stack.
+        encodeShortBE(encoder.buffer(), 4, Math.max(max_stack, pushed));
 
         int codeGrowth = encoder.length() - 12;
 
@@ -587,11 +591,12 @@ final class ClassFileProcessor {
      *
      * Requires at least 4 operand stack slots.
      *
-     * @param name_index pass 0 for constructor
-     * @return a non-zero first offset if a StackMapTable attribute is required
+     * @param name_index pass 0 for constructors
+     * @return lower word: number of stack slots pushed; upper word: a non-zero first offset if
+     * a StackMapTable attribute is required
      */
-    private int encodeAgentCheck(BufferEncoder encoder, int name_index, ConstantPool.C_UTF8 desc,
-                                 DenyAction action)
+    private long encodeAgentCheck(BufferEncoder encoder, int name_index, ConstantPool.C_UTF8 desc,
+                                  DenyAction action)
         throws IOException
     {
         int codeStartPos = encoder.length();
@@ -629,13 +634,13 @@ final class ClassFileProcessor {
         encoder.writeShort(cp.addMethodRef(agentName, checkName, checkDesc).mIndex);
 
         if (standard) {
-            return 0;
+            return 4;
         }
 
         encoder.writeByte(IFNE);
 
-        // FIXME: pushed (might need to increase max_stack)
-        encodeDenyAction(encoder, action, desc, name_index == 0);
+        long pushed = encodeDenyAction(encoder, action, desc, name_index == 0);
+        pushed = Math.max(4, pushed);
 
         int first = encoder.length() - codeStartPos;
 
@@ -643,7 +648,7 @@ final class ClassFileProcessor {
         // is simpler than attempting to update the first entry if it's at offset 0.
         encoder.writeByte(NOP);
 
-        return first;
+        return pushed | ((long) first) << 32;
     }
 
     /**
@@ -957,7 +962,7 @@ final class ClassFileProcessor {
     }
 
     /**
-     * @return stack slots pushed
+     * @return number of stack slots pushed
      */
     private int encodeCustomAndReturn(BufferEncoder encoder, DenyAction.Custom custom,
                                       ConstantPool.C_UTF8 desc)
@@ -974,8 +979,10 @@ final class ClassFileProcessor {
         int slot = 0;
         String customDesc = custom.mhi.getMethodType().descriptorString();
 
-        loop: for (int i=0; i<customDesc.length(); ) {
-            switch (customDesc.charAt(i++)) {
+        int i = 0;
+        loop: for (; i<customDesc.length(); ) {
+            int c = customDesc.charAt(i++);
+            switch (c) {
                 default -> {
                     break loop;
                 }
@@ -1000,12 +1007,18 @@ final class ClassFileProcessor {
                     encoder.writeByte(slot); slot += 2;
                     pushed += 2;
                 }
-                case 'L' -> {
+                case 'L', '[' -> {
                     encoder.writeByte(ALOAD);
                     encoder.writeByte(slot++);
                     pushed++;
-                    i = customDesc.indexOf(';', i) + 1;
-                    if (i <= 0) {
+                    int j = customDesc.indexOf(';', i) + 1;
+                    if (j > 0) {
+                        i = j;
+                    } else if (c == '[') {
+                        while (i < customDesc.length() && customDesc.charAt(i++) == '[');
+                    } else {
+                        // Descriptor is broken.
+                        i--;
                         break;
                     }
                 }
@@ -1018,16 +1031,25 @@ final class ClassFileProcessor {
         encoder.writeByte(INVOKEVIRTUAL);
         encoder.writeShort(customRef.mIndex);
 
-        char type = customDesc.charAt(customDesc.length() - 1);
+        char type = customDesc.charAt(i);
 
-        encoder.writeByte(switch (type) {
-            default -> ARETURN;
-            case 'V' -> RETURN;
-            case 'Z', 'C', 'B', 'S', 'I' -> IRETURN;
-            case 'J' -> LRETURN;
-            case 'F' -> FRETURN;
-            case 'D' -> DRETURN;
-        });
+        byte op;
+        switch (type) {
+            default -> op = ARETURN;
+            case 'V' -> op = RETURN;
+            case 'Z', 'C', 'B', 'S', 'I' -> op = IRETURN;
+            case 'F' -> op = FRETURN;
+            case 'J' -> {
+                op = LRETURN;
+                pushed = Math.max(2, pushed);
+            }
+            case 'D' -> {
+                op = DRETURN;
+                pushed = Math.max(2, pushed);
+            }
+        }
+
+        encoder.writeByte(op);
 
         encodeShortBE(encoder.buffer(), offset, encoder.length() - offset + 1);
 
