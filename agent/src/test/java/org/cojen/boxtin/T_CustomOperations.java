@@ -68,4 +68,76 @@ public class T_CustomOperations {
                                   long a7, long a8, long a9, long a10, long a11, long a12,
                                   long a13, long a14, long a15, long a16, long a17, long a18,
                                   long a19, long a20, long a21, long a22, long a23, long a24);
+
+    public static String op11(int a, String b) {
+        if (a == 0) {
+            var x = new int[] {
+                0,1,2,3,4,5,6,7,8,9,
+                0,1,2,3,4,5,6,7,8,9,
+                0,1,2,3,4,5,6,7,8,9,
+                0,1,2,3,4,5,6,7,8,9,
+                0,1,2,3,4,5,6,7,8,9,
+                0,1,2,3,4,5,6,7,8,9,
+            };
+            return x.toString();
+        }
+
+        throw null;
+    }
+
+    public static String op12(int a, String b) {
+        if (a == 0) {
+            System.out.println(new int[] {
+                0,1,2,3,4,5,6,7,8,9,
+            });
+        }
+
+        throw null;
+    }
+
+    public static String op13(double a1, double a2, double a3, double a4, double a5, double a6,
+                              double a7, double a8, double a9, double a10, double a11, double a12,
+                              long a13, long a14, long a15, long a16, long a17, long a18)
+    {
+        if (a1 == 0) {
+            System.out.println(a2);
+        }
+
+        throw null;
+    }
+
+    public static String op14(int a, String b,
+                              long a1, long a2, long a3, long a4, long a5, long a6,
+                              long a7, long a8, long a9, long a10, long a11, long a12,
+                              long a13, long a14, long a15, long a16, long a17, long a18,
+                              long a19, long a20, long a21, long a22, long a23, long a24)
+    {
+        try {
+            var x = new int[] {
+                0,1,2,3,4,5,6,7,0,0,0
+            };
+            return x.toString();
+        } catch (Exception e) {
+            throw null;
+        }
+    }
+
+    public static String op15(int a, String b) {
+        try {
+            System.out.println(new int[] {
+                0,1,2,3,4,5,6,7,8,9,
+                0,1,2,3,4,5,6,7,8,9,
+                0,1,2,3,4,5,6,7,8,9,
+            });
+        } catch (Exception e) {
+            throw new Error();
+        }
+        throw null;
+    }
+
+    public static String op16(int a) {
+        int x = a + 2;
+        int y = a == 0 ? 1 : 2;
+        return "" + x + y;
+    }
 }

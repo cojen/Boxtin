@@ -61,6 +61,29 @@ public class CustomTransformTest extends TransformTest {
                                    long.class, long.class, long.class,
                                    long.class, long.class, long.class)
                             , "op10")
+                .denyMethod(custom(String.class, "c_op11", int.class, String.class), "op11")
+                .denyMethod(custom(String.class, "c_op12", int.class, String.class), "op12")
+                .denyMethod(custom(String.class, "c_op13",
+                                   double.class, double.class, double.class,
+                                   double.class, double.class, double.class,
+                                   double.class, double.class, double.class,
+                                   double.class, double.class, double.class,
+                                   long.class, long.class, long.class,
+                                   long.class, long.class, long.class)
+                            , "op13")
+                .denyMethod(custom(String.class, "c_op14",
+                                   int.class, String.class,
+                                   long.class, long.class, long.class,
+                                   long.class, long.class, long.class,
+                                   long.class, long.class, long.class,
+                                   long.class, long.class, long.class,
+                                   long.class, long.class, long.class,
+                                   long.class, long.class, long.class,
+                                   long.class, long.class, long.class,
+                                   long.class, long.class, long.class)
+                            , "op14")
+                .denyMethod(custom(String.class, "c_op15", int.class, String.class), "op15")
+                .denyMethod(custom(String.class, "c_op16", int.class), "op16")
                 ;
 
             RULES = b.build();
@@ -129,6 +152,38 @@ public class CustomTransformTest extends TransformTest {
         return 42;
     }
 
+    public static String c_op11(int a, String b) {
+        return "" + a + b;
+    }
+
+    public static String c_op12(int a, String b) {
+        return "" + b + a;
+    }
+
+    public static String c_op13(double a1, double a2, double a3, double a4, double a5, double a6,
+                                double a7, double a8, double a9, double a10, double a11, double a12,
+                                long a13, long a14, long a15, long a16, long a17, long a18)
+    {
+        return "" + (a1 + a2 + a3);
+    }
+
+    public static String c_op14(int a, String b,
+                                long a1, long a2, long a3, long a4, long a5, long a6,
+                                long a7, long a8, long a9, long a10, long a11, long a12,
+                                long a13, long a14, long a15, long a16, long a17, long a18,
+                                long a19, long a20, long a21, long a22, long a23, long a24)
+    {
+        return "" + (a + b + a1);
+    }
+
+    public static String c_op15(int a, String b) {
+        return "x" + b + a;
+    }
+
+    public static String c_op16(int a) {
+        return "q" + a;
+    }
+
     @Test
     public void custom() throws Exception {
         if (runWith(RULES)) {
@@ -153,5 +208,22 @@ public class CustomTransformTest extends TransformTest {
         assertEquals(5, T_CustomOperations.op9("hello"));
         assertEquals(42, T_CustomOperations.op10(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
                                                  13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24));
+    }
+
+    @Test
+    public void complex() throws Exception {
+        if (runWith(RULES)) {
+            return;
+        }
+
+        assertEquals("9hello", T_CustomOperations.op11(9, "hello"));
+        assertEquals("hello9", T_CustomOperations.op12(9, "hello"));
+        assertEquals("6.0", T_CustomOperations.op13
+                     (1, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+        assertEquals("1x3", T_CustomOperations.op14
+                     (1, "x", 3, 4, 5, 6, 7, 8, 3, 4, 5, 6, 7, 8,
+                      3, 4, 5, 6, 7, 8, 3, 4, 5, 6, 7, 8));
+        assertEquals("xhello9", T_CustomOperations.op15(9, "hello"));
+        assertEquals("q9", T_CustomOperations.op16(9));
     }
 }
