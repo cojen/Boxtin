@@ -412,16 +412,16 @@ final class JavaBaseApplier implements RulesApplier {
             .allowAll()
 
             .forClass("Configuration")
+            .callerCheck()
             .denyMethod("resolve")
             .denyMethod("resolveAndBind")
 
             .forClass("ModuleFinder")
             .callerCheck()
-            .denyMethod("find")
-            .denyMethod("findAll")
-            .denyMethod("ofSystem")
+            .denyAll()
 
             .forClass("ModuleReader")
+            .callerCheck()
             .denyAll()
 
             .forClass("ModuleReference")
