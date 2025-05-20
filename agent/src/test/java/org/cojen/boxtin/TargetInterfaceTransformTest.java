@@ -72,7 +72,8 @@ public class TargetInterfaceTransformTest extends TransformTest {
             // Expected.
         }
 
-        /* FIXME: broken
+        /* FIXME: This appears to be a bug in the Java compiler. The bootstrap linkage is
+                  being made to the interface method instead of the implementation method.
         try {
             trampoline1(opsImpl::op1, 1);
             fail();
