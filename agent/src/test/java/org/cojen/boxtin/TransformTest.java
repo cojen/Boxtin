@@ -125,6 +125,12 @@ public abstract class TransformTest {
             if (!name.startsWith("org.cojen.boxtin.T_")) {
                 return super.loadClass(name, resolve);
             }
+
+            Class<?> clazz = findLoadedClass(name);
+            if (clazz != null) {
+                return clazz;
+            }
+
             try {
                 return loadAndTransformClass(name, true);
             } catch (ClassNotFoundException e) {
