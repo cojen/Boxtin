@@ -139,11 +139,6 @@ public sealed class Rule implements Rules, Rules.ForClass {
     }
 
     @Override
-    public boolean isAnyMethodDenied() {
-        return isDenied();
-    }
-
-    @Override
     public boolean isAnyDeniedAtCaller() {
         return isDeniedAtCaller();
     }

@@ -473,11 +473,6 @@ public class ReflectionTest {
         }
 
         @Override
-        public boolean isAnyMethodDenied() {
-            return true;
-        }
-
-        @Override
         public boolean isAnyDeniedAtCaller() {
             return true;
         }

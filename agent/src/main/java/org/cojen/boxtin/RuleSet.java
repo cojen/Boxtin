@@ -242,11 +242,6 @@ final class RuleSet implements Rules {
         }
 
         @Override
-        public boolean isAnyMethodDenied() {
-            return mMethods != null || mDefaultMethodRule.isDenied();
-        }
-
-        @Override
         public boolean isAnyDeniedAtCaller() {
             int where = mWhereDenied >> 2;
 

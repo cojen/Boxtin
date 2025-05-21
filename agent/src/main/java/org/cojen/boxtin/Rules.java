@@ -108,11 +108,6 @@ public interface Rules {
         public boolean isAnyConstructorDenied();
 
         /**
-         * Check if at least one method in the class can deny access.
-         */
-        public boolean isAnyMethodDenied();
-
-        /**
          * Returns true if at least one operation is denied at the caller class.
          */
         public boolean isAnyDeniedAtCaller();
