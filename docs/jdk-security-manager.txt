@@ -1,0 +1,1278 @@
+
+List of public JDK APIs which used to be guarded by SecurityManager:
+
+module java.base:
+
+java.io.File:
+    canExecute
+    canRead
+    canWrite
+    createNewFile
+    createTempFile
+    delete
+    deleteOnExit
+    exists
+    getAbsoluteFile
+    getAbsolutePath
+    getCanonicalFile
+    getCanonicalPath
+    getFreeSpace
+    getTotalSpace
+    getUsableSpace
+    isDirectory
+    isFile
+    isHidden
+    lastModified
+    length
+    list
+    listFiles
+    mkdir
+    mkdirs
+    renameTo
+    setExecutable
+    setLastModified
+    setReadOnly
+    setReadable
+    setWritable
+    toURI
+
+java.io.FileInputStream:
+    constructors
+
+java.io.FileOutputStream:
+    constructors
+
+java.io.ObjectInputFilter:
+    Config:
+        setSerialFilter
+        setSerialFilterFactory
+
+java.io.ObjectInputStream:
+    constructor has special subclassing restrictions: readUnshared
+    enableResolveObject
+    setObjectInputFilter
+
+java.io.ObjectOutputStream:
+    constructor has special subclassing restrictions: writeUnshared
+    enableReplaceObject
+
+java.io.PrintStream:
+    constructor(String fileName, *)
+    constructor(File file, *)
+
+java.io.PrintWriter:
+    constructor(String fileName, *)
+    constructor(File file, *)
+
+java.io.RandomAccessFile:
+    constructors
+
+java.lang.Boolean:
+    getBoolean
+
+java.lang.Class:
+    forName(Module, String)
+    forName(String, boolean, loader)
+    getClassLoader
+    getClasses
+    getConstructor
+    getConstructors
+    getDeclaredClasses
+    getDeclaredConstructor
+    getDeclaredConstructors
+    getDeclaredField
+    getDeclaredFields
+    getDeclaredMethod
+    getDeclaredMethods
+    getDeclaringClass
+    getEnclosingClass
+    getEnclosingConstructor
+    getEnclosingMethod
+    getField
+    getFields
+    getMethod
+    getMethods
+    getNestHost
+    getNestMembers
+    getPermittedSubclasses
+    getProtectionDomain
+    getRecordComponents
+    getResource  // weak; returns null instead of throwing an exception
+    getResourceAsStream  // weak; returns null instead of throwing an exception
+    newInstance  // deprecated anyhow
+
+java.lang.ClassLoader:
+    all constructors
+    defineClass
+    getParent
+    getPlatformClassLoader
+    getSystemClassLoader
+
+java.lang.Integer:
+    getInteger
+
+java.lang.Long:
+    getLong
+
+java.lang.Module:
+    getClassLoader
+    getResourceAsStream  // weak; returns null instead of throwing an exception
+
+java.lang.ModuleLayer:
+    defineModulesWithOneLoader
+    defineModulesWithManyLoaders    
+    defineModules
+    defineModulesWithOneLoader
+    defineModulesWithManyLoaders
+    findLoader
+
+java.lang.Process:
+    toHandle
+    children
+    descendants
+
+java.lang.ProcessBuilder:
+    environment
+    start
+    startPipeline
+
+java.lang.ProcessHandle:
+    of
+    current
+    parent
+    children
+    descendants        
+    allProcesses
+
+java.lang.Runtime:
+    exit
+    addShutdownHook
+    removeShutdownHook
+    halt
+    exec
+    load
+    loadLibrary
+
+java.lang.StackWalker:
+    getInstance // only the variants which accept options
+
+java.lang.System:
+    setIn
+    setOut
+    setErr
+    inheritedChannel
+    setSecurityManager
+    getProperties  // note: other APIs might rely on this too
+    setProperties
+    getProperty  // note: other APIs might rely on this too
+    setProperty
+    clearProperty
+    getenv
+    exit
+    load
+    loadLibrary
+    LoggerFinder:
+        constructor
+        getLogger
+        getLocalizedLogger
+        getLoggerFinder
+
+java.lang.Thread:
+    constructor(ThreadGroup, *)
+    checkAccess
+    enumerate
+    getAllStackTraces
+    getContextClassLoader
+    getStackTrace
+    interrupt
+    setContextClassLoader
+    setDaemon
+    setDefaultUncaughtExceptionHandler
+    setName
+    setPriority
+    setUncaughtExceptionHandler
+    Builder:
+        unstarted
+        start
+
+java.lang.ThreadGroup:
+    constructors
+    checkAccess
+    enumerate
+    getParent
+    interrupt
+    setDaemon
+    setMaxPriority
+
+java.lang.invoke.LambdaMetafactory:
+    metafactory
+    altMetafactory
+
+java.lang.invoke.MethodType:
+    fromMethodDescriptorString
+
+java.lang.invoke.MethodHandles:
+    privateLookupIn
+    reflectAs
+    Lookup:
+        accessClass
+        bind
+        defineClass
+        defineHiddenClass
+        defineHiddenClassWithClassData
+        ensureInitialized
+        findClass
+        findConstructor
+        findGetter
+        findSetter
+        findSpecial
+        findStatic
+        findStaticGetter
+        findStaticSetter
+        findStaticVarHandle
+        findVarHandle
+        findVirtual
+        revealDirect
+
+java.lang.module.Configuration:
+    resolve
+    resolveAndBind
+
+java.lang.module.ModuleFinder:
+    find
+    findAll
+    ofSystem
+
+java.lang.module.ModuleReader:
+    find    
+    open
+    read
+    list
+
+java.lang.module.ModuleReference:
+    open
+
+java.lang.ref.Cleaner:
+    create
+
+java.lang.reflect.AccessibleObject:
+    setAccessible
+    trySetAccessible    
+
+java.lang.reflect.Constructor:
+    setAccessible
+
+java.lang.reflect.Field:
+    setAccessible
+
+java.lang.reflect.Method
+    setAccessible
+
+java.lang.reflect.Proxy
+    getProxyClass  // deprecated
+    newProxyInstance
+
+java.net.Authenticator
+    setDefault
+    getDefault
+    requestPasswordAuthentication
+
+java.net.CookieHandler:
+    getDefault
+    setDefault
+
+java.net.DatagramSocket:
+    constructors
+    bind
+    connect
+    send
+    setDatagramSocketImplFactory
+    setOption
+    getOption
+    joinGroup
+    leaveGroup
+
+java.net.HttpURLConnection:
+    setFollowRedirects
+    setRequestMethod
+
+java.net.InetAddress:
+    getByName
+    getAllByName
+
+java.net.InetSocketAddress:
+    constructor(String hostname, int port)
+
+java.net.MulticastSocket:
+    constructors
+    send
+    joinGroup
+    leaveGroup
+
+java.net.ResponseCache
+    getDefault
+    setDefault
+
+java.net.ProxySelector
+    getDefault
+    setDefault
+
+java.net.ServerSocket:
+    constructors
+    bind
+    getInetAddress  // catches SecurityException and returns loopback address
+    accept
+    setSocketFactory
+    setOption
+    getOption
+
+java.net.Socket:
+    constructors
+    bind
+    getLocalAddress  // catches SecurityException and returns loopback address
+    setSocketImplFactory    
+    setOption
+    getOption
+
+java.net.URL:
+    constructors
+    of
+    openConnection
+    setURLStreamHandlerFactory
+
+java.net.URLClassLoader:
+    constructors
+    close  // note: is defined by Closeable interface
+
+java.net.URLConnection:
+    setFileNameMap
+    setContentHandlerFactory
+
+java.net.URLStreamHandler:
+    setURL
+
+java.net.spi.InetAddressResolverProvider:
+    constructor
+
+java.net.spi.URLStreamHandlerProvider:
+    constructor
+
+java.nio.channels.AsynchronousFileChannel:
+    open
+
+java.nio.channels.AsynchronousServerSocketChannel:
+    bind
+
+java.nio.channels.AsynchronousSocketChannel:
+    bind
+    connect
+
+java.nio.channels.DatagramChannel
+    bind
+    connect
+    receive
+    send
+
+java.nio.channels.FileChannel
+    open
+
+java.nio.channels.MulticastChannel
+    join
+
+java.nio.channels.NetworkChannel
+    bind
+
+java.nio.channels.ServerSocketChannel
+    bind
+    accept
+
+java.nio.channels.SocketChannel
+    open
+    bind
+    connect
+
+java.nio.channels.spi.AsynchronousChannelProvider:
+    constructor
+
+java.nio.charset.spi.CharsetProvider
+    constructor
+
+java.nio.channels.spi.SelectorProvider.java:
+    constructor
+    inheritedChannel
+
+java.nio.charset.spi.CharsetProvider:
+    constructor
+
+java.nio.file.Files:  // all methods
+    newInputStream
+    newOutputStream
+    newByteChannel
+    newDirectoryStream
+    createFile
+    createDirectory
+    createDirectories
+    createTempFile
+    createTempDirectory
+    createSymbolicLink
+    createLink
+    delete
+    deleteIfExists
+    copy
+    move
+    readSymbolicLink
+    getFileStore
+    isSameFile
+    mismatch
+    isHidden
+    probeContentType
+    readAttributes
+    setAttribute
+    getAttribute
+    readAttributes
+    getPosixFilePermissions
+    setPosixFilePermissions
+    getOwner
+    setOwner
+    isSymbolicLink
+    isDirectory
+    isRegularFile
+    getLastModifiedTime
+    setLastModifiedTime
+    size
+    exists
+    notExists
+    isReadable
+    isWritable
+    isExecutable
+    walkFileTree
+    newBufferedReader
+    newBufferedWriter
+    readAllBytes
+    readString
+    readAllLines
+    write
+    writeString
+    list
+    walk
+    find
+    lines
+
+java.nio.file.FileSystems:
+    getFileSystem
+    newFileSystem
+
+java.nio.file.Path:
+    of
+    toUri
+    toAbsolutePath
+    toRealPath
+    register
+
+java.nio.file.Paths:
+    get
+
+java.nio.file.SecureDirectoryStream:
+    newDirectoryStream
+    newByteChannel
+    deleteFile
+    deleteDirectory
+    move
+
+java.nio.file.Watchable:
+    register
+
+java.nio.file.attribute.AclFileAttributeView:
+    getAcl
+    setAcl
+
+java.nio.file.attribute.BasicFileAttributeView:
+    readAttributes
+    setTimes
+
+java.nio.file.attribute.DosFileAttributeView:
+    readAttributes
+    setReadOnly
+    setHidden
+    setSystem
+    setArchive
+
+java.nio.file.attribute.FileOwnerAttributeView:
+    getOwner
+    setOwner
+
+java.nio.file.attribute.PosixFileAttributeView:
+    readAttributes
+    setPermissions
+    setGroup
+
+java.nio.file.attribute.UserDefinedFileAttributeView:
+    list
+    size
+    read
+    write
+    delete
+
+java.nio.file.attribute.UserPrincipalLookupService:
+    lookupPrincipalByName
+    lookupPrincipalByGroupName
+
+java.nio.file.spi.FileTypeDetector:
+    constructor
+    probeContentType
+
+java.nio.file.spi.FileSystemProvider:
+    all constructors and all methods (nearly)
+
+java.security.AccessControlContext:
+    (deprecated)
+
+java.security.AuthProvider:
+    login
+    logout
+    setCallbackHandler
+
+java.security.Guard:
+    checkGuard
+
+java.security.GuardedObject:
+    getObject
+
+java.security.Identity:
+    (deprecated)
+
+java.security.IdentityScope:
+    (deprecated)
+
+java.security.KeyStore:
+    getInstance
+
+java.security.Permission:
+    checkGuard
+
+java.security.Policy:
+    getPolicy
+    setPolicy
+    getInstance
+
+java.security.Provider:
+    clear
+    put
+    putIfAbsent
+    remove
+    replace
+    replaceAll
+    compute
+    computeIfAbsent
+    computeIfPresent
+    merge
+    putService
+    removeService
+
+java.security.SecureClassLoader:
+    constructors
+    defineClass
+
+java.security.Security:
+    insertProviderAt
+    addProvider
+    removeProvider
+    getProperty
+    setProperty
+
+java.security.Signer:
+    (deprecated)
+
+java.util.Formatter:
+    constructor(String fileName, *)
+    constructor(File file, *)
+
+java.util.Locale:
+    setDefault
+
+java.util.ResourceBundle:
+    getBundle
+    Control:
+        newBundle
+
+java.util.TimeZone:
+    setDefault
+
+java.util.concurrent.ExecutorService:
+    shutdown
+    shutdownNow
+    close  // note: is defined by Closeable interface
+
+java.util.concurrent.ForkJoinPool:
+    constructors
+    setParallelism
+    shutdown
+    shutdownNow
+    close  // note: is defined by Closeable interface
+
+java.util.concurrent.ScheduledThreadPoolExecutor
+    shutdown
+    shutdownNow
+
+java.util.concurrent.ThreadPoolExecutor:
+    shutdown
+    shutdownNow
+
+java.util.jar.JarFile:
+    constructor(String name, *)
+    constructor(File file, *)
+    
+java.util.spi.LocaleServiceProvider:
+    constructor
+
+java.util.zip.ZipFile:
+    constructor(String name, *)
+    constructor(File file, *)
+
+javax.net.ServerSocketFactory:
+    createServerSocket
+
+javax.net.SocketFactory:
+    createSocket
+
+javax.net.ssl.HttpsURLConnection:
+    setDefaultHostnameVerifier
+    setDefaultSSLSocketFactory
+    setSSLSocketFactory
+
+javax.net.ssl.SSLContext:
+    setDefault
+
+javax.net.ssl.SSLServerSocket:
+    constructors
+
+javax.net.ssl.SSLSession:
+    getSessionContext
+
+javax.net.ssl.SSLSocket:
+    constructors
+
+javax.security.auth.Subject:
+    doAs
+    doAsPrivileged
+    getSubject
+    setReadOnly
+    equals  // note: is defined by Object
+    hashCode  // note: is defined by Object
+
+javax.security.auth.login.Configuration:
+    getInstance
+
+
+module java.compiler:
+
+javax.tools.JavaFileManager:
+    getClassLoader
+
+javax.tools.ForwardingJavaFileManager:
+    getClassLoader
+
+
+module java.desktop:
+
+java.applet.Applet:
+    setStub
+
+java.awt.Desktop:
+    checkFileValidation
+    open
+    exit
+    print
+    browse
+    mail
+    addAppEventListener
+    removeAppEventListener
+    setAboutHandler
+    setPreferencesHandler
+    setOpenFileHandler
+    setPrintFileHandler
+    setOpenURIHandler  // note: undocumented
+    setQuitHandler
+    setQuitStrategy
+    enableSuddenTermination
+    disableSuddenTermination
+    requestForeground
+    openHelpViewer
+    setDefaultMenuBar
+    browseFileDirectory
+    moveToTrash
+
+java.awt.Dialog:
+    constructors
+    setModalityType
+
+java.awt.Font:
+    createFont
+
+java.awt.Graphics2D:
+    setComposite
+
+java.awt.KeyboardFocusManager:
+    setCurrentKeyboardFocusManager
+    getGlobalFocusOwner
+    setGlobalFocusOwner
+    clearGlobalFocusOwner
+    getGlobalPermanentFocusOwner
+    setGlobalPermanentFocusOwner
+    getGlobalFocusedWindow
+    setGlobalFocusedWindow
+    getGlobalActiveWindow
+    setGlobalActiveWindow
+    getGlobalCurrentFocusCycleRoot
+    setGlobalCurrentFocusCycleRoot
+
+java.awt.MouseInfo:
+    getPointerInfo
+
+java.awt.Robot:
+    constructors
+    getPixelColor
+    createScreenCapture
+    createMultiResolutionScreenCapture
+
+java.awt.SystemTray:
+    getSystemTray
+
+java.awt.Taskbar:
+    requestUserAttention
+    requestWindowUserAttention
+    setMenu
+    getMenu
+    getIconImage
+    setIconBadge
+    setWindowIconBadge
+    setProgressValue
+    setWindowProgressValue
+    setWindowProgressState
+
+java.awt.Toolkit:
+    getImage
+    createImage
+    getPrintJob
+    getSystemEventQueue
+    addAWTEventListener
+    removeAWTEventListener
+    getAWTEventListeners
+
+java.awt.TrayIcon:
+    constructors
+
+java.awt.Window:
+    setModalExclusionType
+    setAlwaysOnTop
+
+java.awt.color.ICC_Profile:
+    getInstance
+
+java.awt.print.PrinterJob:
+    getPrinterJob
+    getUserName
+
+java.beans.Beans:
+    setDesignTime
+    setGuiAvailable
+
+java.beans.Expression:
+    execute
+
+java.beans.Introspector:
+    setBeanInfoSearchPath
+
+java.beans.PropertyEditorManager:
+    registerEditor
+    setEditorSearchPath
+
+java.beans.Statement
+    execute
+
+javax.accessibility.AccessibilityProvider:
+    constructor
+    checkPermission
+
+javax.imageio.ImageIO:
+    setCacheDirectory
+
+javax.imageio.stream.FileImageInputStream:
+    constructors
+
+javax.imageio.stream.FileImageOutputStream:
+    constructors
+
+javax.sound.midi.MidiDevice:
+    open
+
+javax.sound.sampled.AudioSystem:
+    getMixer
+    getLine
+    getClip
+    getSourceDataLine
+    getTargetDataLine
+
+javax.sound.sampled.Clip:
+    open
+
+javax.sound.sampled.Line:
+    open
+    close  // note: is defined by AutoCloseable interface
+
+javax.sound.sampled.Mixer:
+    getLine
+    getSourceLines
+    getTargetLines
+
+javax.sound.sampled.SourceDataLine:
+    open
+
+javax.sound.sampled.TargetDataLine:
+    open
+
+javax.swing.FocusManager:
+    setCurrentManager
+
+javax.swing.JDialog:
+    constructors
+
+javax.swing.JFrame:
+    setDefaultCloseOperation
+
+javax.swing.JTable:
+    print
+
+javax.swing.filechooser.FileSystemView:
+    isLink
+    getLinkLocation
+
+javax.swing.text.JTextComponent:
+    print
+
+
+module java.logging:
+
+java.util.logging.FileHandler:
+    constructors
+    close
+
+java.util.logging.Handler:
+    close
+    setFormatter
+    setEncoding
+    setFilter
+    setErrorManager
+    getErrorManager
+    setLevel
+
+java.util.logging.Logger:
+    setFilter
+    setLevel
+    addHandler
+    removeHandler
+    setUseParentHandlers
+    setResourceBundle
+    setParent
+
+java.util.logging.LoggingMXBean:
+    setLoggerLevel
+
+java.util.logging.LogManager:
+    readConfiguration
+    reset
+    updateConfiguration
+    checkAccess
+    addConfigurationListener
+    removeConfigurationListener
+    LoggingProviderAccess:
+        demandLoggerFor
+
+java.util.logging.MemoryHandler:
+    close
+    setPushLevel
+
+java.util.logging.SocketHandler:
+    close
+
+java.util.logging.StreamHandler:
+    setOutputStream
+    setEncoding
+    close
+
+
+module java.management:
+
+java.lang.management.ClassLoadingMXBean:
+    setVerbose
+
+java.lang.management.ManagementFactory:
+    getPlatformMBeanServer
+
+java.lang.management.MemoryMXBean:
+    setVerbose
+
+java.lang.management.OperatingSystemMXBean:
+    getName
+    getArch
+    getVersion
+
+java.lang.management.MemoryPoolMXBean:
+    resetPeakUsage
+    setUsageThreshold
+    setCollectionUsageThreshold
+
+java.lang.management.PlatformLoggingMXBean:
+    setLoggerLevel
+
+java.lang.management.RuntimeMXBean:
+    getVmName
+    getVmVendor
+    getVmVersion
+    getSpecName
+    getSpecVendor
+    getSpecVersion
+    getClassPath
+    getLibraryPath
+    getBootClassPath
+    getInputArguments
+    getSystemProperties
+
+java.lang.management.ThreadMXBean:
+    getAllThreadIds
+    getThreadInfo
+    setThreadContentionMonitoringEnabled
+    setThreadCpuTimeEnabled
+    findMonitorDeadlockedThreads
+    findDeadlockedThreads
+    dumpAllThreads
+
+javax.management.JMX:
+    newMBeanProxy
+    newMXBeanProxy
+
+
+module java.management.rmi:
+
+javax.management.remote.rmi.RMIConnection:
+    createMBean
+    unregisterMBean
+    getObjectInstance
+    queryMBeans        
+    queryNames
+    isRegistered
+    getMBeanCount
+    getAttribute
+    getAttributes
+    setAttribute
+    setAttributes
+    invoke
+    getDefaultDomain
+    getDomains
+    getMBeanInfo
+    isInstanceOf
+    addNotificationListener
+    removeNotificationListener
+    addNotificationListeners
+    removeNotificationListeners
+
+
+module java.naming:
+
+javax.naming.ldap.spi.LdapDnsProvider:
+    constructor
+
+javax.naming.spi.NamingManager:
+    setObjectFactoryBuilder
+    setInitialContextFactoryBuilder
+
+
+module java.net.http:
+
+java.net.http.HttpRequest:
+    ofFile
+
+java.net.http.HttpClient:
+    send
+    sendAsync too?
+    Builder:
+        build
+
+java.net.http.HttpResponse:
+    BodyHandlers:
+        ofFile
+        ofFileDownload
+
+
+module java.prefs:
+
+java.util.prefs.Preferences:
+    userNodeForPackage
+    systemNodeForPackage
+    userRoot
+    systemRoot
+    importPreferences
+
+java.util.prefs.FileSystemPreferences:
+    removeNode  // via lockFile/unlockFile
+    sync  // via lockFile/unlockFile
+
+
+module java.rmi:
+
+Note that LogStream is deprecated and has some global stuff.
+
+java.rmi.server.RemoteServer:
+    setLog
+
+java.rmi.server.RMIClassLoader:
+    getClassLoader
+    getDefaultProviderInstance
+
+java.rmi.server.RMIClassLoaderSpi:
+    getClassLoader
+
+java.rmi.server.RMISocketFactory:
+    setSocketFactory
+    setFailureHandler
+
+
+module java.security.jgss:
+
+javax.security.auth.kerberos.KerberosPrincipal:
+    constructors
+
+javax.security.auth.kerberos.KeyTab:
+    getKeys
+    exists
+
+
+module java.smartcardio:
+
+javax.smartcardio.Card:
+    getBasicChannel
+    openLogicalChannel
+    beginExclusive<
+    endExclusive
+    transmitControlCommand
+    disconnect
+
+javax.smartcardio.CardTerminal:
+    connect
+
+
+module java.sql:
+
+java.sql.Connection:
+    abort
+    setNetworkTimeout
+
+java.sql.DriverManager:
+    setLogWriter
+    deregisterDriver
+    setLogStream
+
+
+module java.sql.rowset:
+
+javax.sql.rowset.serial.SerialJavaObject:
+    getFields
+
+javax.sql.rowset.spi.SyncFactory:
+    setLogger
+    setJNDIContext
+
+
+module java.xml:
+
+javax.xml.catalog.CatalogManager:
+    catalog
+    catalogResolver(URI)
+
+jdk.xml.internal.SecuritySupport:
+    getClassLoader
+
+org.xml.sax.helpers.ParserFactory: (added by me, also deprecated)
+    deny all 
+
+org.xml.sax.helpers.XMLReaderFactory: (added by me, also deprecated)
+    deny all 
+
+
+module jdk.crypto.cryptoki:
+
+sun.security.pkcs11.SunPKCS11:
+    login
+    logout
+    setCallbackHandler
+
+
+module jdk.attach:
+
+com.sun.tools.attach.VirtualMachine:
+    attach
+
+com.sun.tools.attach.spi.AttachProvider:
+    constructor
+    attachVirtualMachine
+
+
+module jdk.dynalink:
+
+jdk.dynalink.CallSiteDescriptor:
+    changeOperation
+
+jdk.dynalink.SecureLookupSupplier:
+    getLookup
+
+jdk.dynalink.linker.GuardingDynamicLinkerExporter:
+    constructor
+
+
+module jdk.httpserver:
+
+com.sun.net.httpserver.SimpleFileServer:
+    createFileServer
+    createFileHandler
+
+com.sun.net.httpserver.spi.HttpServerProvider:
+    constructor
+
+
+module jdk.jdi:
+
+com.sun.jdi.Bootstrap:
+    virtualMachineManager
+
+
+module jdk.jfr:
+
+jdk.jfr.Configuration:
+    create
+
+jdk.jfr.EventFactory:
+    create
+    register
+    unregister
+
+jdk.jfr.FlightRecorder:
+    register
+    unregister
+    getFlightRecorder
+    addPeriodicEvent
+    removePeriodicEvent
+    addListener
+    removeListener
+
+jdk.jfr.Recording:
+    constructors
+    stop
+    dump
+    setDestination
+
+jdk.jfr.ValueDescriptor:
+    constructors
+
+jdk.jfr.consumer.EventStream:
+    openRepository
+    openFile
+
+jdk.jfr.consumer.RecordingFile:
+    constructors
+    write
+    readAllEvents    
+
+jdk.jfr.consumer.RecordingStream:
+    constructors
+    dump
+
+
+module jdk.jshell:
+
+module jdk.management:
+
+com.sun.management.HotSpotDiagnosticMXBean:
+    dumpHeap
+    dumpThreads
+    setVMOption
+
+com.sun.management.ThreadMXBean
+    setThreadAllocatedMemoryEnabled
+
+
+module jdk.management.jfr:
+
+jdk.management.jfr.FlightRecorderMXBean:
+    newRecording
+    takeSnapshot
+    cloneRecording
+    startRecording
+    stopRecording
+    closeRecording
+    openStream
+    closeStream
+    readStream
+    getRecordingOptions
+    setConfiguration
+    setPredefinedConfiguration
+    setRecordingSettings
+    setRecordingOptions
+    getRecordings
+    getConfigurations
+    getEventTypes   
+    copyTo
+
+jdk.management.jfr.RemoteRecordingStream:
+    constructors
+    dump
+
+
+module jdk.net:
+
+jdk.net.Sockets:
+    setOption
+    getOption
+
+jdk.nio.Channels:
+    readWriteSelectableChannel
+
+
+module jdk.sctp:
+
+com.sun.nio.sctp.SctpChannel:
+    open
+    bind
+    connect
+
+com.sun.nio.sctp.SctpServerChannel:
+    accept
+    bind
+
+com.sun.nio.sctp.SctpMultiChannel:
+    bind
+    receive
+    send
+
+
+module jdk.security.auth:
+
+com.sun.security.auth.login.ConfigFile:
+    constructors
+    refresh
+
+
+module jdk.security.jgss:
+
+com.sun.security.jgss.ExtendedGSSContext:
+    inquireSecContext
+
+
+module jdk.unsupported:
+
+sun.misc.Unsafe:
+    getUnsafe
+
+sun.reflect.ReflectionFactory:
+    getReflectionFactory
+
+---
