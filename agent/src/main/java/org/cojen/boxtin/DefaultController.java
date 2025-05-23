@@ -16,6 +16,8 @@
 
 package org.cojen.boxtin;
 
+import java.util.Set;
+
 /**
  * 
  *
@@ -71,7 +73,7 @@ final class DefaultController implements Controller {
     }
 
     @Override
-    public Rules rulesForTarget() {
-        return mRules;
+    public Set<Rules> allRules() {
+        return Set.of(mRules);
     }
 }

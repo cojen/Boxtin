@@ -63,8 +63,8 @@ public abstract class TransformTest {
             }
 
             @Override
-            public Rules rulesForTarget() {
-                return rules;
+            public Set<Rules> allRules() {
+                return Set.of(rules);
             }
         };
 
@@ -161,7 +161,7 @@ public abstract class TransformTest {
                 // If the class is explicitly designated as a target, force it to have target
                 // rules applied, and don't apply caller rules.
 
-                Rules forTarget = mController.rulesForTarget();
+                Rules forTarget = MergedTargetRules.from(mController);
 
                 int index = pathName.lastIndexOf('/');
                 String packageName = index < 0 ? "" : pathName.substring(0, index);

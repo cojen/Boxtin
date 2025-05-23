@@ -41,6 +41,8 @@ final class RuleSet implements Rules {
     // Default is selected when no map entry is found.
     private final Rule mDefaultRule;
 
+    private int mHashCode;
+
     /**
      * @param packages package names must have '/' characters as separators
      */
@@ -50,6 +52,15 @@ final class RuleSet implements Rules {
         }
         mPackages = packages;
         mDefaultRule = defaultRule;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = mHashCode;
+        if (hash == 0) {
+            mHashCode = hash = Objects.hashCode(mPackages) * 31 + mDefaultRule.hashCode();
+        }
+        return hash;
     }
 
     @Override
@@ -127,12 +138,23 @@ final class RuleSet implements Rules {
         // Default is selected when no map entry is found.
         private final Rule mDefaultRule;
 
+        private int mHashCode;
+
         PackageScope(Map<String, ClassScope> classes, Rule defaultRule) {
             if (classes != null && classes.isEmpty()) {
                 classes = null;
             }
             mClasses = classes;
             mDefaultRule = defaultRule;
+        }
+
+        @Override
+        public int hashCode() {
+            int hash = mHashCode;
+            if (hash == 0) {
+                mHashCode = hash = Objects.hashCode(mClasses) * 31 + mDefaultRule.hashCode();
+            }
+            return hash;
         }
 
         @Override
@@ -185,6 +207,8 @@ final class RuleSet implements Rules {
         // Bits 3..2 for caller, bits 1..0 for target. 0: unknown, 1: denied, 3: allowed
         private int mWhereDenied;
 
+        private int mHashCode;
+
         ClassScope(MethodScope constructors, Rule defaultConstructorRule,
                    Map<String, MethodScope> methods, Rule defaultMethodRule)
         {
@@ -195,6 +219,19 @@ final class RuleSet implements Rules {
             }
             mMethods = methods;
             mDefaultMethodRule = defaultMethodRule;
+        }
+
+        @Override
+        public int hashCode() {
+            int hash = mHashCode;
+            if (hash == 0) {
+                hash = Objects.hashCode(mConstructors);
+                hash = hash * 31 + mDefaultConstructorRule.hashCode();
+                hash = hash * 31 + Objects.hashCode(mMethods);
+                hash = hash * 31 + mDefaultMethodRule.hashCode();
+                mHashCode = hash;
+            }
+            return hash;
         }
 
         @Override
@@ -367,12 +404,23 @@ final class RuleSet implements Rules {
         // Default is selected when no map entry is found.
         private final Rule mDefaultRule;
 
+        private int mHashCode;
+
         MethodScope(NavigableMap<CharSequence, Rule> variants, Rule defaultRule) {
             if (variants != null && variants.isEmpty()) {
                 variants = null;
             }
             mVariants = variants;
             mDefaultRule = defaultRule;
+        }
+
+        @Override
+        public int hashCode() {
+            int hash = mHashCode;
+            if (hash == 0) {
+                mHashCode = hash = Objects.hashCode(mVariants) * 31 + mDefaultRule.hashCode();
+            }
+            return hash;
         }
 
         @Override

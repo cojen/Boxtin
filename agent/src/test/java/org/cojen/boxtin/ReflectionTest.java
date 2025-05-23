@@ -30,6 +30,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.RecordComponent;
 
+import java.util.Set;
+
 import org.junit.*;
 import static org.junit.Assert.*;
 
@@ -438,8 +440,8 @@ public class ReflectionTest {
         }
 
         @Override
-        public Rules rulesForTarget() {
-            return this;
+        public Set<Rules> allRules() {
+            return Set.of(this);
         }
 
         @Override

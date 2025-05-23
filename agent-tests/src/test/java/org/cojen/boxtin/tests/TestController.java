@@ -16,6 +16,8 @@
 
 package org.cojen.boxtin.tests;
 
+import java.util.Set;
+
 import org.cojen.boxtin.Controller;
 import org.cojen.boxtin.Rules;
 import org.cojen.boxtin.RulesBuilder;
@@ -171,7 +173,7 @@ public final class TestController implements Controller {
     }
 
     @Override
-    public Rules rulesForTarget() {
-        return mRules;
+    public Set<Rules> allRules() {
+        return Set.of(mRules);
     }
 }

@@ -16,6 +16,8 @@
 
 package org.cojen.boxtin;
 
+import java.util.Set;
+
 /**
  * Decides what set of operations should be allowed or denied based on the caller's {@code
  * Module}.
@@ -31,17 +33,9 @@ public interface Controller {
      */
     public Rules rulesForCaller(Module module);
 
-    // FIXME: The rulesForTarget result is generally supposed to be the "union" of all
-    // denials, of all rule sets. Does this mean that the method should be renamed? Should
-    // other methods be provided? Define utilities for combining rule sets?
-    //
-    // FIXME: The merge rules must be target centric. A CALLER_DENY rule is interpreted as
-    // ALLOW. Only TARGET_DENY is kept as-is. Rules.mergeForTarget(...)?
-
     /**
-     * Returns rules which determine if a target class has deniable operations.
-     *
-     * @return a Rules instance, which can be null if all operations are allowed
+     * Returns all the rules which can be returned by the {@link #rulesForCaller
+     * rulesForCaller} method.
      */
-    public Rules rulesForTarget();
+    public Set<Rules> allRules();
 }

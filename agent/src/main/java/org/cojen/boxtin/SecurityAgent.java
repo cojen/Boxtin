@@ -33,6 +33,7 @@ import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.WeakHashMap;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -303,8 +304,17 @@ public final class SecurityAgent {
         return Utils.isAccessible(clazz)
             && (module = clazz.getModule()).isNamed()
             && module.isExported(clazz.getPackageName())
-            && (rules = mController.rulesForTarget()) != null
-            && rules.forClass(clazz).isAnyDeniedAtTarget();
+            && isAnyDeniedAtTarget(clazz);
+    }
+
+    private boolean isAnyDeniedAtTarget(Class<?> clazz) {
+        Set<Rules> allRules = mController.allRules();
+        if (allRules != null) for (Rules rules : allRules) {
+            if (rules != null && rules.forClass(clazz).isAnyDeniedAtTarget()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean isSpecial(Class<?> clazz) {
@@ -364,10 +374,7 @@ public final class SecurityAgent {
         // Note that unnamed modules cannot have target security checks applied to them, since
         // they're not expected to implement sensitive operations.
 
-        Rules forTarget;
-        if (!module.isNamed() || (forTarget = mController.rulesForTarget()) == null) {
-            forTarget = Rule.allow();
-        }
+        Rules forTarget = module.isNamed() ? MergedTargetRules.from(mController) : Rule.allow();
 
         if (forCaller.isAllAllowed() && forTarget.isAllAllowed()) {
             return null;
