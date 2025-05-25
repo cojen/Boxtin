@@ -187,11 +187,6 @@ public sealed class Rule implements Rules, Rules.ForClass {
         }
 
         @Override
-        public boolean isDeniedAtTarget() {
-            return false;
-        }
-
-        @Override
         public DenyAction denyAction() {
             return action;
         }
@@ -230,11 +225,6 @@ public sealed class Rule implements Rules, Rules.ForClass {
         @Override
         public boolean isDenied() {
             return true;
-        }
-
-        @Override
-        public boolean isDeniedAtCaller() {
-            return false;
         }
 
         @Override

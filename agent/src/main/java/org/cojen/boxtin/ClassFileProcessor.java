@@ -669,10 +669,10 @@ final class ClassFileProcessor {
             exAction = (DenyAction.Exception) action;
         } else if (action instanceof DenyAction.Value va) {
             return encodeValueAndReturn(encoder, va.value, desc);
-        } else if (action instanceof DenyAction.Empty em) {
+        } else if (action instanceof DenyAction.Empty) {
             return encodeEmptyAndReturn(encoder, desc);
         } else if (action instanceof DenyAction.Custom cu) {
-            return encodeCustomAndReturn(encoder, cu, desc);
+            return encodeCustomAndReturn(encoder, cu);
         } else {
             // Handle unknown action as standard.
             exAction = DenyAction.Standard.THE;
@@ -757,15 +757,15 @@ final class ClassFileProcessor {
         }
 
         case 'Z' -> {
-            boolean v = (value instanceof Boolean b) ? b.booleanValue() : false;
+            boolean v = value instanceof Boolean b && b;
             encoder.writeByte(v ? ICONST_1 : ICONST_0);
             encoder.writeByte(IRETURN);
         }
 
         case 'C' -> {
-            char v = (value instanceof Character c) ? c.charValue() :
+            char v = (value instanceof Character c) ? c :
                 ((value instanceof Number n) ? ((char) n.intValue()) : 0);
-            if (0 <= v && v <= 5) {
+            if (v <= 5) {
                 encoder.writeByte(ICONST_0 + v);
             } else {
                 encoder.writeByte(LDC_W);
@@ -962,8 +962,7 @@ final class ClassFileProcessor {
     /**
      * @return number of stack slots pushed
      */
-    private int encodeCustomAndReturn(BufferEncoder encoder, DenyAction.Custom custom,
-                                      ConstantPool.C_UTF8 desc)
+    private int encodeCustomAndReturn(BufferEncoder encoder, DenyAction.Custom custom)
         throws IOException
     {
         int offset = encoder.length();
@@ -1617,7 +1616,6 @@ final class ClassFileProcessor {
 
             case PT_NATIVE -> {
                 maxStack = 4;
-                labelOffset = -1;
 
                 long result = encodeAgentCheck(encoder, cp.addString(proxyName).mIndex,
                                                proxyDesc, rule.denyAction());

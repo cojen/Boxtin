@@ -92,7 +92,7 @@ public abstract sealed class DenyAction {
     private static Object checkValue(Object value) {
         if (value instanceof String || value instanceof Boolean || value instanceof Character) {
             return value;
-        } else if (value instanceof Number n) {
+        } else if (value instanceof Number) {
             if (value instanceof Integer || value instanceof Long || value instanceof Double ||
                 value instanceof Float || value instanceof Short || value instanceof Byte)
             {

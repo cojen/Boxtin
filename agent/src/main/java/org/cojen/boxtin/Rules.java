@@ -21,7 +21,7 @@ import java.io.PrintStream;
 import java.io.PrintWriter;
 
 /**
- * Checks if acces to a class member is allowed or denied, defined by a set of rules, built
+ * Checks if access to a class member is allowed or denied, defined by a set of rules, built
  * using a {@link RulesBuilder}.
  *
  * @author Brian S. O'Neill

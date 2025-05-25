@@ -62,7 +62,7 @@ import static java.util.Collections.synchronizedMap;
  * java -javaagent:Boxtin.jar=my.app.SecurityController=custom.value ...
  * </pre>
  *
- * <p>If no controller is specified, then then the {@link #activate activate} method must be
+ * <p>If no controller is specified, then the {@link #activate activate} method must be
  * called later, preferably from the main method.
  *
  * @author Brian S. O'Neill
@@ -221,7 +221,7 @@ public final class SecurityAgent {
     }
 
     /**
-     * Should only used by the tests. Pass null to deactivate.
+     * Should only be used by the tests. Pass null to deactivate.
      */
     static synchronized SecurityAgent testActivate(Controller controller) {
         return cAgent = controller == null ? null : new SecurityAgent(controller);
@@ -300,7 +300,6 @@ public final class SecurityAgent {
      */
     private boolean isTargetChecked(Class<?> clazz) {
         Module module;
-        Rules rules;
         return Utils.isAccessible(clazz)
             && (module = clazz.getModule()).isNamed()
             && module.isExported(clazz.getPackageName())
@@ -479,7 +478,7 @@ public final class SecurityAgent {
      * Boot-Class-Path option in the MANIFEST.MF file. The jar file can also be specified on
      * the module path, in which case it will ALSO be loaded by the system ClassLoader. All the
      * magic stuff going on in the static intializer of this class is intended to find the real
-     * SecurityAgent instance which should be invoked by the isAllowed method.
+     * SecurityAgent instance, which should be invoked by the isAllowed method.
      */
     private static class AllowCheck {
         private static final MethodHandle IS_ALLOWED_H;
