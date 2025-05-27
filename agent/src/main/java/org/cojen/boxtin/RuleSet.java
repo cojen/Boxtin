@@ -18,7 +18,6 @@ package org.cojen.boxtin;
 
 import java.io.IOException;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -480,7 +479,7 @@ final class RuleSet implements Rules {
                     a.append(" variant ");
 
                     String descriptor = e.getKey().toString();
-                    List<String> paramTypes = tryParseDescriptor(descriptor);
+                    List<String> paramTypes = tryParseParameters(descriptor);
                     if (paramTypes == null) {
                         a.append(descriptor);
                     } else {
@@ -496,75 +495,6 @@ final class RuleSet implements Rules {
                     a.append('\n');
                 }
             }
-        }
-
-        private List<String> tryParseDescriptor(String descriptor) {
-            var paramTypes = new ArrayList<String>(4);
-
-            for (int pos = 0; pos < descriptor.length(); ) {
-                pos = addParamType(paramTypes, descriptor, pos);
-                if (pos <= 0) {
-                    return null;
-                }
-            }
-
-            return paramTypes;
-        }
-
-        /**
-         * @return updated pos; is 0 if parse failed
-         */
-        private static int addParamType(ArrayList<String> paramTypes,
-                                        String descriptor, int pos)
-        {
-            char first = descriptor.charAt(pos);
-
-            Class<?> type = null;
-            String typeName = null;
-
-            switch (first) {
-                default -> {
-                    return 0;
-                }
-                    
-                case 'Z' -> type = boolean.class;
-                case 'B' -> type = byte.class;
-                case 'S' -> type = short.class;
-                case 'C' -> type = char.class;
-                case 'I' -> type = int.class;
-                case 'F' -> type = float.class;
-                case 'D' -> type = double.class;
-                case 'J' -> type = long.class;
-                case 'V' -> type = void.class;
-
-                case '[' -> {
-                    pos = addParamType(paramTypes, descriptor, pos + 1);
-                    if (pos > 0) {
-                        int ix = paramTypes.size() - 1;
-                        paramTypes.set(ix, paramTypes.get(ix) + "[]");
-                    }
-                    return pos;
-                }
-
-                case 'L' -> {
-                    pos++;
-                    int end = descriptor.indexOf(';', pos);
-                    if (end < 0) {
-                        return 0;
-                    }
-                    typeName = descriptor.substring(pos, end).replace('/', '.');
-                    pos = end;
-                }
-            }
-
-            if (type != null) {
-                assert typeName == null;
-                typeName = type.getName();
-            }
-
-            paramTypes.add(typeName);
-
-            return pos + 1;
         }
     }
 }
