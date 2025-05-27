@@ -75,4 +75,6 @@ public class T_Operations {
     public static native int op6();
 
     public native int op7();
+
+    public native int op8(int a, int b, long c, String d);
 }

@@ -1583,6 +1583,7 @@ final class ClassFileProcessor {
         final int codeStartPos = encoder.length();
 
         int pushed = 0;
+        int firstSlot = 0;
         int maxStack, labelOffset;
 
         switch (type) {
@@ -1625,6 +1626,7 @@ final class ClassFileProcessor {
                 if (op != INVOKESTATIC) {
                     encoder.writeByte(ALOAD_0);
                     pushed++;
+                    firstSlot = 1;
                 }
             }
 
@@ -1650,7 +1652,7 @@ final class ClassFileProcessor {
             op = INVOKESPECIAL;
         }
 
-        int nargs = proxyDesc.pushArgs(encoder);
+        int nargs = proxyDesc.pushArgs(encoder, firstSlot);
         pushed += nargs;
 
         encoder.writeByte(op);

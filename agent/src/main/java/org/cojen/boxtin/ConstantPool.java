@@ -774,10 +774,11 @@ final class ConstantPool {
          * Assume that the string refers to a method type descriptor, and generate operations
          * to push all the arguments to the operand stack.
          *
+         * @param firstSlot first parameter slot
          * @return number of stack slots pushed
          */
-        int pushArgs(BufferEncoder encoder) throws IOException {
-            int numPushed = 0;
+        int pushArgs(BufferEncoder encoder, int firstSlot) throws IOException {
+            int numPushed = firstSlot;
 
             byte[] buffer = mBuffer;
             int offset = mOffset + 1; // skip the '('
@@ -815,7 +816,7 @@ final class ConstantPool {
                 }
             }
 
-            return numPushed;
+            return numPushed - firstSlot;
         }
 
         /**

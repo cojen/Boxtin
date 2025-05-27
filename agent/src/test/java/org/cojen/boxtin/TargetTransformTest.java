@@ -181,4 +181,18 @@ public class TargetTransformTest extends TransformTest {
             // Expected.
         }
     }
+
+    @Test
+    public void op8() throws Exception {
+        if (runWith(RULES)) {
+            return;
+        }
+
+        try {
+            new T_Operations(123).op8(1, 2, 3, "hello");
+            fail();
+        } catch (SecurityException e) {
+            // Expected.
+        }
+    }
 }
