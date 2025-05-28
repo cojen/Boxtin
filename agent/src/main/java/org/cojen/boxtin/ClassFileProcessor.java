@@ -765,45 +765,25 @@ final class ClassFileProcessor {
         case 'C' -> {
             char v = (value instanceof Character c) ? c :
                 ((value instanceof Number n) ? ((char) n.intValue()) : 0);
-            if (v <= 5) {
-                encoder.writeByte(ICONST_0 + v);
-            } else {
-                encoder.writeByte(LDC_W);
-                encoder.writeShort(mConstantPool.addInteger(v).mIndex);
-            }
+            mConstantPool.pushInt(encoder, v);
             encoder.writeByte(IRETURN);
         }
 
         case 'B' -> {
             byte v = (value instanceof Number n) ? n.byteValue() : 0;
-            if (-1 <= v && v <= 5) {
-                encoder.writeByte(ICONST_0 + v);
-            } else {
-                encoder.writeByte(BIPUSH);
-                encoder.writeByte(v);
-            }
+            mConstantPool.pushInt(encoder, v);
             encoder.writeByte(IRETURN);
         }
 
         case 'S' -> {
             short v = (value instanceof Number n) ? n.shortValue() : 0;
-            if (-1 <= v && v <= 5) {
-                encoder.writeByte(ICONST_0 + v);
-            } else {
-                encoder.writeByte(SIPUSH);
-                encoder.writeShort(v);
-            }
+            mConstantPool.pushInt(encoder, v);
             encoder.writeByte(IRETURN);
         }
 
         case 'I' -> {
             int v = (value instanceof Number n) ? n.intValue() : 0;
-            if (-1 <= v && v <= 5) {
-                encoder.writeByte(ICONST_0 + v);
-            } else {
-                encoder.writeByte(LDC_W);
-                encoder.writeShort(mConstantPool.addInteger(v).mIndex);
-            }
+            mConstantPool.pushInt(encoder, v);
             encoder.writeByte(IRETURN);
         }
 

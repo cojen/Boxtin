@@ -553,6 +553,24 @@ final class ConstantPool {
         }
     }
 
+    /**
+     * Generates code to push an int value to the operand stack.
+     */
+    void pushInt(BufferEncoder encoder, int value) throws IOException {
+        if (-1 <= value && value <= 5) {
+            encoder.writeByte(ICONST_0 + value);
+        } else if (-128 <= value && value <= 127) {
+            encoder.writeByte(BIPUSH);
+            encoder.writeByte(value);
+        } else if (-32768 <= value && value <= 32767) {
+            encoder.writeByte(SIPUSH);
+            encoder.writeShort(value);
+        } else {
+            encoder.writeByte(LDC_W);
+            encoder.writeShort(addInteger(value).mIndex);
+        }
+    }
+
     static abstract class Constant {
         final int mTag;
         int mIndex;
