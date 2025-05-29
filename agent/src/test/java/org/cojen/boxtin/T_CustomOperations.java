@@ -140,4 +140,8 @@ public class T_CustomOperations {
         int y = a == 0 ? 1 : 2;
         return "" + x + y;
     }
+
+    public Object op17(int a) {
+        return a + 1;
+    }
 }

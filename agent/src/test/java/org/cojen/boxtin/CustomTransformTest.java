@@ -41,6 +41,7 @@ public class CustomTransformTest extends TransformTest {
 
             b.forModule("xxx").forPackage("org.cojen.boxtin")
                 .forClass("T_CustomOperations")
+                .allowAllConstructors()
                 .denyMethod(custom(void.class, "c_op1",
                                    int.class, boolean.class, char.class, double.class), "op1")
                 .denyMethod(custom(boolean.class, "c_op2", long.class), "op2")
@@ -84,6 +85,8 @@ public class CustomTransformTest extends TransformTest {
                             , "op14")
                 .denyMethod(custom(String.class, "c_op15", int.class, String.class), "op15")
                 .denyMethod(custom(String.class, "c_op16", int.class), "op16")
+                .denyMethod(custom(Object.class, "c_op17",
+                                   T_CustomOperations.class, int.class), "op17")
                 ;
 
             RULES = b.build();
@@ -184,6 +187,10 @@ public class CustomTransformTest extends TransformTest {
         return "q" + a;
     }
 
+    public static Object c_op17(T_CustomOperations obj, int a) {
+        return obj;
+    }
+
     @Test
     public void custom() throws Exception {
         if (runWith(RULES)) {
@@ -225,5 +232,15 @@ public class CustomTransformTest extends TransformTest {
                       3, 4, 5, 6, 7, 8, 3, 4, 5, 6, 7, 8));
         assertEquals("xhello9", T_CustomOperations.op15(9, "hello"));
         assertEquals("q9", T_CustomOperations.op16(9));
+    }
+
+    @Test
+    public void instance() throws Exception {
+        if (runWith(RULES)) {
+            return;
+        }
+
+        var obj = new T_CustomOperations();
+        assertSame(obj, obj.op17(1));
     }
 }
