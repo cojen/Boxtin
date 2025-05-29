@@ -137,8 +137,7 @@ final class MergedTargetRules implements Rules {
             if (mergedRule.denyAction().equals(addedRule.denyAction())) {
                 return mergedRule;
             }
-            // FIXME: need a dynamic action
-            throw null;
+            return Rule.denyAtTarget(DenyAction.dynamic());
         }
 
         @Override

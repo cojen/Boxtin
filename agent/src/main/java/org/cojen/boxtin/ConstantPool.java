@@ -382,6 +382,10 @@ final class ConstantPool {
         return addMemberRef(9, className, name, desc);
     }
 
+    C_MemberRef addFieldRef(C_Class clazz, String name, String desc) {
+        return addMemberRef(9, clazz, addNameAndType(name, desc));
+    }
+
     C_MemberRef addMethodRef(String className, String name, String desc) {
         return addMemberRef(10, className, name, desc);
     }
@@ -789,6 +793,44 @@ final class ConstantPool {
         }
 
         /**
+         * Assume that the string refers to a method type descriptor, and return the number of
+         * arguments or slots it has.
+         *
+         * @param wideSize pass 1 to count number of arguments, or pass 2 to count slots
+         * @return number of stack slots pushed
+         */
+        int numArgs(int wideSize) {
+            int numPushed = 0;
+
+            byte[] buffer = mBuffer;
+            int offset = mOffset + 1; // skip the '('
+            int endOffset = offset + mLength;
+
+            loop: while (offset < endOffset) {
+                int c = buffer[offset++] & 0xff;
+
+                switch (c) {
+                    default -> {
+                        break loop;
+                    }
+                    case 'B', 'C', 'I', 'S', 'Z', 'F' -> {
+                        numPushed++;
+                    }
+                    case 'J', 'D' -> {
+                        numPushed += wideSize;
+                    }
+                    case 'L', '[' -> {
+                        numPushed++;
+                        // Find the ';' terminator.
+                        while (offset < endOffset && (buffer[offset++] & 0xff) != ';');
+                    }
+                }
+            }
+
+            return numPushed;
+        }
+
+        /**
          * Assume that the string refers to a method type descriptor, and generate operations
          * to push all the arguments to the operand stack.
          *
@@ -835,6 +877,137 @@ final class ConstantPool {
             }
 
             return numPushed - firstSlot;
+        }
+
+        /**
+         * Assume that the string refers to a method type descriptor, and generate operations
+         * to push an object the operand which contains all of the arguments. For zero
+         * arguments, the object is null, for one argument the object is just the argument
+         * (possibly boxed), and an Object array is pushed for more than one argument.
+         *
+         * @param pushThis when true, also push `this` as an argument
+         * @return maximum number of stack slots used: [1..5]
+         */
+        int pushArgsObject(BufferEncoder encoder, boolean pushThis) throws IOException {
+            int numArgs = numArgs(1);
+
+            if (pushThis) {
+                if (numArgs == 0) {
+                    encoder.writeByte(ALOAD_0);
+                    return 1;
+                }
+                numArgs++;
+            } else if (numArgs == 0) {
+                encoder.writeByte(ACONST_NULL);
+                return 1;
+            }
+
+            int maxPushed, extra = 0;
+            int ix = 0, slot = 0;
+
+            if (numArgs == 1) {
+                // No array.
+                maxPushed = 1;
+            } else {
+                // Make an array.
+
+                maxPushed = 4;
+                pushInt(encoder, numArgs);
+                encoder.writeByte(ANEWARRAY);
+                encoder.writeShort(addClass("java/lang/Object").mIndex);
+
+                if (pushThis) {
+                    encoder.writeByte(DUP); // dup the array
+                    pushInt(encoder, 0);    // push the array index
+                    encoder.writeByte(ALOAD_0);
+                    encoder.writeByte(AASTORE);
+                    ix = 1;
+                    slot = 1;
+                }
+            }
+
+            byte[] buffer = mBuffer;
+            int offset = mOffset + 1; // skip the '('
+            int endOffset = offset + mLength;
+
+            loop: while (offset < endOffset) {
+                int c = buffer[offset++] & 0xff;
+
+                switch (c) {
+                    default -> {
+                        break loop;
+                    }
+                    case 'B', 'C', 'I', 'S', 'Z', 'J', 'F', 'D', 'L', '[' -> {
+                        break;
+                    }
+                }
+
+                if (numArgs != 1) {
+                    encoder.writeByte(DUP); // dup the array
+                    pushInt(encoder, ix++); // push the array index
+                }
+
+                switch (c) {
+                    default -> {
+                        throw new AssertionError();
+                    }
+                    case 'B' -> {
+                        pushAndBox(encoder, ILOAD, slot++, c, Byte.class);
+                    }
+                    case 'C' -> {
+                        pushAndBox(encoder, ILOAD, slot++, c, Character.class);
+                    }
+                    case 'I' -> {
+                        pushAndBox(encoder, ILOAD, slot++, c, Integer.class);
+                    }
+                    case 'S' -> {
+                        pushAndBox(encoder, ILOAD, slot++, c, Short.class);
+                    }
+                    case 'Z' -> {
+                        pushAndBox(encoder, ILOAD, slot++, c, Boolean.class);
+                    }
+                    case 'F' -> {
+                        pushAndBox(encoder, FLOAD, slot++, c, Float.class);
+                    }
+                    case 'J' -> {
+                        pushAndBox(encoder, LLOAD, slot, c, Long.class);
+                        slot += 2;
+                        extra = 1;
+                    }
+                    case 'D' -> {
+                        pushAndBox(encoder, DLOAD, slot, c, Double.class);
+                        slot += 2;
+                        extra = 1;
+                    }
+                    case 'L', '[' -> {
+                        encoder.writeByte(ALOAD);
+                        encoder.writeByte(slot++);
+                        // Find the ';' terminator.
+                        while (offset < endOffset && (buffer[offset++] & 0xff) != ';');
+                    }
+                }
+
+                if (numArgs != 1) {
+                    encoder.writeByte(AASTORE);
+                }
+            }
+
+            return maxPushed + extra;
+        }
+
+        private void pushAndBox(BufferEncoder encoder, byte op, int slot, int type, Class<?> boxed)
+            throws IOException
+        {
+            encoder.writeByte(op);
+            encoder.writeByte(slot);
+            box(encoder, type, boxed);
+        }
+
+        private void box(BufferEncoder encoder, int type, Class<?> boxed) throws IOException {
+            String className = boxed.getName().replace('.', '/');
+            String methodDesc = "(" + ((char) type) + ')' + 'L' + className + ';';
+            encoder.writeByte(INVOKESTATIC);
+            encoder.writeShort(addMethodRef(className, "valueOf", methodDesc).mIndex);
         }
 
         /**

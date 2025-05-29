@@ -16,11 +16,18 @@
 
 package org.cojen.boxtin;
 
-import java.lang.constant.MethodTypeDesc;
-
 import java.lang.invoke.MethodHandleInfo;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+
+import java.lang.reflect.Array;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 import java.util.Objects;
+
+import static java.lang.invoke.MethodHandleInfo.*;
 
 /**
  * 
@@ -127,46 +134,45 @@ public abstract sealed class DenyAction {
      * <p>Note: This action has no effect for constructors, unless the custom operation throws
      * an exception. Otherwise, the standard action is used.
      */
+    // FIXME: Perhaps allow the operation for constructors when no exception is thrown, but
+    // only when the return type is void. Perhaps a mhi which returns void can always be used
+    // as a general-purpose filter style check.
     public static DenyAction custom(MethodHandleInfo mhi) {
         return new Custom(Objects.requireNonNull(mhi));
     }
 
-    /**
-     * @see DenyAction#select
-     * /
-    @FunctionalInterface
-    public static interface Selector {
-        /**
-         * Returns a deny action based on the actual deniable operation.
-         *
-         * @param packageName the target package name
-         * @param className the target class name, without a package qualifier
-         * @param methodName the target method name; is null for constructors
-         * @param descriptor the target method descriptor
-         * @see MethodTypeDesc
-         * /
-        public DenyAction select(String packageName, String className,
-                                 String methodName, String descriptor);
+    static DenyAction dynamic() {
+        return Dynamic.THE;
     }
-
-    /**
-     * Returns a deny action which selects the actual deny action based on the deniable
-     * operation. If the selected action is actually a select action (or null), then the
-     * standard action is used instead.
-     * /
-    public static DenyAction select(Selector selector) {
-        return new Select(Objects.requireNonNull(selector));
-    }
-    */
 
     private DenyAction() {
     }
+
+    /**
+     * @param returnType never a primitive type
+     */
+    abstract Object apply(Class<?> caller, Class<?> returnType, Object args) throws Throwable;
 
     static sealed class Exception extends DenyAction {
         final String className;
 
         private Exception(String className) {
             this.className = className.replace('.', '/').intern();
+        }
+
+        @Override
+        Object apply(Class<?> caller, Class<?> returnType, Object args) throws Throwable {
+            Throwable ex;
+            try {
+                String name = className.replace('/', '.');
+                ex = (Throwable) Class.forName(name).getConstructor().newInstance();
+            } catch (SecurityException e) {
+                throw e;
+            } catch (java.lang.Exception e) {
+                throw new SecurityException(e);
+            }
+
+            throw ex;
         }
 
         @Override
@@ -193,6 +199,11 @@ public abstract sealed class DenyAction {
         }
 
         @Override
+        Object apply(Class<?> caller, Class<?> returnType, Object args) throws Throwable {
+            throw new SecurityException();
+        }
+
+        @Override
         public int hashCode() {
             return 50737076;
         }
@@ -214,6 +225,21 @@ public abstract sealed class DenyAction {
         private WithMessage(String className, String message) {
             super(className);
             this.message = message;
+        }
+
+        @Override
+        Object apply(Class<?> caller, Class<?> returnType, Object args) throws Throwable {
+            Throwable ex;
+            try {
+                ex = (Throwable) Class.forName(className)
+                    .getConstructor(String.class).newInstance(message);
+            } catch (SecurityException e) {
+                throw e;
+            } catch (java.lang.Exception e) {
+                throw new SecurityException(e);
+            }
+
+            throw ex;
         }
 
         @Override
@@ -243,6 +269,11 @@ public abstract sealed class DenyAction {
         }
 
         @Override
+        Object apply(Class<?> caller, Class<?> returnType, Object args) throws Throwable {
+            return value;
+        }
+
+        @Override
         public int hashCode() {
             return 434596572 ^ Objects.hashCode(value);
         }
@@ -265,6 +296,59 @@ public abstract sealed class DenyAction {
         }
 
         @Override
+        Object apply(Class<?> caller, Class<?> returnType, Object args) throws Throwable {
+            if (returnType.isPrimitive()) {
+                if (returnType == int.class) {
+                    return 0;
+                } else if (returnType == long.class) {
+                    return 0L;
+                } else if (returnType == boolean.class) {
+                    return false;
+                } else if (returnType == void.class) {
+                    return null;
+                } else if (returnType == double.class) {
+                    return 0.0d;
+                } else if (returnType == byte.class) {
+                    return (byte) 0;
+                } else if (returnType == float.class) {
+                    return 0.0f;
+                } else if (returnType == char.class) {
+                    return '\0';
+                } else if (returnType == short.class) {
+                    return (short) 0;
+                } else {
+                    throw new SecurityException();
+                }
+            }
+
+            if (returnType.isArray()) {
+                return Array.newInstance(returnType.getComponentType(), 0);
+            }
+
+            Method method;
+
+            try {
+                method = EmptyActions.class.getMethod(returnType.getName().replace('.', '_'));
+            } catch (NoSuchMethodException e) {
+                method = null;
+            }
+
+            if (method != null) {
+                return method.invoke(null);
+            }
+
+            try {
+                return returnType.getConstructor().newInstance();
+            } catch (InvocationTargetException e) {
+                throw e.getCause();
+            } catch (SecurityException e) {
+                throw e;
+            } catch (java.lang.Exception e) {
+                throw new SecurityException(e);
+            }
+        }
+
+        @Override
         public int hashCode() {
             return 1539211235;
         }
@@ -283,6 +367,48 @@ public abstract sealed class DenyAction {
         }
 
         @Override
+        Object apply(Class<?> caller, Class<?> returnType, Object args) throws Throwable {
+            MethodHandles.Lookup lookup = MethodHandles.lookup();
+
+            Class<?> clazz = mhi.getDeclaringClass();
+            String name = mhi.getName();
+            MethodType mt = mhi.getMethodType();
+
+            MethodHandle mh;
+
+            try {
+                mh = switch (mhi.getReferenceKind()) {
+                default -> {
+                    throw new SecurityException();
+                }
+                case REF_getField -> lookup.findGetter(clazz, name, mt.returnType());
+                case REF_getStatic -> lookup.findStaticGetter(clazz, name, mt.returnType());
+                case REF_putField -> lookup.findSetter(clazz, name, mt.returnType());
+                case REF_putStatic -> lookup.findStaticSetter(clazz, name, mt.returnType());
+                case REF_invokeVirtual, REF_invokeInterface -> lookup.findVirtual(clazz, name, mt);
+                case REF_invokeStatic -> lookup.findStatic(clazz, name, mt);
+                case REF_invokeSpecial -> lookup.findSpecial(clazz, name, mt, caller);
+                case REF_newInvokeSpecial -> lookup.findConstructor(clazz, mt);
+                };
+            } catch (SecurityException e) {
+                throw e;
+            } catch (java.lang.Exception e) {
+                throw new SecurityException(e);
+            }
+
+            Object[] argsArray;
+            if (args instanceof Object[]) {
+                argsArray = (Object[]) args;
+            } else if (args == null && mhi.getMethodType().parameterCount() == 0) {
+                argsArray = new Object[0];
+            } else {
+                argsArray = new Object[] {args};
+            }
+
+            return mh.invokeWithArguments(argsArray);
+        }
+
+        @Override
         public int hashCode() {
             return -1398046693 ^ mhi.hashCode();
         }
@@ -298,28 +424,31 @@ public abstract sealed class DenyAction {
         }
     }
 
-    /*
-    static final class Select extends DenyAction {
-        final Selector selector;
+    static final class Dynamic extends DenyAction {
+        static final Dynamic THE = new Dynamic();
 
-        private Select(Selector selector) {
-            this.selector = selector;
+        private Dynamic() {
+        }
+
+        @Override
+        Object apply(Class<?> caller, Class<?> returnType, Object args) throws Throwable {
+            // Should never be called.
+            throw new SecurityException();
         }
 
         @Override
         public int hashCode() {
-            return -2029867990 ^ selector.hashCode();
+            return 114945825;
         }
 
         @Override
         public boolean equals(Object obj) {
-            return obj instanceof Select other && selector.equals(other.selector);
+            return this == obj;
         }
 
         @Override
         public String toString() {
-            return "select(" + selector + ')';
+            return "dynamic";
         }
     }
-    */
 }

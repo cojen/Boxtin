@@ -45,9 +45,10 @@ public abstract class TransformTest {
      * Transforms the current class using a SecurityAgent, and then runs the caller's test
      * method. Note that before and after test actions aren't performed.
      *
+     * @param rules the first is the only one which is ever actually selected
      * @return true if the test should simply return because it already ran
      */
-    protected boolean runWith(Rules rules) throws Exception {
+    protected boolean runWith(Rules... rules) throws Exception {
         if (cRunning.get()) {
             return false;
         }
@@ -59,7 +60,7 @@ public abstract class TransformTest {
         Controller c = new Controller() {
             @Override
             public Rules rulesForCaller(Module module) {
-                return rules;
+                return rules[0];
             }
 
             @Override

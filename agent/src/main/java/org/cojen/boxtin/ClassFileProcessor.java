@@ -18,6 +18,9 @@ package org.cojen.boxtin;
 
 import java.io.IOException;
 
+import java.lang.constant.ClassDesc;
+import java.lang.constant.MethodTypeDesc;
+
 import java.lang.invoke.MethodHandle;
 
 import java.lang.reflect.Modifier;
@@ -115,6 +118,12 @@ final class ClassFileProcessor {
     // Work objects used by the local forClass method.
     private ConstantPool.C_UTF8 mPackageName, mClassName;
 
+    // Must be assigned before calling the encodeAgentCheck method.
+    private int mMaxLocals;
+
+    // The access_flags for the current method, set as methods are checked.
+    private int mMethodAccessFlags;
+
     private ClassFileProcessor(ConstantPool cp, int accessFlags,
                                int thisClassIndex, BufferDecoder decoder)
         throws IOException
@@ -208,7 +217,7 @@ final class ClassFileProcessor {
 
         for (int i = mMethodsCount; --i >= 0; ) {
             int startOffset = decoder.offset();
-            int access_flags = decoder.readUnsignedShort();
+            mMethodAccessFlags = decoder.readUnsignedShort();
             int name_index = decoder.readUnsignedShort();
             int desc_index = decoder.readUnsignedShort();
 
@@ -216,7 +225,7 @@ final class ClassFileProcessor {
             Rule targetRule; // can be null when !targetCodeChecked
             ConstantPool.C_UTF8 name, desc; // both can be null when !targetCodeChecked
 
-            if (!targetClassChecked || !isAccessible(access_flags) ||
+            if (!targetClassChecked || !isAccessible(mMethodAccessFlags) ||
                 (name = mConstantPool.findConstantUTF8(name_index)).isClinit())
             {
                 targetCodeChecked = false;
@@ -245,7 +254,7 @@ final class ClassFileProcessor {
                 continue;
             }
 
-            if (targetCodeChecked && Modifier.isNative(access_flags)) {
+            if (targetCodeChecked && Modifier.isNative(mMethodAccessFlags)) {
                 // First, rename the native method to start with NATIVE_PREFIX, and make it
                 // private and synthetic.
 
@@ -255,7 +264,7 @@ final class ClassFileProcessor {
                 ConstantPool.C_UTF8 newName = mConstantPool.addUTF8(newNameStr);
 
                 var replacement = new Replacement(4, 4);
-                int newFlags = access_flags & ~(Modifier.PUBLIC | Modifier.PROTECTED);
+                int newFlags = mMethodAccessFlags & ~(Modifier.PUBLIC | Modifier.PROTECTED);
                 newFlags |= Modifier.PRIVATE | 0x1000; // | synthetic
                 replacement.writeShort(newFlags);
                 replacement.writeShort(newName.mIndex);
@@ -265,13 +274,13 @@ final class ClassFileProcessor {
                 // Define a proxy method which matches the original, performs a check, and then
                 // calls the renamed native method.
 
-                byte op = Modifier.isStatic(access_flags) ? INVOKESTATIC : INVOKEVIRTUAL;
+                byte op = Modifier.isStatic(mMethodAccessFlags) ? INVOKESTATIC : INVOKEVIRTUAL;
 
                 C_Class thisClass = mConstantPool.findConstant(mThisClassIndex, C_Class.class);
                 C_MemberRef methodRef = mConstantPool.addMethodRef(thisClass, newName, desc);
 
                 addProxyMethod(targetRule, op, PT_NATIVE, methodRef,
-                               access_flags & ~Modifier.NATIVE, name, desc);
+                               mMethodAccessFlags & ~Modifier.NATIVE, name, desc);
             }
 
             // Look for the Code attribute, and then modify it.
@@ -463,20 +472,21 @@ final class ClassFileProcessor {
         var encoder = new Replacement((int) capacity, codeAttrLength + 4);
 
         int max_stack = decoder.readUnsignedShort();
-        int max_locals = decoder.readUnsignedShort();
+        mMaxLocals = decoder.readUnsignedShort();
         long code_length = decoder.readUnsignedInt();
 
         encoder.writeInt(0); // attribute_length; to be filled in properly later
         encoder.writeShort(0); // max_stack; to be filled in properly later
-        encoder.writeShort(max_locals);
+        encoder.writeShort(0); // max_locals; to be filled in properly later
         encoder.writeInt(0); // code_length; to be filled in properly later
 
         long result = encodeAgentCheck(encoder, name_index, desc, action);
         int pushed = (int) result;
         int first = (int) (result >> 32);
 
-        // Fill in the proper max_stack.
+        // Fill in the proper max_stack and max_locals values.
         encodeShortBE(encoder.buffer(), 4, Math.max(max_stack, pushed));
+        encodeShortBE(encoder.buffer(), 6, mMaxLocals);
 
         int codeGrowth = encoder.length() - 12;
 
@@ -615,14 +625,28 @@ final class ClassFileProcessor {
         encoder.writeShort(cp.addFieldRef(agentName, "WALKER", walkerDesc).mIndex);
         encoder.writeByte(INVOKEVIRTUAL);
         encoder.writeShort(cp.addMethodRef(walkerName, "getCallerClass", callerDesc).mIndex);
+
+        int callerSlot = -1;
+
+        if (action instanceof DenyAction.Dynamic) {
+            // Capture the caller in a local variable, in case it's needed again.
+            encoder.writeByte(ASTORE);
+            callerSlot = mMaxLocals++;
+            encoder.writeByte(callerSlot);
+            encoder.writeByte(ALOAD);
+            encoder.writeByte(callerSlot);
+        }
+
         encoder.writeByte(LDC_W);
         encoder.writeShort(mThisClassIndex);
+
         if (name_index != 0) {
             encoder.writeByte(LDC_W);
             encoder.writeShort(name_index);
         } else {
             encoder.writeByte(ACONST_NULL);
         }
+
         encoder.writeByte(LDC_W);
         encoder.writeShort(desc_index);
         encoder.writeByte(INVOKESTATIC);
@@ -637,7 +661,7 @@ final class ClassFileProcessor {
 
         encoder.writeByte(IFNE);
 
-        long pushed = encodeDenyAction(encoder, action, desc, name_index == 0);
+        long pushed = encodeDenyAction(encoder, action, callerSlot, name_index, desc);
         pushed = Math.max(4, pushed);
 
         int first = encoder.length() - codeStartPos;
@@ -653,17 +677,19 @@ final class ClassFileProcessor {
      * Caller has already written an IFNE or IF_ACMPEQ opcode, and this method encodes the
      * branch offset.
      *
-     * @param mustThrow when true, the deny action must throw an exception
+     * @param callerSlot is used by target-side DenyAction.Dynamic; pass -1 if not defined
+     * @param name_index pass 0 for constructors
      * @return number of stack slots pushed
      */
-    private int encodeDenyAction(BufferEncoder encoder, DenyAction action,
-                                 ConstantPool.C_UTF8 desc, boolean mustThrow)
+    private int encodeDenyAction(BufferEncoder encoder, DenyAction action, int callerSlot,
+                                 int name_index, ConstantPool.C_UTF8 desc)
         throws IOException
     {
         DenyAction.Exception exAction;
 
-        if (mustThrow) {
-            // FIXME: Allow a custom action, but also throw an exception just in case.
+        if (name_index == 0) {
+            // Operation is a constructor.
+            // FIXME: Allow a custom or dynamic action, but also throw an exception just in case.
             exAction = DenyAction.Standard.THE;
         } else if (action instanceof DenyAction.Exception) {
             exAction = (DenyAction.Exception) action;
@@ -673,6 +699,8 @@ final class ClassFileProcessor {
             return encodeEmptyAndReturn(encoder, desc);
         } else if (action instanceof DenyAction.Custom cu) {
             return encodeCustomAndReturn(encoder, cu);
+        } else if (action instanceof DenyAction.Dynamic && callerSlot >= 0) {
+            return encodeDynamicAndReturn(encoder, callerSlot, name_index, desc);
         } else {
             // Handle unknown action as standard.
             exAction = DenyAction.Standard.THE;
@@ -712,7 +740,7 @@ final class ClassFileProcessor {
      * @return number of stack slots pushed
      */
     private int encodeValueAndReturn(BufferEncoder encoder, Object value,
-                                      ConstantPool.C_UTF8 desc)
+                                     ConstantPool.C_UTF8 desc)
         throws IOException
     {
         int offset = encoder.length();
@@ -734,6 +762,7 @@ final class ClassFileProcessor {
             encoder.writeByte(ARETURN);
         }
 
+        // Encode the branch target offset.
         encodeShortBE(encoder.buffer(), offset, encoder.length() - offset + 1);
 
         return pushed;
@@ -934,6 +963,7 @@ final class ClassFileProcessor {
         }
         }
 
+        // Encode the branch target offset.
         encodeShortBE(encoder.buffer(), offset, encoder.length() - offset + 1);
 
         return pushed;
@@ -957,7 +987,7 @@ final class ClassFileProcessor {
         String customDesc = custom.mhi.getMethodType().descriptorString();
 
         int i = 0;
-        loop: for (; i<customDesc.length(); ) {
+        loop: while (i < customDesc.length()) {
             int c = customDesc.charAt(i++);
             switch (c) {
                 default -> {
@@ -1028,6 +1058,123 @@ final class ClassFileProcessor {
 
         encoder.writeByte(op);
 
+        // Encode the branch target offset.
+        encodeShortBE(encoder.buffer(), offset, encoder.length() - offset + 1);
+
+        return pushed;
+    }
+
+    /**
+     * @param callerSlot valid slot to the caller local variable
+     * @param name_index pass 0 for constructors
+     * @return number of stack slots pushed
+     */
+    private int encodeDynamicAndReturn(BufferEncoder encoder, int callerSlot,
+                                       int name_index, ConstantPool.C_UTF8 desc)
+        throws IOException
+    {
+        assert callerSlot >= 0;
+
+        String descStr = desc.str();
+
+        ClassDesc retTypeDesc;
+
+        try {
+            retTypeDesc = MethodTypeDesc.ofDescriptor(descStr).returnType();
+        } catch (IllegalArgumentException e) {
+            // Descriptor is broken.
+            encoder.writeByte(ACONST_NULL);
+            encoder.writeByte(ARETURN);
+            return 1;
+        }
+
+        C_Class retClass, boxedClass;
+
+        if (!retTypeDesc.isPrimitive()) {
+            String str = retTypeDesc.descriptorString();
+            if (!retTypeDesc.isArray()) {
+                // Strip off the 'L' and ';' characters.
+                str = str.substring(1, str.length() - 1);
+            }
+            retClass = mConstantPool.addClass(str);
+            boxedClass = null;
+        } else {
+            retClass = null;
+
+            Class<?> boxed = switch (retTypeDesc.descriptorString().charAt(0)) {
+                default -> Void.class;
+                case 'B' -> Byte.class;
+                case 'C' -> Character.class;
+                case 'D' -> Double.class;
+                case 'F' -> Float.class;
+                case 'I' -> Integer.class;
+                case 'J' -> Long.class;
+                case 'S' -> Short.class;
+                case 'Z' -> Boolean.class;
+            };
+
+            boxedClass = mConstantPool.addClass(boxed.getName().replace('.', '/'));
+        }
+
+        int offset = encoder.length();
+        encoder.writeShort(0); // branch offset; to be filled in properly later
+
+        encoder.writeByte(ALOAD);
+        encoder.writeByte(callerSlot);
+        encoder.writeByte(LDC_W);
+        encoder.writeShort(mThisClassIndex);
+
+        if (name_index != 0) {
+            encoder.writeByte(LDC_W);
+            encoder.writeShort(name_index);
+        } else {
+            encoder.writeByte(ACONST_NULL);
+        }
+
+        encoder.writeByte(LDC_W);
+        encoder.writeShort(mConstantPool.addString(desc).mIndex);
+
+        if (retClass != null) {
+            encoder.writeByte(LDC_W);
+            encoder.writeShort(retClass.mIndex);
+        } else {
+            encoder.writeByte(GETSTATIC);
+            encoder.writeShort(mConstantPool.addFieldRef
+                               (boxedClass, "TYPE", Class.class.descriptorString()).mIndex);
+        }
+
+        boolean pushThis = name_index != 0 && !Modifier.isStatic(mMethodAccessFlags);
+        int pushed = 5 + desc.pushArgsObject(encoder, pushThis);
+
+        String agentName = SecurityAgent.CLASS_NAME;
+        String classDesc = Class.class.descriptorString();
+        String stringDesc = String.class.descriptorString();
+        String objectDesc = Object.class.descriptorString();
+        String applyDesc = '(' + classDesc + classDesc + stringDesc + stringDesc +
+            classDesc + objectDesc + ')' + objectDesc;
+
+        encoder.writeByte(INVOKESTATIC);
+        encoder.writeShort(mConstantPool.addMethodRef
+                           (agentName, "applyDenyAction", applyDesc).mIndex);
+
+        if (retClass != null) {
+            encoder.writeByte(CHECKCAST);
+            encoder.writeShort(retClass.mIndex);
+        } else {
+            char c = retTypeDesc.descriptorString().charAt(0);
+            if (c != 'V') {
+                encoder.writeByte(CHECKCAST);
+                encoder.writeShort(boxedClass.mIndex);
+                encoder.writeByte(INVOKEVIRTUAL);
+                String methodName = retTypeDesc.displayName() + "Value";
+                encoder.writeShort(mConstantPool.addMethodRef
+                                   (boxedClass, methodName, "()" + c).mIndex);
+            }
+        }
+
+        desc.returnValue(encoder);
+
+        // Encode the branch target offset.
         encodeShortBE(encoder.buffer(), offset, encoder.length() - offset + 1);
 
         return pushed;
@@ -1590,13 +1737,21 @@ final class ClassFileProcessor {
                 encoder.writeShort(getModuleIndex);
                 encoder.writeByte(IF_ACMPEQ);
 
-                pushed = encodeDenyAction(encoder, rule.denyAction(), proxyDesc, false);
+                int name_index = methodRef.mNameAndType.mName.mIndex;
+                pushed = encodeDenyAction(encoder, rule.denyAction(), -1, name_index, proxyDesc);
 
                 labelOffset = encoder.length() - codeStartPos;
             }
 
             case PT_NATIVE -> {
                 maxStack = 4;
+
+                int originalMaxLocals = proxyDesc.numArgs(2);
+                mMaxLocals = originalMaxLocals;
+
+                if (op != INVOKESTATIC) {
+                    mMaxLocals++;
+                }
 
                 long result = encodeAgentCheck(encoder, cp.addString(proxyName).mIndex,
                                                proxyDesc, rule.denyAction());
@@ -1605,9 +1760,10 @@ final class ClassFileProcessor {
 
                 if (op != INVOKESTATIC) {
                     encoder.writeByte(ALOAD_0);
-                    pushed++;
                     firstSlot = 1;
                 }
+
+                pushed += (mMaxLocals - originalMaxLocals);
             }
 
             case PT_REFLECTION -> {

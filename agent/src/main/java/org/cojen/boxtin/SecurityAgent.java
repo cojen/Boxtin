@@ -288,7 +288,7 @@ public final class SecurityAgent {
 
     private final Controller mController;
 
-    private final Map<Module, Map<Class<?>, Map<String, Map<String, Boolean>>>> mCheckCache;
+    private final Map<Module, Map<Class<?>, Map<String, Map<String, Rule>>>> mCheckCache;
 
     private SecurityAgent(Controller controller) {
         mController = controller;
@@ -463,6 +463,16 @@ public final class SecurityAgent {
     }
 
     /**
+     * @hidden
+     */
+    public static Object applyDenyAction(Class<?> caller, Class<?> target, String name, String desc,
+                                         Class<?> returnType, Object args)
+        throws Throwable
+    {
+        return AllowCheck.applyDenyAction(caller, target, name, desc, returnType, args);
+    }
+
+    /**
      * Returns a Reflection instance corresponding to the current caller.
      *
      * @hidden
@@ -481,21 +491,26 @@ public final class SecurityAgent {
      * SecurityAgent instance, which should be invoked by the isAllowed method.
      */
     private static class AllowCheck {
-        private static final MethodHandle IS_ALLOWED_H;
+        private static final MethodHandle IS_ALLOWED_H, APPLY_DENY_ACTION_H;
 
         static {
             var lookup = MethodHandles.lookup();
 
-            var mt2 = MethodType.methodType
+            var mt1 = MethodType.methodType
                 (boolean.class, Class.class, Class.class, String.class, String.class);
 
-            MethodHandle mh;
+            var mt2 = MethodType.methodType
+                (Object.class, Class.class, Class.class, String.class, String.class,
+                 Class.class, Object.class);
+
+            MethodHandle mh1, mh2;
 
             try {
                 Object agent = agent();
 
                 if (agent != null) {
-                    mh = lookup.findVirtual(SecurityAgent.class, "isAllowed2", mt2);
+                    mh1 = lookup.findVirtual(SecurityAgent.class, "isAllowed2", mt1);
+                    mh2 = lookup.findVirtual(SecurityAgent.class, "applyDenyAction2", mt2);
                 } else {
                     try {
                         Class<?> altClass = Class.forName
@@ -508,18 +523,22 @@ public final class SecurityAgent {
                             .invoke();
 
                         if (agent != null) {
-                            mh = lookup.findVirtual(altClass, "isAllowed2", mt2);
+                            mh1 = lookup.findVirtual(altClass, "isAllowed2", mt1);
+                            mh2 = lookup.findVirtual(altClass, "applyDenyAction2", mt2);
                         } else {
-                            mh = lookup.findStatic(altClass, "isAllowed3", mt2);
+                            mh1 = lookup.findStatic(altClass, "isAllowed3", mt1);
+                            mh2 = lookup.findStatic(altClass, "applyDenyAction3", mt2);
                         }
                     } catch (ClassNotFoundException e) {
                         agent = null;
-                        mh = lookup.findStatic(SecurityAgent.class, "isAllowed3", mt2);
+                        mh1 = lookup.findStatic(SecurityAgent.class, "isAllowed3", mt1);
+                        mh2 = lookup.findStatic(SecurityAgent.class, "applyDenyAction3", mt2);
                     }
                 }
 
                 if (agent != null) {
-                    mh = MethodHandles.insertArguments(mh, 0, agent);
+                    mh1 = MethodHandles.insertArguments(mh1, 0, agent);
+                    mh2 = MethodHandles.insertArguments(mh2, 0, agent);
                 }
             } catch (ExceptionInInitializerError e) {
                 throw e;
@@ -527,7 +546,8 @@ public final class SecurityAgent {
                 throw new ExceptionInInitializerError(e);
             }
 
-            IS_ALLOWED_H = mh;
+            IS_ALLOWED_H = mh1;
+            APPLY_DENY_ACTION_H = mh2;
         }
 
         static boolean isAllowed(Class<?> caller, Class<?> target, String name, String desc) {
@@ -539,6 +559,13 @@ public final class SecurityAgent {
                 throw new SecurityException(e);
             }
         }
+
+        static Object applyDenyAction(Class<?> caller, Class<?> target, String name, String desc,
+                                      Class<?> returnType, Object args)
+            throws Throwable
+        {
+            return APPLY_DENY_ACTION_H.invokeExact(caller, target, name, desc, returnType, args);
+        }
     }
 
     /**
@@ -546,8 +573,14 @@ public final class SecurityAgent {
      *
      * @hidden
      */
-    public static synchronized SecurityAgent agent() {
-        return cAgent;
+    public static SecurityAgent agent() {
+        SecurityAgent agent = cAgent;
+        if (agent == null) {
+            synchronized (SecurityAgent.class) {
+                agent = cAgent;
+            }
+        }
+        return agent;
     }
 
     /**
@@ -558,6 +591,32 @@ public final class SecurityAgent {
      * @hidden
      */
     public boolean isAllowed2(Class<?> caller, Class<?> target, String name, String desc) {
+        return findRule(caller, target, name, desc).isAllowed();
+    }
+
+    /**
+     * Note: Must be public because it can be accessed from a different ClassLoader.
+     *
+     * @hidden
+     */
+    public Object applyDenyAction2(Class<?> caller, Class<?> target, String name, String desc,
+                                   Class<?> returnType, Object args)
+        throws Throwable
+    {
+        DenyAction action = findRule(caller, target, name, desc).denyAction();
+
+        if (action != null) {
+            Object result = action.apply(caller, returnType, args);
+            if (name != null) {
+                return result;
+            }
+            // Constructors must always throw an exception.
+        }
+
+        throw new SecurityException();
+    }
+
+    private Rule findRule(Class<?> caller, Class<?> target, String name, String desc) {
         Module callerModule = caller.getModule();
         String fname = name == null ? "<init>" : name;
 
@@ -569,7 +628,7 @@ public final class SecurityAgent {
             .computeIfAbsent(desc, k -> {
                 Rules rules = mController.rulesForCaller(callerModule);
                 if (rules == null) {
-                    return true;
+                    return Rule.allow();
                 }
                 Rules.ForClass forClass = rules.forClass(target);
                 Rule rule;
@@ -578,27 +637,27 @@ public final class SecurityAgent {
                 } else {
                     rule = forClass.ruleForMethod(name, desc);
                 }
-                return rule.isAllowed();
+                return rule;
             });
     }
 
     /**
      * Note: Module comparison should be performed as a prerequisite.
-     *
-     * @hidden
      */
     private static boolean isAllowed3(Class<?> caller, Class<?> target, String name, String desc) {
-        SecurityAgent agent = cAgent;
+        SecurityAgent agent = agent();
+        return agent == null ? false : agent.isAllowed2(caller, target, name, desc);
+    }
 
-        if (agent == null) {
-            synchronized (SecurityAgent.class) {
-                agent = cAgent;
-            }
-            if (agent == null) {
-                return false;
-            }
+    private static Object applyDenyAction3(Class<?> caller, Class<?> target,
+                                           String name, String desc,
+                                           Class<?> returnType, Object args)
+        throws Throwable
+    {
+        SecurityAgent agent = agent();
+        if (agent != null) {
+            return agent.applyDenyAction2(caller, target, name, desc, returnType, args);
         }
-
-        return agent.isAllowed2(caller, target, name, desc);
+        throw new SecurityException();
     }
 }
