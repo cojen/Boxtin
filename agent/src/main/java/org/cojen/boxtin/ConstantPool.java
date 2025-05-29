@@ -575,6 +575,42 @@ final class ConstantPool {
         }
     }
 
+    /**
+     * Generates code to push a long value to the operand stack.
+     */
+    void pushLong(BufferEncoder encoder, long value) throws IOException {
+        if (0 <= value && value <= 1) {
+            encoder.writeByte(LCONST_0 + (int) value);
+        } else {
+            encoder.writeByte(LDC2_W);
+            encoder.writeShort(addLong(value).mIndex);
+        }
+    }
+
+    /**
+     * Generates code to push a double value to the operand stack.
+     */
+    void pushDouble(BufferEncoder encoder, double value) throws IOException {
+        if (value == 0.0d || value == 1.0d) {
+            encoder.writeByte(DCONST_0 + (int) value);
+        } else {
+            encoder.writeByte(LDC2_W);
+            encoder.writeShort(addDouble(value).mIndex);
+        }
+    }
+
+    /**
+     * Generates code to push a float value to the operand stack.
+     */
+    void pushFloat(BufferEncoder encoder, float value) throws IOException {
+        if (value == 0.0f || value == 1.0f || value == 2.0f) {
+            encoder.writeByte(FCONST_0 + (int) value);
+        } else {
+            encoder.writeByte(LDC_W);
+            encoder.writeShort(addFloat(value).mIndex);
+        }
+    }
+
     static abstract class Constant {
         final int mTag;
         int mIndex;

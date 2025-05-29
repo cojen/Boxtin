@@ -137,4 +137,76 @@ public class T_ValueOperations {
     public static StringBuilder op27() {
         throw null;
     }
+
+    public static Object op28() {
+        throw null;
+    }
+
+    public static Integer op29() {
+        throw null;
+    }
+
+    public static Long op30() {
+        throw null;
+    }
+
+    public static Double op31() {
+        throw null;
+    }
+
+    public static Float op32() {
+        throw null;
+    }
+
+    public static Short op33() {
+        throw null;
+    }
+
+    public static Byte op34() {
+        throw null;
+    }
+
+    public static Character op35() {
+        throw null;
+    }
+
+    public static Boolean op36() {
+        throw null;
+    }
+
+    public static Number op37() {
+        throw null;
+    }
+
+    public static String op38() {
+        throw null;
+    }
+
+    public static String op39() {
+        throw null;
+    }
+
+    public static String op40() {
+        throw null;
+    }
+
+    public static String op41() {
+        throw null;
+    }
+
+    public static String op42() {
+        throw null;
+    }
+
+    public static String op43() {
+        throw null;
+    }
+
+    public static String op44() {
+        throw null;
+    }
+
+    public static String op45() {
+        throw null;
+    }
 }

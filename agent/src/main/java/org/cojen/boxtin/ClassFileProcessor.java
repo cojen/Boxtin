@@ -749,15 +749,10 @@ final class ClassFileProcessor {
         int pushed = tryEncodeValueAndReturn(encoder, value, desc.charAt(desc.length() - 1));
 
         if (pushed <= 0) {
-            // FIXME: Boxed primitives. Look for a valueOf method.
-            pushed = 1;
-            if (value == null || !(value instanceof String str) ||
-                !desc.str().endsWith(")Ljava/lang/String;"))
-            {
+            pushed = tryEncodeObjectValue(encoder, value, desc);
+            if (pushed <= 0) {
+                pushed = 1;
                 encoder.writeByte(ACONST_NULL);
-            } else {
-                encoder.writeByte(LDC_W);
-                encoder.writeShort(mConstantPool.addString(str).mIndex);
             }
             encoder.writeByte(ARETURN);
         }
@@ -818,41 +813,163 @@ final class ClassFileProcessor {
 
         case 'J' -> {
             long v = (value instanceof Number n) ? n.longValue() : 0;
-            if (0 <= v && v <= 1) {
-                encoder.writeByte(LCONST_0 + (int) v);
-            } else {
-                encoder.writeByte(LDC2_W);
-                encoder.writeShort(mConstantPool.addLong(v).mIndex);
-            }
+            mConstantPool.pushLong(encoder, v);
             encoder.writeByte(LRETURN);
             return 2;
         }
 
         case 'F' -> {
             float v = (value instanceof Number n) ? n.floatValue() : 0;
-            if (v == 0.0f || v == 1.0f || v == 2.0f) {
-                encoder.writeByte(FCONST_0 + (int) v);
-            } else {
-                encoder.writeByte(LDC_W);
-                encoder.writeShort(mConstantPool.addFloat(v).mIndex);
-            }
+            mConstantPool.pushFloat(encoder, v);
             encoder.writeByte(FRETURN);
         }
 
         case 'D' -> {
             double v = (value instanceof Number n) ? n.doubleValue() : 0;
-            if (v == 0.0d || v == 1.0d) {
-                encoder.writeByte(DCONST_0 + (int) v);
-            } else {
-                encoder.writeByte(LDC2_W);
-                encoder.writeShort(mConstantPool.addDouble(v).mIndex);
-            }
+            mConstantPool.pushDouble(encoder, v);
             encoder.writeByte(DRETURN);
             return 2;
         }
         }
 
         return 1;
+    }
+
+    /**
+     * @return stack slots pushed; is zero if nothing was encoded
+     */
+    private int tryEncodeObjectValue(BufferEncoder encoder, Object value, ConstantPool.C_UTF8 desc)
+        throws IOException
+    {
+        if (value == null) {
+            return 0;
+        }
+
+        if (value instanceof String str) {
+            if (isCompatible(desc, String.class)) {
+                encoder.writeByte(LDC_W);
+                encoder.writeShort(mConstantPool.addString(str).mIndex);
+                return 1;
+            }
+            return 0;
+        }
+
+        char primType;
+        int pushed;
+
+        pushPrim: {
+            int intValue;
+
+            prepInt: {
+                if (value instanceof Number n) {
+                    if (n instanceof Integer v) {
+                        if (isCompatible(desc, Integer.class)) {
+                            primType = 'I';
+                            intValue = v.intValue();
+                            break prepInt;
+                        }
+                        return 0;
+                    }
+
+                    if (n instanceof Long v) {
+                        if (isCompatible(desc, Long.class)) {
+                            primType = 'J';
+                            pushed = 2;
+                            mConstantPool.pushLong(encoder, v);
+                            break pushPrim;
+                        }
+                        return 0;
+                    }
+
+                    if (n instanceof Double v) {
+                        if (isCompatible(desc, Double.class)) {
+                            primType = 'D';
+                            pushed = 2;
+                            mConstantPool.pushDouble(encoder, v);
+                            break pushPrim;
+                        }
+                        return 0;
+                    }
+
+                    if (n instanceof Float v) {
+                        if (isCompatible(desc, Float.class)) {
+                            primType = 'F';
+                            pushed = 1;
+                            mConstantPool.pushFloat(encoder, v);
+                            break pushPrim;
+                        }
+                        return 0;
+                    }
+
+                    if (n instanceof Byte v) {
+                        if (isCompatible(desc, Byte.class)) {
+                            primType = 'B';
+                            intValue = v.intValue();
+                            break prepInt;
+                        }
+                        return 0;
+                    }
+
+                    if (n instanceof Short v) {
+                        if (isCompatible(desc, Short.class)) {
+                            primType = 'S';
+                            intValue = v.intValue();
+                            break prepInt;
+                        }
+                        return 0;
+                    }
+
+                    return 0;
+                }
+
+                if (value instanceof Boolean b) {
+                    if (isCompatible(desc, Boolean.class)) {
+                        primType = 'Z';
+                        intValue = b ? 1 : 0;
+                        break prepInt;
+                    }
+                    return 0;
+                }
+
+                if (value instanceof Character c) {
+                    if (isCompatible(desc, Character.class)) {
+                        primType = 'C';
+                        intValue = c.charValue();
+                        break prepInt;
+                    }
+                    return 0;
+                }
+
+                return 0;
+            }
+
+            pushed = 1;
+            mConstantPool.pushInt(encoder, intValue);
+            break pushPrim;
+        }
+
+        String boxedClass = value.getClass().getName().replace('.', '/');
+
+        C_MemberRef ref = mConstantPool.addMethodRef
+            (boxedClass, "valueOf", "" + '(' + primType + ')' + 'L' + boxedClass + ';');
+
+        encoder.writeByte(INVOKESTATIC);
+        encoder.writeShort(ref.mIndex);
+
+        return pushed;
+    }
+
+    /**
+     * Returns true if the given method descriptor return type can be assigned to the "to" type.
+     */
+    private static boolean isCompatible(ConstantPool.C_UTF8 desc, Class<?> to) {
+        String str = desc.str();
+        do {
+            if (str.endsWith(')' + to.descriptorString())) {
+                return true;
+            }
+        } while ((to = to.getSuperclass()) != null);
+        return false;
     }
 
     /**

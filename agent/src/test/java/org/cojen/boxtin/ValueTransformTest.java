@@ -63,6 +63,24 @@ public class ValueTransformTest extends TransformTest {
             .denyMethod(DenyAction.value("hello"), "op25")
             .denyMethod(DenyAction.value(null), "op26")
             .denyMethod(DenyAction.value("hello"), "op27")
+            .denyMethod(DenyAction.value("hello"), "op28")
+            .denyMethod(DenyAction.value(123), "op29")
+            .denyMethod(DenyAction.value(Long.MAX_VALUE), "op30")
+            .denyMethod(DenyAction.value(Double.MAX_VALUE), "op31")
+            .denyMethod(DenyAction.value(Float.MAX_VALUE), "op32")
+            .denyMethod(DenyAction.value(Short.MAX_VALUE), "op33")
+            .denyMethod(DenyAction.value(Byte.MAX_VALUE), "op34")
+            .denyMethod(DenyAction.value(Character.MAX_VALUE), "op35")
+            .denyMethod(DenyAction.value(true), "op36")
+            .denyMethod(DenyAction.value(345), "op37")
+            .denyMethod(DenyAction.value(345), "op38")
+            .denyMethod(DenyAction.value(345L), "op39")
+            .denyMethod(DenyAction.value(345.0d), "op40")
+            .denyMethod(DenyAction.value(345.0f), "op41")
+            .denyMethod(DenyAction.value((byte) 12), "op42")
+            .denyMethod(DenyAction.value((short) 1234), "op43")
+            .denyMethod(DenyAction.value(false), "op44")
+            .denyMethod(DenyAction.value('a'), "op45")
             ;
 
         RULES = b.build();
@@ -101,5 +119,23 @@ public class ValueTransformTest extends TransformTest {
         assertEquals("hello", T_ValueOperations.op25());
         assertNull(T_ValueOperations.op26());
         assertNull(T_ValueOperations.op27());
+        assertEquals("hello", T_ValueOperations.op28());
+        assertEquals(123, (int) T_ValueOperations.op29());
+        assertEquals(Long.MAX_VALUE, (long) T_ValueOperations.op30());
+        assertTrue(Double.MAX_VALUE == (double) T_ValueOperations.op31());
+        assertTrue(Float.MAX_VALUE == (float) T_ValueOperations.op32());
+        assertEquals(Short.MAX_VALUE, (short) T_ValueOperations.op33());
+        assertEquals(Byte.MAX_VALUE, (byte) T_ValueOperations.op34());
+        assertEquals(Character.MAX_VALUE, (char) T_ValueOperations.op35());
+        assertTrue(T_ValueOperations.op36());
+        assertEquals(345, T_ValueOperations.op37().intValue());
+        assertNull(T_ValueOperations.op38());
+        assertNull(T_ValueOperations.op39());
+        assertNull(T_ValueOperations.op40());
+        assertNull(T_ValueOperations.op41());
+        assertNull(T_ValueOperations.op42());
+        assertNull(T_ValueOperations.op43());
+        assertNull(T_ValueOperations.op44());
+        assertNull(T_ValueOperations.op45());
     }
 }
