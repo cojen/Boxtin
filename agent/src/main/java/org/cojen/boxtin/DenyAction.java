@@ -127,16 +127,17 @@ public abstract sealed class DenyAction {
 
     /**
      * Returns a deny action which performs a custom operation. The parameters given to the
-     * custom method is the instance (if applicable), and the original method parameters. The
-     * return type must exactly match the original method's return type. If the custom method
-     * type is incompatible, then a {@code LinkageError} is thrown at runtime.
+     * custom method is the caller class (if specified), the instance (if applicable), and the
+     * original method parameters. The return type must exactly match the original method's
+     * return type. If the custom method type is incompatible, then a {@code LinkageError} is
+     * thrown at runtime.
      *
      * <p>Note: This action has no effect for constructors, unless the custom operation throws
      * an exception. Otherwise, the standard action is used.
      */
     // FIXME: Perhaps allow the operation for constructors when no exception is thrown, but
     // only when the return type is void. Perhaps a mhi which returns void can always be used
-    // as a general-purpose filter style check.
+    // as a general-purpose filter style check. The constructor doesn't get the instance.
     public static DenyAction custom(MethodHandleInfo mhi) {
         return new Custom(Objects.requireNonNull(mhi));
     }
@@ -152,6 +153,10 @@ public abstract sealed class DenyAction {
      * @param returnType never a primitive type
      */
     abstract Object apply(Class<?> caller, Class<?> returnType, Object args) throws Throwable;
+
+    boolean requiresCaller() {
+        return false;
+    }
 
     static sealed class Exception extends DenyAction {
         final String className;
@@ -409,6 +414,11 @@ public abstract sealed class DenyAction {
         }
 
         @Override
+        boolean requiresCaller() {
+            return true;
+        }
+
+        @Override
         public int hashCode() {
             return -1398046693 ^ mhi.hashCode();
         }
@@ -434,6 +444,11 @@ public abstract sealed class DenyAction {
         Object apply(Class<?> caller, Class<?> returnType, Object args) throws Throwable {
             // Should never be called.
             throw new SecurityException();
+        }
+
+        @Override
+        boolean requiresCaller() {
+            return true;
         }
 
         @Override

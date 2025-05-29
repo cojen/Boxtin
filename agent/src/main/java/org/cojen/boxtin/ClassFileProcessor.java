@@ -22,6 +22,7 @@ import java.lang.constant.ClassDesc;
 import java.lang.constant.MethodTypeDesc;
 
 import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodType;
 
 import java.lang.reflect.Modifier;
 
@@ -628,7 +629,7 @@ final class ClassFileProcessor {
 
         int callerSlot = -1;
 
-        if (action instanceof DenyAction.Dynamic) {
+        if (action.requiresCaller()) {
             // Capture the caller in a local variable, in case it's needed again.
             encoder.writeByte(ASTORE);
             callerSlot = mMaxLocals++;
@@ -677,7 +678,8 @@ final class ClassFileProcessor {
      * Caller has already written an IFNE or IF_ACMPEQ opcode, and this method encodes the
      * branch offset.
      *
-     * @param callerSlot is used by target-side DenyAction.Dynamic; pass -1 if not defined
+     * @param callerSlot is used by target-side DenyAction.Dynamic; can pass -1 if defining a
+     * caller-side method
      * @param name_index pass 0 for constructors
      * @return number of stack slots pushed
      */
@@ -698,7 +700,7 @@ final class ClassFileProcessor {
         } else if (action instanceof DenyAction.Empty) {
             return encodeEmptyAndReturn(encoder, desc);
         } else if (action instanceof DenyAction.Custom cu) {
-            return encodeCustomAndReturn(encoder, cu);
+            return encodeCustomAndReturn(encoder, callerSlot, cu);
         } else if (action instanceof DenyAction.Dynamic && callerSlot >= 0) {
             return encodeDynamicAndReturn(encoder, callerSlot, name_index, desc);
         } else {
@@ -1087,9 +1089,12 @@ final class ClassFileProcessor {
     }
 
     /**
+     * @param callerSlot valid slot to the caller local variable; can pass -1 if defining a
+     * caller-side method
      * @return number of stack slots pushed
      */
-    private int encodeCustomAndReturn(BufferEncoder encoder, DenyAction.Custom custom)
+    private int encodeCustomAndReturn(BufferEncoder encoder, int callerSlot,
+                                      DenyAction.Custom custom)
         throws IOException
     {
         int offset = encoder.length();
@@ -1101,7 +1106,8 @@ final class ClassFileProcessor {
         encoder.writeShort(mConstantPool.addMethodHandle(custom.mhi).mIndex);
 
         int slot = 0;
-        String customDesc = custom.mhi.getMethodType().descriptorString();
+        MethodType mt = custom.mhi.getMethodType();
+        String customDesc = mt.descriptorString();
 
         int i = 0;
         loop: while (i < customDesc.length()) {
@@ -1132,10 +1138,24 @@ final class ClassFileProcessor {
                     pushed += 2;
                 }
                 case 'L', '[' -> {
-                    encoder.writeByte(ALOAD);
-                    encoder.writeByte(slot++);
+                    if (i == 2 && mt.parameterType(0) == Class.class) {
+                        // Pass the caller class.
+                        if (callerSlot < 0) {
+                            encoder.writeByte(LDC_W);
+                            encoder.writeShort(mThisClassIndex);
+                        } else {
+                            encoder.writeByte(ALOAD);
+                            encoder.writeByte(callerSlot);
+                        }
+                    } else {
+                        encoder.writeByte(ALOAD);
+                        encoder.writeByte(slot++);
+                    }
+
                     pushed++;
+
                     int j = customDesc.indexOf(';', i) + 1;
+
                     if (j > 0) {
                         i = j;
                     } else if (c == '[') {
@@ -1190,6 +1210,7 @@ final class ClassFileProcessor {
                                        int name_index, ConstantPool.C_UTF8 desc)
         throws IOException
     {
+        // Dynamic actions should only be used for target-side methods.
         assert callerSlot >= 0;
 
         String descStr = desc.str();

@@ -144,4 +144,8 @@ public class T_CustomOperations {
     public Object op17(int a) {
         return a + 1;
     }
+
+    public Object[] op18(int a) {
+        return null;
+    }
 }

@@ -87,6 +87,8 @@ public class CustomTransformTest extends TransformTest {
                 .denyMethod(custom(String.class, "c_op16", int.class), "op16")
                 .denyMethod(custom(Object.class, "c_op17",
                                    T_CustomOperations.class, int.class), "op17")
+                .denyMethod(custom(Object[].class, "c_op18",
+                                   Class.class, T_CustomOperations.class, int.class), "op18")
                 ;
 
             RULES = b.build();
@@ -191,6 +193,10 @@ public class CustomTransformTest extends TransformTest {
         return obj;
     }
 
+    public static Object[] c_op18(Class<?> caller, T_CustomOperations obj, int a) {
+        return new Object[] {caller, obj};
+    }
+
     @Test
     public void custom() throws Exception {
         if (runWith(RULES)) {
@@ -242,5 +248,9 @@ public class CustomTransformTest extends TransformTest {
 
         var obj = new T_CustomOperations();
         assertSame(obj, obj.op17(1));
+
+        Object[] pair = obj.op18(1);
+        assertSame(getClass(), pair[0]);
+        assertSame(obj, pair[1]);
     }
 }
