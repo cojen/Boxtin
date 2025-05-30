@@ -689,37 +689,52 @@ final class ClassFileProcessor {
                                  int name_index, ConstantPool.C_UTF8 desc)
         throws IOException
     {
-        DenyAction.Exception exAction;
+        int offset = encoder.length();
+        encoder.writeShort(0); // branch offset; to be filled in properly later
 
-        if (action instanceof DenyAction.Exception) {
-            exAction = (DenyAction.Exception) action;
-        } else {
-            if (action instanceof DenyAction.Value va) {
-                if (name_index != 0) { // not a constructor
-                    return encodeValueAndReturn(encoder, va.value, desc);
+        int pushed;
+
+        encode: {
+            DenyAction.Exception exAction;
+
+            if (action instanceof DenyAction.Exception) {
+                exAction = (DenyAction.Exception) action;
+            } else {
+                if (action instanceof DenyAction.Value va) {
+                    if (name_index != 0) { // not a constructor
+                        pushed = encodeValueAndReturn(encoder, va.value, desc);
+                        break encode;
+                    }
+                } else if (action instanceof DenyAction.Empty) {
+                    if (name_index != 0) { // not a constructor
+                        pushed = encodeEmptyAndReturn(encoder, desc);
+                        break encode;
+                    }
+                } else if (action instanceof DenyAction.Custom cu) {
+                    pushed = encodeCustomAndReturn(encoder, callerSlot, name_index, cu);
+                    break encode;
+                } else if (action instanceof DenyAction.Dynamic && callerSlot >= 0) {
+                    pushed = encodeDynamicAndReturn(encoder, callerSlot, name_index, desc);
+                    break encode;
                 }
-            } else if (action instanceof DenyAction.Empty) {
-                if (name_index != 0) { // not a constructor
-                    return encodeEmptyAndReturn(encoder, desc);
-                }
-            } else if (action instanceof DenyAction.Custom cu) {
-                return encodeCustomAndReturn(encoder, callerSlot, name_index, cu);
-            } else if (action instanceof DenyAction.Dynamic && callerSlot >= 0) {
-                return encodeDynamicAndReturn(encoder, callerSlot, name_index, desc);
+
+                // Make sure an exception is always thrown.
+                exAction = DenyAction.Standard.THE;
             }
 
-            // Make sure an exception is always thrown.
-            exAction = DenyAction.Standard.THE;
+            pushed = encodeExceptionAction(encoder, exAction);
         }
 
-        return encodeExceptionAction(encoder, exAction, true);
+        // Encode the branch target offset.
+        encodeShortBE(encoder.buffer(), offset, encoder.length() - offset + 1);
+
+        return pushed;
     }
 
     /**
      * @return number of stack slots pushed
      */
-    private int encodeExceptionAction(BufferEncoder encoder, DenyAction.Exception exAction,
-                                      boolean finishBranchOp)
+    private int encodeExceptionAction(BufferEncoder encoder, DenyAction.Exception exAction)
         throws IOException
     {
         ConstantPool cp = mConstantPool;
@@ -729,9 +744,6 @@ final class ClassFileProcessor {
 
         if (exAction instanceof DenyAction.WithMessage wm) {
             exInitRef = cp.addMethodRef(exAction.className, "<init>", "(Ljava/lang/String;)V");
-            if (finishBranchOp) {
-                encoder.writeShort(14); // offset past the ATHROW operation
-            }
             encoder.writeByte(NEW);
             encoder.writeShort(exClassIndex);
             encoder.writeByte(DUP);
@@ -740,9 +752,6 @@ final class ClassFileProcessor {
             pushed = 3;
         } else {
             exInitRef = cp.addMethodRef(exAction.className, "<init>", "()V");
-            if (finishBranchOp) {
-                encoder.writeShort(11); // offset past the ATHROW operation
-            }
             encoder.writeByte(NEW);
             encoder.writeShort(exClassIndex);
             encoder.writeByte(DUP);
@@ -763,9 +772,6 @@ final class ClassFileProcessor {
                                      ConstantPool.C_UTF8 desc)
         throws IOException
     {
-        int offset = encoder.length();
-        encoder.writeShort(0); // branch offset; to be filled in properly later
-
         int pushed = tryEncodeValueAndReturn(encoder, value, desc.charAt(desc.length() - 1));
 
         if (pushed <= 0) {
@@ -776,9 +782,6 @@ final class ClassFileProcessor {
             }
             encoder.writeByte(ARETURN);
         }
-
-        // Encode the branch target offset.
-        encodeShortBE(encoder.buffer(), offset, encoder.length() - offset + 1);
 
         return pushed;
     }
@@ -998,9 +1001,6 @@ final class ClassFileProcessor {
     private int encodeEmptyAndReturn(BufferEncoder encoder, ConstantPool.C_UTF8 desc)
         throws IOException
     {
-        int offset = encoder.length();
-        encoder.writeShort(0); // branch offset; to be filled in properly later
-
         int pushed = 1;
         char type = desc.charAt(desc.length() - 1);
         char prefix = desc.charAt(desc.length() - 2);
@@ -1100,9 +1100,6 @@ final class ClassFileProcessor {
         }
         }
 
-        // Encode the branch target offset.
-        encodeShortBE(encoder.buffer(), offset, encoder.length() - offset + 1);
-
         return pushed;
     }
 
@@ -1116,9 +1113,6 @@ final class ClassFileProcessor {
                                       int name_index, DenyAction.Custom custom)
         throws IOException
     {
-        int offset = encoder.length();
-        encoder.writeShort(0); // branch offset; to be filled in properly later
-
         int pushed = 1;
 
         encoder.writeByte(LDC_W);
@@ -1196,8 +1190,7 @@ final class ClassFileProcessor {
 
         if (name_index == 0) {
             // Denied constructors must always throw an exception.
-            DenyAction.Exception exAction = DenyAction.Standard.THE;
-            pushed = Math.max(pushed, encodeExceptionAction(encoder, exAction, false));
+            pushed = Math.max(pushed, encodeExceptionAction(encoder, DenyAction.Standard.THE));
         } else {
             char type = customDesc.charAt(i);
 
@@ -1219,9 +1212,6 @@ final class ClassFileProcessor {
 
             encoder.writeByte(op);
         }
-
-        // Encode the branch target offset.
-        encodeShortBE(encoder.buffer(), offset, encoder.length() - offset + 1);
 
         return pushed;
     }
@@ -1279,9 +1269,6 @@ final class ClassFileProcessor {
             boxedClass = mConstantPool.addClass(boxed.getName().replace('.', '/'));
         }
 
-        int offset = encoder.length();
-        encoder.writeShort(0); // branch offset; to be filled in properly later
-
         encoder.writeByte(ALOAD);
         encoder.writeByte(callerSlot);
         encoder.writeByte(LDC_W);
@@ -1336,8 +1323,7 @@ final class ClassFileProcessor {
 
         if (name_index == 0) {
             // Denied constructors must always throw an exception.
-            DenyAction.Exception exAction = DenyAction.Standard.THE;
-            pushed = Math.max(pushed, encodeExceptionAction(encoder, exAction, false));
+            pushed = Math.max(pushed, encodeExceptionAction(encoder, DenyAction.Standard.THE));
         } else {
             if (retClass != null) {
                 encoder.writeByte(CHECKCAST);
@@ -1356,9 +1342,6 @@ final class ClassFileProcessor {
 
             desc.returnValue(encoder);
         }
-
-        // Encode the branch target offset.
-        encodeShortBE(encoder.buffer(), offset, encoder.length() - offset + 1);
 
         return pushed;
     }
