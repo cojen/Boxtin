@@ -423,10 +423,12 @@ final class ClassFileProcessor {
 
         if (mNewMethods != null) {
             // Update the methods_count field.
-            // FIXME: Throw ClassFormatException if too big.
-            int numNewMethods = mNewMethods.size();
+            int numMethods = mMethodsCount + mNewMethods.size();
+            if (numMethods >= 65536 || numMethods < 0) {
+                throw new ClassFormatException();
+            }
             int methodsStartOffset = mMethodsStartOffset + (int) cpGrowth;
-            encodeShortBE(buffer, methodsStartOffset, mMethodsCount + numNewMethods);
+            encodeShortBE(buffer, methodsStartOffset, numMethods);
         }
 
         if (mReplacedMethodHandles != null) {
