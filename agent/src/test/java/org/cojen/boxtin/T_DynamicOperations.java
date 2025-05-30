@@ -95,4 +95,31 @@ public class T_DynamicOperations {
     public int op16(Integer x, int y) {
         return x + y;
     }
+
+    public static int op17() {
+        return 1;
+    }
+
+    public static int op18(int a) {
+        return a + 1;
+    }
+
+    public static int op19(int a, int b) {
+        return a + b + 1;
+    }
+
+    public static void op20() {
+    }
+
+    public static java.util.List op21() {
+        return null;
+    }
+
+    public static Thread op22() {
+        return null;
+    }
+
+    public static System op23() {
+        return null;
+    }
 }
