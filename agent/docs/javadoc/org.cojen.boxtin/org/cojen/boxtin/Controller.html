@@ -66,7 +66,7 @@ loadScripts(document, 'script');</script>
 <li><a href="#method-detail" tabindex="0">Method Details</a>
 <ol class="toc-list">
 <li><a href="#rulesForCaller(java.lang.Module)" tabindex="0">rulesForCaller(Module)</a></li>
-<li><a href="#rulesForTarget()" tabindex="0">rulesForTarget()</a></li>
+<li><a href="#allRules()" tabindex="0">allRules()</a></li>
 </ol>
 </li>
 </ol>
@@ -97,15 +97,15 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#rulesForCaller(java.lang.Module)" class="member-name-link">rulesForCaller</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Module.html" title="class or interface in java.lang" class="external-link">Module</a>&nbsp;module)</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/Set.html" title="class or interface in java.util" class="external-link">Set</a><wbr>&lt;<a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#allRules()" class="member-name-link">allRules</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
-<div class="block">Returns rules which determine if a calling module is allowed to perform an operation.</div>
+<div class="block">Returns all the rules which can be returned by the <a href="#rulesForCaller(java.lang.Module)"><code>rulesForCaller</code></a> method.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#rulesForTarget()" class="member-name-link">rulesForTarget</a>()</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#rulesForCaller(java.lang.Module)" class="member-name-link">rulesForCaller</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Module.html" title="class or interface in java.lang" class="external-link">Module</a>&nbsp;module)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
-<div class="block">Returns rules which determine if a target class has deniable operations.</div>
+<div class="block">Returns rules which determine if a calling module is allowed to perform an operation.</div>
 </div>
 </div>
 </div>
@@ -137,15 +137,11 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="rulesForTarget()">
-<h3>rulesForTarget</h3>
+<section class="detail" id="allRules()">
+<h3>allRules</h3>
 <div class="horizontal-scroll">
-<div class="member-signature"><span class="return-type"><a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a></span>&nbsp;<span class="element-name">rulesForTarget</span>()</div>
-<div class="block">Returns rules which determine if a target class has deniable operations.</div>
-<dl class="notes">
-<dt>Returns:</dt>
-<dd>a Rules instance, which can be null if all operations are allowed</dd>
-</dl>
+<div class="member-signature"><span class="return-type"><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/Set.html" title="class or interface in java.util" class="external-link">Set</a>&lt;<a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a>&gt;</span>&nbsp;<span class="element-name">allRules</span>()</div>
+<div class="block">Returns all the rules which can be returned by the <a href="#rulesForCaller(java.lang.Module)"><code>rulesForCaller</code></a> method.</div>
 </div>
 </section>
 </li>

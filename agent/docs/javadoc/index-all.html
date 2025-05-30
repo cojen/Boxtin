@@ -100,6 +100,10 @@ loadScripts(document, 'script');</script>
 <div class="block">Allow access to a specific variant of the current constructor or method, superseding
  all previous rules.</div>
 </dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html#allRules()" class="member-name-link">allRules()</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html" title="interface in org.cojen.boxtin">Controller</a></dt>
+<dd>
+<div class="block">Returns all the rules which can be returned by the <a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html#rulesForCaller(java.lang.Module)"><code>rulesForCaller</code></a> method.</div>
+</dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html#applyRules(org.cojen.boxtin.RulesApplier)" class="member-name-link">applyRules(RulesApplier)</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html" title="class in org.cojen.boxtin">RulesBuilder</a></dt>
 <dd>
 <div class="block">Applies a set of rules to this builder.</div>
@@ -396,12 +400,6 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns true if at least one operation is denied at the target class.</div>
 </dd>
-<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Rule.html#isAnyMethodDenied()" class="member-name-link">isAnyMethodDenied()</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Rule.html" title="class in org.cojen.boxtin">Rule</a></dt>
-<dd>&nbsp;</dd>
-<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Rules.ForClass.html#isAnyMethodDenied()" class="member-name-link">isAnyMethodDenied()</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></dt>
-<dd>
-<div class="block">Check if at least one method in the class can deny access.</div>
-</dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/Rule.html#isDenied()" class="member-name-link">isDenied()</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Rule.html" title="class in org.cojen.boxtin">Rule</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/Rule.html#isDeniedAtCaller()" class="member-name-link">isDeniedAtCaller()</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Rule.html" title="class in org.cojen.boxtin">Rule</a></dt>
@@ -470,7 +468,7 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/Rules.html" class="type-name-link" title="interface in org.cojen.boxtin">Rules</a> - Interface in <a href="org.cojen.boxtin/org/cojen/boxtin/package-summary.html">org.cojen.boxtin</a></dt>
 <dd>
-<div class="block">Checks if acces to a class member is allowed or denied, defined by a set of rules, built
+<div class="block">Checks if access to a class member is allowed or denied, defined by a set of rules, built
  using a <a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html" title="class in org.cojen.boxtin"><code>RulesBuilder</code></a>.</div>
 </dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/Rules.ForClass.html" class="type-name-link" title="interface in org.cojen.boxtin">Rules.ForClass</a> - Interface in <a href="org.cojen.boxtin/org/cojen/boxtin/package-summary.html">org.cojen.boxtin</a></dt>
@@ -503,10 +501,6 @@ loadScripts(document, 'script');</script>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html#rulesForCaller(java.lang.Module)" class="member-name-link">rulesForCaller(Module)</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html" title="interface in org.cojen.boxtin">Controller</a></dt>
 <dd>
 <div class="block">Returns rules which determine if a calling module is allowed to perform an operation.</div>
-</dd>
-<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html#rulesForTarget()" class="member-name-link">rulesForTarget()</a> - Method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html" title="interface in org.cojen.boxtin">Controller</a></dt>
-<dd>
-<div class="block">Returns rules which determine if a target class has deniable operations.</div>
 </dd>
 </dl>
 <h2 class="title" id="I:S">S</h2>
