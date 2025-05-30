@@ -36,6 +36,8 @@ public class ValueTransformTest extends TransformTest {
 
         b.forModule("xxx").forPackage("org.cojen.boxtin")
             .forClass("T_ValueOperations")
+            .allowAllConstructors()
+            .denyVariant(DenyAction.value(null))
             .denyMethod(DenyAction.value(null), "op1")
             .denyMethod(DenyAction.value(true), "op2")
             .denyMethod(DenyAction.value('\0'), "op3")
@@ -137,5 +139,18 @@ public class ValueTransformTest extends TransformTest {
         assertNull(T_ValueOperations.op43());
         assertNull(T_ValueOperations.op44());
         assertNull(T_ValueOperations.op45());
+    }
+
+    @Test
+    public void deniedCtor() throws Exception {
+        if (runWith(RULES)) {
+            return;
+        }
+
+        try {
+            new T_ValueOperations();
+            fail();
+        } catch (SecurityException e) {
+        }
     }
 }

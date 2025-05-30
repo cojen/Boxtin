@@ -133,14 +133,16 @@ public abstract sealed class DenyAction {
      * thrown at runtime.
      *
      * <p>Note: This action has no effect for constructors, unless the custom operation throws
-     * an exception. Otherwise, the standard action is used.
+     * an exception. If it doesn't throw an exception, a {@code SecurityException} is thrown
+     * instead.
      */
-    // FIXME: Perhaps allow the operation for constructors when no exception is thrown, but
-    // only when the return type is void. Perhaps a mhi which returns void can always be used
-    // as a general-purpose filter style check. The constructor doesn't get the instance.
     public static DenyAction custom(MethodHandleInfo mhi) {
         return new Custom(Objects.requireNonNull(mhi));
     }
+
+    // FIXME: Support a "checked" action which uses a predicate MethodHandleInfo and another
+    // DenyAction to invoke when the predicate returns false. The other DenyAction must not be
+    // another check.
 
     static DenyAction dynamic() {
         return Dynamic.THE;

@@ -922,9 +922,10 @@ final class ConstantPool {
          * (possibly boxed), and an Object array is pushed for more than one argument.
          *
          * @param pushThis when true, also push `this` as an argument
+         * @param slot first local variable slot to push
          * @return maximum number of stack slots used: [1..5]
          */
-        int pushArgsObject(BufferEncoder encoder, boolean pushThis) throws IOException {
+        int pushArgsObject(BufferEncoder encoder, boolean pushThis, int slot) throws IOException {
             int numArgs = numArgs(1);
 
             if (pushThis) {
@@ -939,7 +940,7 @@ final class ConstantPool {
             }
 
             int maxPushed, extra = 0;
-            int ix = 0, slot = 0;
+            int ix = 0;
 
             if (numArgs == 1) {
                 // No array.
@@ -958,7 +959,6 @@ final class ConstantPool {
                     encoder.writeByte(ALOAD_0);
                     encoder.writeByte(AASTORE);
                     ix = 1;
-                    slot = 1;
                 }
             }
 

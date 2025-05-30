@@ -38,6 +38,7 @@ public class DynamicTransformTest extends TransformTest {
             b1.forModule("xxx").forPackage("org.cojen.boxtin")
                 .forClass("T_DynamicOperations")
                 .allowAllConstructors()
+                .denyVariant(DenyAction.empty(), int.class)
                 .denyMethod(DenyAction.value("denied1"), "op1")
                 .denyMethod(DenyAction.value("denied2"), "op2")
                 .denyMethod(DenyAction.value("denied3"), "op3")
@@ -117,5 +118,18 @@ public class DynamicTransformTest extends TransformTest {
         assertEquals(0, new T_DynamicOperations().op14().length);
         assertEquals(1, new T_DynamicOperations().op15(null));
         assertEquals(2, new T_DynamicOperations().op16(null, 3));
+    }
+
+    @Test
+    public void deniedCtor() throws Exception {
+        if (runWith(RULES_1, RULES_2)) {
+            return;
+        }
+
+        try {
+            new T_DynamicOperations(123);
+            fail();
+        } catch (SecurityException e) {
+        }
     }
 }

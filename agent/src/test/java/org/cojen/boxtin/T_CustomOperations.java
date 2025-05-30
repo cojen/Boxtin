@@ -30,6 +30,9 @@ public class T_CustomOperations {
     public T_CustomOperations() {
     }
 
+    public T_CustomOperations(int x) {
+    }
+
     public static void op1(int i, boolean b, char c, double d) {
         throw null;
     }

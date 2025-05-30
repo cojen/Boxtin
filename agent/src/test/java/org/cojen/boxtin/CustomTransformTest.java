@@ -16,6 +16,7 @@
 
 package org.cojen.boxtin;
 
+import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodHandleInfo;
 import java.lang.invoke.MethodType;
@@ -42,6 +43,7 @@ public class CustomTransformTest extends TransformTest {
             b.forModule("xxx").forPackage("org.cojen.boxtin")
                 .forClass("T_CustomOperations")
                 .allowAllConstructors()
+                .denyVariant(custom(void.class, null), int.class)
                 .denyMethod(custom(void.class, "c_op1",
                                    int.class, boolean.class, char.class, double.class), "op1")
                 .denyMethod(custom(boolean.class, "c_op2", long.class), "op2")
@@ -108,7 +110,9 @@ public class CustomTransformTest extends TransformTest {
     {
         MethodHandles.Lookup lookup = MethodHandles.lookup();
         MethodType mt = MethodType.methodType(returnType, paramTypes);
-        return lookup.revealDirect(lookup.findStatic(CustomTransformTest.class, name, mt));
+        MethodHandle mh = name == null ? lookup.findConstructor(CustomTransformTest.class, mt)
+            : lookup.findStatic(CustomTransformTest.class, name, mt);
+        return lookup.revealDirect(mh);
     }
 
     public static void c_op1(int i, boolean b, char c, double d) {
@@ -252,5 +256,18 @@ public class CustomTransformTest extends TransformTest {
         Object[] pair = obj.op18(1);
         assertSame(getClass(), pair[0]);
         assertSame(obj, pair[1]);
+    }
+
+    @Test
+    public void deniedCtor() throws Exception {
+        if (runWith(RULES)) {
+            return;
+        }
+
+        try {
+            new T_CustomOperations(123);
+            fail();
+        } catch (SecurityException e) {
+        }
     }
 }

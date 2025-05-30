@@ -691,25 +691,37 @@ final class ClassFileProcessor {
     {
         DenyAction.Exception exAction;
 
-        if (name_index == 0) {
-            // Operation is a constructor.
-            // FIXME: Allow a custom or dynamic action, but also throw an exception just in case.
-            exAction = DenyAction.Standard.THE;
-        } else if (action instanceof DenyAction.Exception) {
+        if (action instanceof DenyAction.Exception) {
             exAction = (DenyAction.Exception) action;
-        } else if (action instanceof DenyAction.Value va) {
-            return encodeValueAndReturn(encoder, va.value, desc);
-        } else if (action instanceof DenyAction.Empty) {
-            return encodeEmptyAndReturn(encoder, desc);
-        } else if (action instanceof DenyAction.Custom cu) {
-            return encodeCustomAndReturn(encoder, callerSlot, cu);
-        } else if (action instanceof DenyAction.Dynamic && callerSlot >= 0) {
-            return encodeDynamicAndReturn(encoder, callerSlot, name_index, desc);
         } else {
-            // Handle unknown action as standard.
+            if (action instanceof DenyAction.Value va) {
+                if (name_index != 0) { // not a constructor
+                    return encodeValueAndReturn(encoder, va.value, desc);
+                }
+            } else if (action instanceof DenyAction.Empty) {
+                if (name_index != 0) { // not a constructor
+                    return encodeEmptyAndReturn(encoder, desc);
+                }
+            } else if (action instanceof DenyAction.Custom cu) {
+                return encodeCustomAndReturn(encoder, callerSlot, name_index, cu);
+            } else if (action instanceof DenyAction.Dynamic && callerSlot >= 0) {
+                return encodeDynamicAndReturn(encoder, callerSlot, name_index, desc);
+            }
+
+            // Make sure an exception is always thrown.
             exAction = DenyAction.Standard.THE;
         }
 
+        return encodeExceptionAction(encoder, exAction, true);
+    }
+
+    /**
+     * @return number of stack slots pushed
+     */
+    private int encodeExceptionAction(BufferEncoder encoder, DenyAction.Exception exAction,
+                                      boolean finishBranchOp)
+        throws IOException
+    {
         ConstantPool cp = mConstantPool;
         int exClassIndex = cp.addClass(exAction.className).mIndex;
         ConstantPool.C_MemberRef exInitRef;
@@ -717,7 +729,9 @@ final class ClassFileProcessor {
 
         if (exAction instanceof DenyAction.WithMessage wm) {
             exInitRef = cp.addMethodRef(exAction.className, "<init>", "(Ljava/lang/String;)V");
-            encoder.writeShort(14); // offset past the ATHROW operation
+            if (finishBranchOp) {
+                encoder.writeShort(14); // offset past the ATHROW operation
+            }
             encoder.writeByte(NEW);
             encoder.writeShort(exClassIndex);
             encoder.writeByte(DUP);
@@ -726,7 +740,9 @@ final class ClassFileProcessor {
             pushed = 3;
         } else {
             exInitRef = cp.addMethodRef(exAction.className, "<init>", "()V");
-            encoder.writeShort(11); // offset past the ATHROW operation
+            if (finishBranchOp) {
+                encoder.writeShort(11); // offset past the ATHROW operation
+            }
             encoder.writeByte(NEW);
             encoder.writeShort(exClassIndex);
             encoder.writeByte(DUP);
@@ -1093,10 +1109,11 @@ final class ClassFileProcessor {
     /**
      * @param callerSlot valid slot to the caller local variable; can pass -1 if defining a
      * caller-side method
+     * @param name_index pass 0 for constructors
      * @return number of stack slots pushed
      */
     private int encodeCustomAndReturn(BufferEncoder encoder, int callerSlot,
-                                      DenyAction.Custom custom)
+                                      int name_index, DenyAction.Custom custom)
         throws IOException
     {
         int offset = encoder.length();
@@ -1177,25 +1194,31 @@ final class ClassFileProcessor {
         encoder.writeByte(INVOKEVIRTUAL);
         encoder.writeShort(customRef.mIndex);
 
-        char type = customDesc.charAt(i);
+        if (name_index == 0) {
+            // Denied constructors must always throw an exception.
+            DenyAction.Exception exAction = DenyAction.Standard.THE;
+            pushed = Math.max(pushed, encodeExceptionAction(encoder, exAction, false));
+        } else {
+            char type = customDesc.charAt(i);
 
-        byte op;
-        switch (type) {
-            default -> op = ARETURN;
-            case 'V' -> op = RETURN;
-            case 'Z', 'C', 'B', 'S', 'I' -> op = IRETURN;
-            case 'F' -> op = FRETURN;
-            case 'J' -> {
-                op = LRETURN;
-                pushed = Math.max(2, pushed);
+            byte op;
+            switch (type) {
+                default -> op = ARETURN;
+                case 'V' -> op = RETURN;
+                case 'Z', 'C', 'B', 'S', 'I' -> op = IRETURN;
+                case 'F' -> op = FRETURN;
+                case 'J' -> {
+                    op = LRETURN;
+                    pushed = Math.max(2, pushed);
+                }
+                case 'D' -> {
+                    op = DRETURN;
+                    pushed = Math.max(2, pushed);
+                }
             }
-            case 'D' -> {
-                op = DRETURN;
-                pushed = Math.max(2, pushed);
-            }
+
+            encoder.writeByte(op);
         }
-
-        encoder.writeByte(op);
 
         // Encode the branch target offset.
         encodeShortBE(encoder.buffer(), offset, encoder.length() - offset + 1);
@@ -1283,8 +1306,22 @@ final class ClassFileProcessor {
                                (boxedClass, "TYPE", Class.class.descriptorString()).mIndex);
         }
 
-        boolean pushThis = name_index != 0 && !Modifier.isStatic(mMethodAccessFlags);
-        int pushed = 5 + desc.pushArgsObject(encoder, pushThis);
+        int pushed;
+
+        {
+            boolean pushThis;
+            int slot;
+            if (name_index == 0) {
+                // Cannot push `this` from a constructor -- it's not initialized yet.
+                pushThis = false;
+                slot = 1;
+            } else {
+                pushThis = !Modifier.isStatic(mMethodAccessFlags);
+                slot = pushThis ? 1 : 0;
+            }
+
+            pushed = 5 + desc.pushArgsObject(encoder, pushThis, slot);
+        }
 
         String agentName = SecurityAgent.CLASS_NAME;
         String classDesc = Class.class.descriptorString();
@@ -1297,22 +1334,28 @@ final class ClassFileProcessor {
         encoder.writeShort(mConstantPool.addMethodRef
                            (agentName, "applyDenyAction", applyDesc).mIndex);
 
-        if (retClass != null) {
-            encoder.writeByte(CHECKCAST);
-            encoder.writeShort(retClass.mIndex);
+        if (name_index == 0) {
+            // Denied constructors must always throw an exception.
+            DenyAction.Exception exAction = DenyAction.Standard.THE;
+            pushed = Math.max(pushed, encodeExceptionAction(encoder, exAction, false));
         } else {
-            char c = retTypeDesc.descriptorString().charAt(0);
-            if (c != 'V') {
+            if (retClass != null) {
                 encoder.writeByte(CHECKCAST);
-                encoder.writeShort(boxedClass.mIndex);
-                encoder.writeByte(INVOKEVIRTUAL);
-                String methodName = retTypeDesc.displayName() + "Value";
-                encoder.writeShort(mConstantPool.addMethodRef
-                                   (boxedClass, methodName, "()" + c).mIndex);
+                encoder.writeShort(retClass.mIndex);
+            } else {
+                char c = retTypeDesc.descriptorString().charAt(0);
+                if (c != 'V') {
+                    encoder.writeByte(CHECKCAST);
+                    encoder.writeShort(boxedClass.mIndex);
+                    encoder.writeByte(INVOKEVIRTUAL);
+                    String methodName = retTypeDesc.displayName() + "Value";
+                    encoder.writeShort(mConstantPool.addMethodRef
+                                       (boxedClass, methodName, "()" + c).mIndex);
+                }
             }
-        }
 
-        desc.returnValue(encoder);
+            desc.returnValue(encoder);
+        }
 
         // Encode the branch target offset.
         encodeShortBE(encoder.buffer(), offset, encoder.length() - offset + 1);

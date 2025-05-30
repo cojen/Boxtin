@@ -38,7 +38,7 @@ public class EmptyTransformTest extends TransformTest {
 
         var forClass = b.forModule("xxx").forPackage("org.cojen.boxtin")
             .forClass("T_EmptyOperations")
-            .denyAllConstructors();
+            .allowAllConstructors().denyVariant(DenyAction.empty());
 
         for (int i=1; i<=NUM; i++) {
             if ((i & 1) == 0) {
@@ -109,6 +109,18 @@ public class EmptyTransformTest extends TransformTest {
         assertEquals(0, T_EmptyOperations.op49().length);
         assertEquals(0, T_EmptyOperations.op50().length);
         assertEquals(0, T_EmptyOperations.op51().length);
+    }
 
+    @Test
+    public void deniedCtor() throws Exception {
+        if (runWith(RULES)) {
+            return;
+        }
+
+        try {
+            new T_EmptyOperations();
+            fail();
+        } catch (SecurityException e) {
+        }
     }
 }

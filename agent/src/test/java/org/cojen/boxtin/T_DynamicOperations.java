@@ -30,6 +30,9 @@ public class T_DynamicOperations {
     public T_DynamicOperations() {
     }
 
+    public T_DynamicOperations(int x) {
+    }
+
     public static String op1() {
         return "op1";
     }
