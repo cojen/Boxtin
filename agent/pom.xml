@@ -179,7 +179,7 @@
           <author>false</author>
           <nodeprecatedlist>true</nodeprecatedlist>
           <notimestamp>true</notimestamp>
-          <reportOutputDirectory>${basedir}/docs</reportOutputDirectory>
+          <reportOutputDirectory>${basedir}/../docs</reportOutputDirectory>
           <destDir>javadoc</destDir>
           <excludePackageNames></excludePackageNames>
           <quiet>true</quiet>
