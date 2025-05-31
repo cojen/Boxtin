@@ -93,16 +93,25 @@ public sealed class Rule implements Rules, Rules.ForClass {
         throw new IllegalStateException();
     }
 
+    /**
+     * Same as {@link #isAllowed}.
+     */
     @Override
     public boolean isAllAllowed() {
         return isAllowed();
     }
 
+    /**
+     * Returns {@code this}.
+     */
     @Override
     public ForClass forClass(CharSequence packageName, CharSequence className) {
         return this;
     }
 
+    /**
+     * Returns {@code this}.
+     */
     @Override
     public ForClass forClass(Class<?> clazz) {
         return this;
@@ -113,36 +122,58 @@ public sealed class Rule implements Rules, Rules.ForClass {
         return true;
     }
 
+    /**
+     * Returns {@code this}.
+     */
     @Override
     public Rule ruleForConstructor(CharSequence descriptor) {
         return this;
     }
 
+    /**
+     * Returns {@code this}.
+     */
     @Override
     public Rule ruleForConstructor(Class<?>... paramTypes) {
         return this;
     }
 
+    /**
+     * Returns {@code this}.
+     */
     @Override
     public Rule ruleForMethod(CharSequence name, CharSequence descriptor) {
         return this;
     }
 
+    /**
+     * Returns {@code this}.
+     */
     @Override
     public Rule ruleForMethod(Class<?> returnType, CharSequence name, Class<?>... paramTypes) {
         return this;
     }
 
+    /**
+     * Same as {@link #isDenied}.
+     */
     @Override
     public boolean isAnyConstructorDenied() {
         return isDenied();
     }
 
+    /**
+     * Same as {@link #isDeniedAtCaller}.
+     */
     @Override
     public boolean isAnyDeniedAtCaller() {
         return isDeniedAtCaller();
     }
 
+    /**
+     * Same as {@link #isDeniedAtTarget}.
+     */
+    @Override
     public boolean isAnyDeniedAtTarget() {
         return isDeniedAtTarget();
     }
