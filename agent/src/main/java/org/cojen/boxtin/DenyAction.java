@@ -175,7 +175,7 @@ public abstract sealed class DenyAction {
                 ex = (Throwable) Class.forName(name).getConstructor().newInstance();
             } catch (SecurityException e) {
                 throw e;
-            } catch (Throwable e) {
+            } catch (java.lang.Exception e) {
                 throw new SecurityException(e);
             }
 
@@ -243,7 +243,7 @@ public abstract sealed class DenyAction {
                     .getConstructor(String.class).newInstance(message);
             } catch (SecurityException e) {
                 throw e;
-            } catch (Throwable e) {
+            } catch (java.lang.Exception e) {
                 throw new SecurityException(e);
             }
 
@@ -353,7 +353,7 @@ public abstract sealed class DenyAction {
                 }
             } catch (SecurityException e) {
                 throw e;
-            } catch (Throwable e) {
+            } catch (java.lang.Exception e) {
                 throw new SecurityException(e);
             }
         }
@@ -402,7 +402,7 @@ public abstract sealed class DenyAction {
                 };
             } catch (SecurityException e) {
                 throw e;
-            } catch (Throwable e) {
+            } catch (java.lang.Exception e) {
                 throw new SecurityException(e);
             }
 
