@@ -140,9 +140,27 @@ public abstract sealed class DenyAction {
         return new Custom(Objects.requireNonNull(mhi));
     }
 
-    // FIXME: Support a "checked" action which uses a predicate MethodHandleInfo and another
-    // DenyAction to invoke when the predicate returns false. The other DenyAction must not be
-    // another check.
+    /**
+     * Returns a deny action which checks a predicate to determine if the operation should
+     * actually be denied. The parameters given to the predicate is the caller class (if
+     * specified), the instance (if applicable), and the original method parameters. The return
+     * type must be boolean. If the predicate format is incompatible, then a {@code
+     * LinkageError} is thrown at runtime.
+     *
+     * @param predicate the predicate checking method which returns true when the operation is
+     * denied
+     * @param action the action to perfom when the operation is denied
+     * @throws IllegalArgumentException if the predicate doesn't return a boolean or if the
+     * given action is checked
+     */
+    public static DenyAction checked(MethodHandleInfo predicate, DenyAction action) {
+        Objects.requireNonNull(predicate);
+        Objects.requireNonNull(action);
+        if (predicate.getMethodType().returnType() != boolean.class || action instanceof Checked) {
+            throw new IllegalArgumentException();
+        }
+        return new Checked(predicate, action);
+    }
 
     static DenyAction dynamic() {
         return Dynamic.THE;
@@ -436,6 +454,41 @@ public abstract sealed class DenyAction {
         @Override
         public String toString() {
             return "custom(" + mhi + ')';
+        }
+    }
+
+    static final class Checked extends DenyAction {
+        final MethodHandleInfo predicate;
+        final DenyAction action;
+
+        private Checked(MethodHandleInfo predicate, DenyAction action) {
+            this.predicate = predicate;
+            this.action = action;
+        }
+
+        @Override
+        Object apply(Class<?> caller, Class<?> returnType, Object args) throws Throwable {
+            return action.apply(caller, returnType, args);
+        }
+
+        @Override
+        boolean requiresCaller() {
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            return 920768027;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return this == obj;
+        }
+
+        @Override
+        public String toString() {
+            return "checked(" + predicate + ", " + action + ')';
         }
     }
 

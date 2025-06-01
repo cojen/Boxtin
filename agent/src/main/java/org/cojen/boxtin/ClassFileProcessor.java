@@ -22,6 +22,7 @@ import java.lang.constant.ClassDesc;
 import java.lang.constant.MethodTypeDesc;
 
 import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandleInfo;
 import java.lang.invoke.MethodType;
 
 import java.lang.reflect.Modifier;
@@ -692,6 +693,16 @@ final class ClassFileProcessor {
         int offset = encoder.length();
         encoder.writeShort(0); // branch offset; to be filled in properly later
 
+        int checkedPushed = 0, checkedOffset = 0;
+
+        if (action instanceof DenyAction.Checked checked) {
+            checkedPushed = encodeMethodHandleInvoke(encoder, callerSlot, checked.predicate);
+            encoder.write(IFEQ); // if false, then the operation isn't denied
+            checkedOffset = encoder.length();
+            encoder.writeShort(0); // branch offset; to be filled in properly later
+            action = checked.action;
+        }
+
         int pushed;
 
         encode: {
@@ -725,10 +736,15 @@ final class ClassFileProcessor {
             pushed = encodeExceptionAction(encoder, exAction);
         }
 
-        // Encode the branch target offset.
+        // Encode the branch target offsets.
+
+        if (checkedOffset != 0) {
+            encodeShortBE(encoder.buffer(), checkedOffset, encoder.length() - checkedOffset + 1);
+        }
+
         encodeShortBE(encoder.buffer(), offset, encoder.length() - offset + 1);
 
-        return pushed;
+        return Math.max(checkedPushed, pushed);
     }
 
     /**
@@ -1113,18 +1129,58 @@ final class ClassFileProcessor {
                                       int name_index, DenyAction.Custom custom)
         throws IOException
     {
+        int pushed = encodeMethodHandleInvoke(encoder, callerSlot, custom.mhi);
+
+        if (name_index == 0) {
+            // Denied constructors must always throw an exception.
+            pushed = Math.max(pushed, encodeExceptionAction(encoder, DenyAction.Standard.THE));
+        } else {
+            String descStr = custom.mhi.getMethodType().descriptorString();
+            int ix = descStr.indexOf(')') + 1;
+            char type = (ix < 2 || ix >= descStr.length()) ? 0 : descStr.charAt(ix);
+
+            byte op;
+            switch (type) {
+                default -> op = ARETURN;
+                case 'V' -> op = RETURN;
+                case 'Z', 'C', 'B', 'S', 'I' -> op = IRETURN;
+                case 'F' -> op = FRETURN;
+                case 'J' -> {
+                    op = LRETURN;
+                    pushed = Math.max(2, pushed);
+                }
+                case 'D' -> {
+                    op = DRETURN;
+                    pushed = Math.max(2, pushed);
+                }
+            }
+
+            encoder.writeByte(op);
+        }
+
+        return pushed;
+    }
+
+    /**
+     * @param callerSlot valid slot to the caller local variable; can pass -1 if defining a
+     * caller-side method
+     * @return number of stack slots pushed
+     */
+    private int encodeMethodHandleInvoke(BufferEncoder encoder, int callerSlot,
+                                         MethodHandleInfo mhi)
+        throws IOException
+    {
         int pushed = 1;
 
         encoder.writeByte(LDC_W);
-        encoder.writeShort(mConstantPool.addMethodHandle(custom.mhi).mIndex);
+        encoder.writeShort(mConstantPool.addMethodHandle(mhi).mIndex);
 
         int slot = 0;
-        MethodType mt = custom.mhi.getMethodType();
-        String customDesc = mt.descriptorString();
+        MethodType mt = mhi.getMethodType();
+        String invokeDesc = mt.descriptorString();
 
-        int i = 0;
-        loop: while (i < customDesc.length()) {
-            int c = customDesc.charAt(i++);
+        loop: for (int i = 0; i < invokeDesc.length(); ) {
+            int c = invokeDesc.charAt(i++);
             switch (c) {
                 default -> {
                     break loop;
@@ -1167,12 +1223,12 @@ final class ClassFileProcessor {
 
                     pushed++;
 
-                    int j = customDesc.indexOf(';', i) + 1;
+                    int j = invokeDesc.indexOf(';', i) + 1;
 
                     if (j > 0) {
                         i = j;
                     } else if (c == '[') {
-                        while (i < customDesc.length() && customDesc.charAt(i++) == '[');
+                        while (i < invokeDesc.length() && invokeDesc.charAt(i++) == '[');
                     } else {
                         // Descriptor is broken.
                         i--;
@@ -1182,36 +1238,11 @@ final class ClassFileProcessor {
             }
         }
 
-        C_MemberRef customRef = mConstantPool.addMethodRef
-            (MethodHandle.class.getName().replace('.', '/'), "invoke", customDesc);
+        C_MemberRef invokeRef = mConstantPool.addMethodRef
+            (MethodHandle.class.getName().replace('.', '/'), "invoke", invokeDesc);
 
         encoder.writeByte(INVOKEVIRTUAL);
-        encoder.writeShort(customRef.mIndex);
-
-        if (name_index == 0) {
-            // Denied constructors must always throw an exception.
-            pushed = Math.max(pushed, encodeExceptionAction(encoder, DenyAction.Standard.THE));
-        } else {
-            char type = customDesc.charAt(i);
-
-            byte op;
-            switch (type) {
-                default -> op = ARETURN;
-                case 'V' -> op = RETURN;
-                case 'Z', 'C', 'B', 'S', 'I' -> op = IRETURN;
-                case 'F' -> op = FRETURN;
-                case 'J' -> {
-                    op = LRETURN;
-                    pushed = Math.max(2, pushed);
-                }
-                case 'D' -> {
-                    op = DRETURN;
-                    pushed = Math.max(2, pushed);
-                }
-            }
-
-            encoder.writeByte(op);
-        }
+        encoder.writeShort(invokeRef.mIndex);
 
         return pushed;
     }
