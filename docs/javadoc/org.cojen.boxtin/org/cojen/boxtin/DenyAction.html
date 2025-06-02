@@ -73,6 +73,7 @@ loadScripts(document, 'script');</script>
 <li><a href="#value(java.lang.Object)" tabindex="0">value(Object)</a></li>
 <li><a href="#empty()" tabindex="0">empty()</a></li>
 <li><a href="#custom(java.lang.invoke.MethodHandleInfo)" tabindex="0">custom(MethodHandleInfo)</a></li>
+<li><a href="#checked(java.lang.invoke.MethodHandleInfo,org.cojen.boxtin.DenyAction)" tabindex="0">checked(MethodHandleInfo, DenyAction)</a></li>
 </ol>
 </li>
 </ol>
@@ -106,46 +107,53 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#custom(java.lang.invoke.MethodHandleInfo)" class="member-name-link">custom</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/invoke/MethodHandleInfo.html" title="class or interface in java.lang.invoke" class="external-link">MethodHandleInfo</a>&nbsp;mhi)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#checked(java.lang.invoke.MethodHandleInfo,org.cojen.boxtin.DenyAction)" class="member-name-link">checked</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/invoke/MethodHandleInfo.html" title="class or interface in java.lang.invoke" class="external-link">MethodHandleInfo</a>&nbsp;predicate,
+ <a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Returns a deny action which checks a predicate to determine if the operation should
+ actually be denied.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#custom(java.lang.invoke.MethodHandleInfo)" class="member-name-link">custom</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/invoke/MethodHandleInfo.html" title="class or interface in java.lang.invoke" class="external-link">MethodHandleInfo</a>&nbsp;mhi)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Returns a deny action which performs a custom operation.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#empty()" class="member-name-link">empty</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#empty()" class="member-name-link">empty</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Returns a deny action which returns an empty instance.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#exception(java.lang.Class)" class="member-name-link">exception</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;?&gt;&nbsp;clazz)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#exception(java.lang.Class)" class="member-name-link">exception</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;?&gt;&nbsp;clazz)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Returns a deny action which throws an exception without a message.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#exception(java.lang.Class,java.lang.String)" class="member-name-link">exception</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;?&gt;&nbsp;clazz,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#exception(java.lang.Class,java.lang.String)" class="member-name-link">exception</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;?&gt;&nbsp;clazz,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;message)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Returns a deny action which throws an exception with an optional message.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#exception(java.lang.String)" class="member-name-link">exception</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;className)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#exception(java.lang.String)" class="member-name-link">exception</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;className)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Returns a deny action which throws an exception without a message.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#exception(java.lang.String,java.lang.String)" class="member-name-link">exception</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;className,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#exception(java.lang.String,java.lang.String)" class="member-name-link">exception</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;className,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;message)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Returns a deny action which throws an exception with an optional message.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#standard()" class="member-name-link">standard</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#standard()" class="member-name-link">standard</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Returns the standard deny action, which throws a <code>SecurityException</code> without a
  message.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#value(java.lang.Object)" class="member-name-link">value</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;value)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#value(java.lang.Object)" class="member-name-link">value</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;value)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Returns a deny action which returns a specific value, possibly null.</div>
 </div>
 </div>
@@ -255,7 +263,7 @@ loadScripts(document, 'script');</script>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></span>&nbsp;<span class="element-name">custom</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/invoke/MethodHandleInfo.html" title="class or interface in java.lang.invoke" class="external-link">MethodHandleInfo</a>&nbsp;mhi)</span></div>
 <div class="block">Returns a deny action which performs a custom operation. The parameters given to the
- custom method is the caller class (if specified), the instance (if applicable), and the
+ custom method are the caller class (if specified), the instance (if applicable), and the
  original method parameters. The return type must exactly match the original method's
  return type. If the custom method type is incompatible, then a <code>LinkageError</code> is
  thrown at runtime.
@@ -263,6 +271,29 @@ loadScripts(document, 'script');</script>
  <p>Note: This action has no effect for constructors, unless the custom operation throws
  an exception. If it doesn't throw an exception, a <code>SecurityException</code> is thrown
  instead.</div>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="checked(java.lang.invoke.MethodHandleInfo,org.cojen.boxtin.DenyAction)">
+<h3>checked</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></span>&nbsp;<span class="element-name">checked</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/invoke/MethodHandleInfo.html" title="class or interface in java.lang.invoke" class="external-link">MethodHandleInfo</a>&nbsp;predicate,
+ <a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</span></div>
+<div class="block">Returns a deny action which checks a predicate to determine if the operation should
+ actually be denied. The parameters given to the predicate are the caller class (if
+ specified), the instance (if applicable), and the original method parameters. The return
+ type must be boolean. If the predicate format is incompatible, then a <code>
+ LinkageError</code> is thrown at runtime.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>predicate</code> - the predicate checking method which returns true when the operation is
+ denied</dd>
+<dd><code>action</code> - the action to perform when the operation is denied</dd>
+<dt>Throws:</dt>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/IllegalArgumentException.html" title="class or interface in java.lang" class="external-link">IllegalArgumentException</a></code> - if the predicate doesn't return a boolean or if the
+ given action is checked</dd>
+</dl>
 </div>
 </section>
 </li>
