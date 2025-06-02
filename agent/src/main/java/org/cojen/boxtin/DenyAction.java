@@ -127,7 +127,7 @@ public abstract sealed class DenyAction {
 
     /**
      * Returns a deny action which performs a custom operation. The parameters given to the
-     * custom method is the caller class (if specified), the instance (if applicable), and the
+     * custom method are the caller class (if specified), the instance (if applicable), and the
      * original method parameters. The return type must exactly match the original method's
      * return type. If the custom method type is incompatible, then a {@code LinkageError} is
      * thrown at runtime.
@@ -142,14 +142,14 @@ public abstract sealed class DenyAction {
 
     /**
      * Returns a deny action which checks a predicate to determine if the operation should
-     * actually be denied. The parameters given to the predicate is the caller class (if
+     * actually be denied. The parameters given to the predicate are the caller class (if
      * specified), the instance (if applicable), and the original method parameters. The return
      * type must be boolean. If the predicate format is incompatible, then a {@code
      * LinkageError} is thrown at runtime.
      *
      * @param predicate the predicate checking method which returns true when the operation is
      * denied
-     * @param action the action to perfom when the operation is denied
+     * @param action the action to perform when the operation is denied
      * @throws IllegalArgumentException if the predicate doesn't return a boolean or if the
      * given action is checked
      */
@@ -195,9 +195,7 @@ public abstract sealed class DenyAction {
 
         try {
             return switch (mhi.getReferenceKind()) {
-                default -> {
-                    throw new SecurityException();
-                }
+                default -> throw new SecurityException();
                 case REF_getField -> lookup.findGetter(clazz, name, mt.returnType());
                 case REF_getStatic -> lookup.findStaticGetter(clazz, name, mt.returnType());
                 case REF_putField -> lookup.findSetter(clazz, name, mt.returnType());
@@ -260,7 +258,7 @@ public abstract sealed class DenyAction {
         }
 
         @Override
-        Object apply(Class<?> caller, Class<?> returnType, Object[] args) throws Throwable {
+        Object apply(Class<?> caller, Class<?> returnType, Object[] args) {
             throw new SecurityException();
         }
 
@@ -326,7 +324,7 @@ public abstract sealed class DenyAction {
         }
 
         @Override
-        Object apply(Class<?> caller, Class<?> returnType, Object[] args) throws Throwable {
+        Object apply(Class<?> caller, Class<?> returnType, Object[] args) {
             return value;
         }
 
@@ -501,7 +499,7 @@ public abstract sealed class DenyAction {
         }
 
         @Override
-        final Object apply(Class<?> caller, Class<?> returnType, Object[] args) throws Throwable {
+        final Object apply(Class<?> caller, Class<?> returnType, Object[] args) {
             // Should never be called.
             throw new SecurityException();
         }

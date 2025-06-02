@@ -646,7 +646,7 @@ public final class SecurityAgent {
      */
     private static boolean isAllowed3(Class<?> caller, Class<?> target, String name, String desc) {
         SecurityAgent agent = agent();
-        return agent == null ? false : agent.isAllowed2(caller, target, name, desc);
+        return agent != null && agent.isAllowed2(caller, target, name, desc);
     }
 
     private static Object applyDenyAction3(Class<?> caller, Class<?> target,

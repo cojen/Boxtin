@@ -163,7 +163,7 @@ final class ClassFileProcessor {
 
         // Check the MethodHandle constants.
 
-        mConstantPool.visitMethodHandleRefs(true, (kind, offset, methodRef) -> {
+        mConstantPool.visitMethodHandleRefs((kind, offset, methodRef) -> {
             Rules.ForClass forClass = forClass(forCaller, methodRef);
 
             if (forClass.isAllAllowed()) {
@@ -991,7 +991,6 @@ final class ClassFileProcessor {
 
             pushed = 1;
             mConstantPool.pushInt(encoder, intValue);
-            break pushPrim;
         }
 
         String boxedClass = value.getClass().getName().replace('.', '/');

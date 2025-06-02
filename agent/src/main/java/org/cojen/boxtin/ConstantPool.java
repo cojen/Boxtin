@@ -255,9 +255,9 @@ final class ConstantPool {
     }
 
     /**
-     * @param methodsOnly when true, skip over MethodHandles which refer to fields
+     * Visits MethodHandles which refer to methods, skipping over those that refer to fields.
      */
-    void visitMethodHandleRefs(boolean methodsOnly, MethodHandleConsumer consumer)
+    void visitMethodHandleRefs(MethodHandleConsumer consumer)
         throws IOException, ClassFormatException
     {
         if (mMethodHandleOffsets == null) {
@@ -280,9 +280,7 @@ final class ConstantPool {
                 default -> throw new ClassFormatException();
 
                 case REF_getField, REF_getStatic, REF_putField, REF_putStatic -> {
-                    if (methodsOnly) {
-                        continue;
-                    }
+                    continue;
                 }
 
                 case REF_invokeVirtual, REF_invokeStatic, REF_invokeSpecial,
