@@ -134,10 +134,14 @@ final class MergedTargetRules implements Rules {
             if (mergedRule == Rule.allow()) {
                 return addedRule;
             }
-            if (mergedRule.denyAction().equals(addedRule.denyAction())) {
+            DenyAction mergedAction = mergedRule.denyAction();
+            DenyAction addedAction = addedRule.denyAction();
+            if (mergedAction.equals(addedAction)) {
                 return mergedRule;
             }
-            return Rule.denyAtTarget(DenyAction.dynamic());
+            return Rule.denyAtTarget
+                ((mergedAction.isChecked() || addedAction.isChecked())
+                 ? DenyAction.checkedDynamic() : DenyAction.dynamic());
         }
 
         @Override

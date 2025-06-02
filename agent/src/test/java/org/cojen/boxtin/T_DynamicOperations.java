@@ -122,4 +122,8 @@ public class T_DynamicOperations {
     public static System op23() {
         return null;
     }
+
+    public static int op24(int a) {
+        return a + 1;
+    }
 }

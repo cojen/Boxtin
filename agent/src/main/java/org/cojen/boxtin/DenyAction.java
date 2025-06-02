@@ -166,6 +166,10 @@ public abstract sealed class DenyAction {
         return Dynamic.THE;
     }
 
+    static DenyAction checkedDynamic() {
+        return CheckedDynamic.THE;
+    }
+
     private DenyAction() {
     }
 
@@ -176,6 +180,38 @@ public abstract sealed class DenyAction {
 
     boolean requiresCaller() {
         return false;
+    }
+
+    boolean isChecked() {
+        return false;
+    }
+
+    static MethodHandle resolveMethodHandle(MethodHandleInfo mhi, Class<?> caller) {
+        MethodHandles.Lookup lookup = MethodHandles.lookup();
+
+        Class<?> clazz = mhi.getDeclaringClass();
+        String name = mhi.getName();
+        MethodType mt = mhi.getMethodType();
+
+        try {
+            return switch (mhi.getReferenceKind()) {
+                default -> {
+                    throw new SecurityException();
+                }
+                case REF_getField -> lookup.findGetter(clazz, name, mt.returnType());
+                case REF_getStatic -> lookup.findStaticGetter(clazz, name, mt.returnType());
+                case REF_putField -> lookup.findSetter(clazz, name, mt.returnType());
+                case REF_putStatic -> lookup.findStaticSetter(clazz, name, mt.returnType());
+                case REF_invokeVirtual, REF_invokeInterface -> lookup.findVirtual(clazz, name, mt);
+                case REF_invokeStatic -> lookup.findStatic(clazz, name, mt);
+                case REF_invokeSpecial -> lookup.findSpecial(clazz, name, mt, caller);
+                case REF_newInvokeSpecial -> lookup.findConstructor(clazz, mt);
+            };
+        } catch (SecurityException e) {
+            throw e;
+        } catch (java.lang.Exception e) {
+            throw new SecurityException(e);
+        }
     }
 
     static sealed class Exception extends DenyAction {
@@ -391,35 +427,7 @@ public abstract sealed class DenyAction {
 
         @Override
         Object apply(Class<?> caller, Class<?> returnType, Object[] args) throws Throwable {
-            MethodHandles.Lookup lookup = MethodHandles.lookup();
-
-            Class<?> clazz = mhi.getDeclaringClass();
-            String name = mhi.getName();
-            MethodType mt = mhi.getMethodType();
-
-            MethodHandle mh;
-
-            try {
-                mh = switch (mhi.getReferenceKind()) {
-                default -> {
-                    throw new SecurityException();
-                }
-                case REF_getField -> lookup.findGetter(clazz, name, mt.returnType());
-                case REF_getStatic -> lookup.findStaticGetter(clazz, name, mt.returnType());
-                case REF_putField -> lookup.findSetter(clazz, name, mt.returnType());
-                case REF_putStatic -> lookup.findStaticSetter(clazz, name, mt.returnType());
-                case REF_invokeVirtual, REF_invokeInterface -> lookup.findVirtual(clazz, name, mt);
-                case REF_invokeStatic -> lookup.findStatic(clazz, name, mt);
-                case REF_invokeSpecial -> lookup.findSpecial(clazz, name, mt, caller);
-                case REF_newInvokeSpecial -> lookup.findConstructor(clazz, mt);
-                };
-            } catch (SecurityException e) {
-                throw e;
-            } catch (java.lang.Exception e) {
-                throw new SecurityException(e);
-            }
-
-            return mh.invokeWithArguments(args);
+            return resolveMethodHandle(mhi, caller).invokeWithArguments(args);
         }
 
         @Override
@@ -454,11 +462,18 @@ public abstract sealed class DenyAction {
 
         @Override
         Object apply(Class<?> caller, Class<?> returnType, Object[] args) throws Throwable {
-            return action.apply(caller, returnType, args);
+            var denied = (boolean) resolveMethodHandle(predicate, caller).invokeWithArguments(args);
+            // Returning the args object signals that the operation isn't actually denied.
+            return denied ? action.apply(caller, returnType, args) : args;
         }
 
         @Override
         boolean requiresCaller() {
+            return true;
+        }
+
+        @Override
+        boolean isChecked() {
             return true;
         }
 
@@ -479,20 +494,20 @@ public abstract sealed class DenyAction {
         }
     }
 
-    static final class Dynamic extends DenyAction {
+    static sealed class Dynamic extends DenyAction {
         static final Dynamic THE = new Dynamic();
 
         private Dynamic() {
         }
 
         @Override
-        Object apply(Class<?> caller, Class<?> returnType, Object[] args) throws Throwable {
+        final Object apply(Class<?> caller, Class<?> returnType, Object[] args) throws Throwable {
             // Should never be called.
             throw new SecurityException();
         }
 
         @Override
-        boolean requiresCaller() {
+        final boolean requiresCaller() {
             return true;
         }
 
@@ -504,6 +519,23 @@ public abstract sealed class DenyAction {
         @Override
         public String toString() {
             return "dynamic";
+        }
+    }
+
+    static final class CheckedDynamic extends Dynamic {
+        static final CheckedDynamic THE = new CheckedDynamic();
+
+        private CheckedDynamic() {
+        }
+
+        @Override
+        boolean isChecked() {
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            return 1869195983;
         }
     }
 }

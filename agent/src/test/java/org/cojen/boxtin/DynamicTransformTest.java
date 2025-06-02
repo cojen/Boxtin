@@ -67,6 +67,8 @@ public class DynamicTransformTest extends TransformTest {
                 .denyMethod(DenyAction.empty(), "op21")
                 .denyMethod(DenyAction.empty(), "op22")
                 .denyMethod(DenyAction.empty(), "op23")
+                .denyMethod(DenyAction.checked(find(boolean.class, "c_op24", int.class),
+                                               DenyAction.standard()), "op24")
                 ;
 
             RULES_1 = b1.build();
@@ -100,6 +102,7 @@ public class DynamicTransformTest extends TransformTest {
                 .denyMethod(exAction, "op21")
                 .denyMethod(exAction, "op22")
                 .denyMethod(exAction, "op23")
+                .denyMethod(exAction, "op24")
                 ;
 
             RULES_2 = b2.build();
@@ -134,6 +137,10 @@ public class DynamicTransformTest extends TransformTest {
 
     public static int c_op19(int a, int b) {
         return 19 + a + b;
+    }
+
+    public static boolean c_op24(int a) {
+        return a < 0; // deny negative inputs
     }
 
     @Test
@@ -185,6 +192,14 @@ public class DynamicTransformTest extends TransformTest {
             fail();
         } catch (SecurityException e) {
             assertTrue(e.getCause() instanceof NoSuchMethodException);
+        }
+
+        assertEquals(2, T_DynamicOperations.op24(1));
+
+        try {
+            T_DynamicOperations.op24(-1);
+            fail();
+        } catch (SecurityException e) {
         }
     }
 

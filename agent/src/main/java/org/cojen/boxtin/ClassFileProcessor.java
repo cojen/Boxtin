@@ -484,9 +484,9 @@ final class ClassFileProcessor {
         encoder.writeShort(0); // max_locals; to be filled in properly later
         encoder.writeInt(0); // code_length; to be filled in properly later
 
-        long result = encodeAgentCheck(encoder, name_index, desc, action);
-        int pushed = (int) result;
-        int first = (int) (result >> 32);
+        long pair = encodeAgentCheck(encoder, name_index, desc, action);
+        int pushed = (int) pair;
+        int first = (int) (pair >> 32);
 
         // Fill in the proper max_stack and max_locals values.
         encodeShortBE(encoder.buffer(), 4, Math.max(max_stack, pushed));
@@ -693,7 +693,7 @@ final class ClassFileProcessor {
         int offset = encoder.length();
         encoder.writeShort(0); // branch offset; to be filled in properly later
 
-        int checkedPushed = 0, checkedOffset = 0;
+        int checkedPushed = 0, checkedOffset = 0, checkedDynamicOffset = 0;
 
         if (action instanceof DenyAction.Checked checked) {
             checkedPushed = encodeMethodHandleInvoke(encoder, callerSlot, checked.predicate);
@@ -724,8 +724,10 @@ final class ClassFileProcessor {
                 } else if (action instanceof DenyAction.Custom cu) {
                     pushed = encodeCustomAndReturn(encoder, callerSlot, name_index, cu);
                     break encode;
-                } else if (action instanceof DenyAction.Dynamic && callerSlot >= 0) {
-                    pushed = encodeDynamicAndReturn(encoder, callerSlot, name_index, desc);
+                } else if (action instanceof DenyAction.Dynamic dyn && callerSlot >= 0) {
+                    long pair = encodeDynamicAndReturn(encoder, callerSlot, name_index, desc, dyn);
+                    pushed = (int) pair;
+                    checkedDynamicOffset = (int) (pair >> 32);
                     break encode;
                 }
 
@@ -740,6 +742,11 @@ final class ClassFileProcessor {
 
         if (checkedOffset != 0) {
             encodeShortBE(encoder.buffer(), checkedOffset, encoder.length() - checkedOffset + 1);
+        }
+
+        if (checkedDynamicOffset != 0) {
+            encodeShortBE(encoder.buffer(), checkedDynamicOffset,
+                          encoder.length() - checkedDynamicOffset + 1);
         }
 
         encodeShortBE(encoder.buffer(), offset, encoder.length() - offset + 1);
@@ -1250,10 +1257,12 @@ final class ClassFileProcessor {
     /**
      * @param callerSlot valid slot to the caller local variable
      * @param name_index pass 0 for constructors
-     * @return number of stack slots pushed
+     * @return lower word: number of stack slots pushed; upper word: a non-zero branch offset
+     * to fill in if the action is checked
      */
-    private int encodeDynamicAndReturn(BufferEncoder encoder, int callerSlot,
-                                       int name_index, ConstantPool.C_UTF8 desc)
+    private long encodeDynamicAndReturn(BufferEncoder encoder, int callerSlot,
+                                        int name_index, ConstantPool.C_UTF8 desc,
+                                        DenyAction.Dynamic dynamic)
         throws IOException
     {
         // Dynamic actions should only be used for target-side methods.
@@ -1341,6 +1350,17 @@ final class ClassFileProcessor {
             pushed = 5 + desc.pushArgsObject(encoder, pushThis, slot);
         }
 
+        int argsSlot = -1;
+
+        if (dynamic instanceof DenyAction.CheckedDynamic) {
+            // Capture the args object in a local variable, to be checked later.
+            encoder.writeByte(ASTORE);
+            argsSlot = mMaxLocals++;
+            encoder.writeByte(argsSlot);
+            encoder.writeByte(ALOAD);
+            encoder.writeByte(argsSlot);
+        }
+
         String agentName = SecurityAgent.CLASS_NAME;
         String classDesc = Class.class.descriptorString();
         String stringDesc = String.class.descriptorString();
@@ -1351,6 +1371,25 @@ final class ClassFileProcessor {
         encoder.writeByte(INVOKESTATIC);
         encoder.writeShort(mConstantPool.addMethodRef
                            (agentName, "applyDenyAction", applyDesc).mIndex);
+
+        int branchOffset = 0;
+
+        if (dynamic instanceof DenyAction.CheckedDynamic) {
+            // If the value is the same as the args object, then this signals that the
+            // operation isn't actually denied. See DenyAction.Checked::apply.
+            encoder.writeByte(ASTORE);
+            int valueSlot = mMaxLocals++;
+            encoder.writeByte(valueSlot);
+            encoder.writeByte(ALOAD);
+            encoder.writeByte(valueSlot);
+            encoder.writeByte(ALOAD);
+            encoder.writeByte(argsSlot);
+            encoder.writeByte(IF_ACMPEQ);
+            branchOffset = encoder.length();
+            encoder.writeShort(0); // branch offset; to be filled in properly later
+            encoder.writeByte(ALOAD);
+            encoder.writeByte(valueSlot);
+        }
 
         if (name_index == 0) {
             // Denied constructors must always throw an exception.
@@ -1374,7 +1413,7 @@ final class ClassFileProcessor {
             desc.returnValue(encoder);
         }
 
-        return pushed;
+        return pushed | ((long) branchOffset) << 32;
     }
 
     /**
@@ -1950,10 +1989,10 @@ final class ClassFileProcessor {
                     mMaxLocals++;
                 }
 
-                long result = encodeAgentCheck(encoder, cp.addString(proxyName).mIndex,
-                                               proxyDesc, rule.denyAction());
-                maxStack = Math.max(maxStack, (int) result);
-                labelOffset = (int) (result >> 32);
+                long pair = encodeAgentCheck(encoder, cp.addString(proxyName).mIndex,
+                                             proxyDesc, rule.denyAction());
+                maxStack = Math.max(maxStack, (int) pair);
+                labelOffset = (int) (pair >> 32);
 
                 if (op != INVOKESTATIC) {
                     encoder.writeByte(ALOAD_0);
