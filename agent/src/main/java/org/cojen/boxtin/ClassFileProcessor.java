@@ -1346,7 +1346,7 @@ final class ClassFileProcessor {
         String stringDesc = String.class.descriptorString();
         String objectDesc = Object.class.descriptorString();
         String applyDesc = '(' + classDesc + classDesc + stringDesc + stringDesc +
-            classDesc + objectDesc + ')' + objectDesc;
+            classDesc + '[' + objectDesc + ')' + objectDesc;
 
         encoder.writeByte(INVOKESTATIC);
         encoder.writeShort(mConstantPool.addMethodRef

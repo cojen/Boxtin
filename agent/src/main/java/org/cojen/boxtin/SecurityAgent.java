@@ -466,7 +466,7 @@ public final class SecurityAgent {
      * @hidden
      */
     public static Object applyDenyAction(Class<?> caller, Class<?> target, String name, String desc,
-                                         Class<?> returnType, Object args)
+                                         Class<?> returnType, Object[] args)
         throws Throwable
     {
         return AllowCheck.applyDenyAction(caller, target, name, desc, returnType, args);
@@ -501,7 +501,7 @@ public final class SecurityAgent {
 
             var mt2 = MethodType.methodType
                 (Object.class, Class.class, Class.class, String.class, String.class,
-                 Class.class, Object.class);
+                 Class.class, Object[].class);
 
             MethodHandle mh1, mh2;
 
@@ -561,7 +561,7 @@ public final class SecurityAgent {
         }
 
         static Object applyDenyAction(Class<?> caller, Class<?> target, String name, String desc,
-                                      Class<?> returnType, Object args)
+                                      Class<?> returnType, Object[] args)
             throws Throwable
         {
             return APPLY_DENY_ACTION_H.invokeExact(caller, target, name, desc, returnType, args);
@@ -600,7 +600,7 @@ public final class SecurityAgent {
      * @hidden
      */
     public Object applyDenyAction2(Class<?> caller, Class<?> target, String name, String desc,
-                                   Class<?> returnType, Object args)
+                                   Class<?> returnType, Object[] args)
         throws Throwable
     {
         DenyAction action = findRule(caller, target, name, desc).denyAction();
@@ -651,7 +651,7 @@ public final class SecurityAgent {
 
     private static Object applyDenyAction3(Class<?> caller, Class<?> target,
                                            String name, String desc,
-                                           Class<?> returnType, Object args)
+                                           Class<?> returnType, Object[] args)
         throws Throwable
     {
         SecurityAgent agent = agent();

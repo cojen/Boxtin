@@ -172,7 +172,7 @@ public abstract sealed class DenyAction {
     /**
      * @param returnType never a primitive type
      */
-    abstract Object apply(Class<?> caller, Class<?> returnType, Object args) throws Throwable;
+    abstract Object apply(Class<?> caller, Class<?> returnType, Object[] args) throws Throwable;
 
     boolean requiresCaller() {
         return false;
@@ -186,7 +186,7 @@ public abstract sealed class DenyAction {
         }
 
         @Override
-        Object apply(Class<?> caller, Class<?> returnType, Object args) throws Throwable {
+        Object apply(Class<?> caller, Class<?> returnType, Object[] args) throws Throwable {
             Throwable ex;
             try {
                 String name = className.replace('/', '.');
@@ -224,7 +224,7 @@ public abstract sealed class DenyAction {
         }
 
         @Override
-        Object apply(Class<?> caller, Class<?> returnType, Object args) throws Throwable {
+        Object apply(Class<?> caller, Class<?> returnType, Object[] args) throws Throwable {
             throw new SecurityException();
         }
 
@@ -248,7 +248,7 @@ public abstract sealed class DenyAction {
         }
 
         @Override
-        Object apply(Class<?> caller, Class<?> returnType, Object args) throws Throwable {
+        Object apply(Class<?> caller, Class<?> returnType, Object[] args) throws Throwable {
             Throwable ex;
             try {
                 String name = className.replace('/', '.');
@@ -290,7 +290,7 @@ public abstract sealed class DenyAction {
         }
 
         @Override
-        Object apply(Class<?> caller, Class<?> returnType, Object args) throws Throwable {
+        Object apply(Class<?> caller, Class<?> returnType, Object[] args) throws Throwable {
             return value;
         }
 
@@ -317,7 +317,7 @@ public abstract sealed class DenyAction {
         }
 
         @Override
-        Object apply(Class<?> caller, Class<?> returnType, Object args) throws Throwable {
+        Object apply(Class<?> caller, Class<?> returnType, Object[] args) throws Throwable {
             if (returnType.isPrimitive()) {
                 if (returnType == int.class) {
                     return 0;
@@ -390,7 +390,7 @@ public abstract sealed class DenyAction {
         }
 
         @Override
-        Object apply(Class<?> caller, Class<?> returnType, Object args) throws Throwable {
+        Object apply(Class<?> caller, Class<?> returnType, Object[] args) throws Throwable {
             MethodHandles.Lookup lookup = MethodHandles.lookup();
 
             Class<?> clazz = mhi.getDeclaringClass();
@@ -419,16 +419,7 @@ public abstract sealed class DenyAction {
                 throw new SecurityException(e);
             }
 
-            Object[] argsArray;
-            if (args instanceof Object[]) {
-                argsArray = (Object[]) args;
-            } else if (args == null && mhi.getMethodType().parameterCount() == 0) {
-                argsArray = new Object[0];
-            } else {
-                argsArray = new Object[] {args};
-            }
-
-            return mh.invokeWithArguments(argsArray);
+            return mh.invokeWithArguments(args);
         }
 
         @Override
@@ -462,7 +453,7 @@ public abstract sealed class DenyAction {
         }
 
         @Override
-        Object apply(Class<?> caller, Class<?> returnType, Object args) throws Throwable {
+        Object apply(Class<?> caller, Class<?> returnType, Object[] args) throws Throwable {
             return action.apply(caller, returnType, args);
         }
 
@@ -495,7 +486,7 @@ public abstract sealed class DenyAction {
         }
 
         @Override
-        Object apply(Class<?> caller, Class<?> returnType, Object args) throws Throwable {
+        Object apply(Class<?> caller, Class<?> returnType, Object[] args) throws Throwable {
             // Should never be called.
             throw new SecurityException();
         }

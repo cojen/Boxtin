@@ -917,9 +917,7 @@ final class ConstantPool {
 
         /**
          * Assume that the string refers to a method type descriptor, and generate operations
-         * to push an object the operand which contains all of the arguments. For zero
-         * arguments, the object is null, for one argument the object is just the argument
-         * (possibly boxed), and an Object array is pushed for more than one argument.
+         * to push an object[] which contains all of the arguments.
          *
          * @param pushThis when true, also push `this` as an argument
          * @param slot first local variable slot to push
@@ -929,37 +927,22 @@ final class ConstantPool {
             int numArgs = numArgs(1);
 
             if (pushThis) {
-                if (numArgs == 0) {
-                    encoder.writeByte(ALOAD_0);
-                    return 1;
-                }
                 numArgs++;
-            } else if (numArgs == 0) {
-                encoder.writeByte(ACONST_NULL);
-                return 1;
             }
 
-            int maxPushed, extra = 0;
+            pushInt(encoder, numArgs);
+            encoder.writeByte(ANEWARRAY);
+            encoder.writeShort(addClass("java/lang/Object").mIndex);
+
+            int maxPushed = 4, extra = 0;
             int ix = 0;
 
-            if (numArgs == 1) {
-                // No array.
-                maxPushed = 1;
-            } else {
-                // Make an array.
-
-                maxPushed = 4;
-                pushInt(encoder, numArgs);
-                encoder.writeByte(ANEWARRAY);
-                encoder.writeShort(addClass("java/lang/Object").mIndex);
-
-                if (pushThis) {
-                    encoder.writeByte(DUP); // dup the array
-                    pushInt(encoder, 0);    // push the array index
-                    encoder.writeByte(ALOAD_0);
-                    encoder.writeByte(AASTORE);
-                    ix = 1;
-                }
+            if (pushThis) {
+                encoder.writeByte(DUP); // dup the array
+                pushInt(encoder, 0);    // push the array index
+                encoder.writeByte(ALOAD_0);
+                encoder.writeByte(AASTORE);
+                ix = 1;
             }
 
             byte[] buffer = mBuffer;
@@ -978,10 +961,8 @@ final class ConstantPool {
                     }
                 }
 
-                if (numArgs != 1) {
-                    encoder.writeByte(DUP); // dup the array
-                    pushInt(encoder, ix++); // push the array index
-                }
+                encoder.writeByte(DUP); // dup the array
+                pushInt(encoder, ix++); // push the array index
 
                 switch (c) {
                     default -> {
@@ -1023,9 +1004,7 @@ final class ConstantPool {
                     }
                 }
 
-                if (numArgs != 1) {
-                    encoder.writeByte(AASTORE);
-                }
+                encoder.writeByte(AASTORE);
             }
 
             return maxPushed + extra;
