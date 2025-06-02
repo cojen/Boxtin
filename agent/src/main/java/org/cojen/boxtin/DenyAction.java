@@ -234,11 +234,6 @@ public abstract sealed class DenyAction {
         }
 
         @Override
-        public boolean equals(Object obj) {
-            return this == obj;
-        }
-
-        @Override
         public String toString() {
             return "standard";
         }
@@ -478,12 +473,13 @@ public abstract sealed class DenyAction {
 
         @Override
         public int hashCode() {
-            return 920768027;
+            return 920768027 ^ predicate.hashCode() ^ action.hashCode();
         }
 
         @Override
         public boolean equals(Object obj) {
-            return this == obj;
+            return obj instanceof Checked other
+                && predicate.equals(other.predicate) && action.equals(other.action);
         }
 
         @Override
@@ -512,11 +508,6 @@ public abstract sealed class DenyAction {
         @Override
         public int hashCode() {
             return 114945825;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            return this == obj;
         }
 
         @Override
