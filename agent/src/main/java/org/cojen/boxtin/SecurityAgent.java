@@ -264,10 +264,20 @@ public final class SecurityAgent {
         var toRetransform = new ArrayList<Class<?>>();
 
         for (Class<?> loaded : inst.getAllLoadedClasses()) {
-            if (!agent.isSpecial(loaded) &&
-                inst.isModifiableClass(loaded) && agent.isTargetChecked(loaded))
-            {
-                toRetransform.add(loaded);
+            if (agent.isSpecial(loaded)) {
+                continue;
+            }
+
+            if (inst.isModifiableClass(loaded)) {
+                if (agent.isTargetChecked(loaded)) {
+                    toRetransform.add(loaded);
+                }
+                continue;
+            }
+
+            if (!loaded.isArray() && agent.isTargetChecked(loaded)) {
+                log(System.Logger.Level.WARNING,
+                    "Loaded class cannot be transformed: " + loaded.getName(), null);
             }
         }
 
@@ -275,8 +285,7 @@ public final class SecurityAgent {
             // FIXME: Check if any classes were loaded on demand and got skipped.
             inst.retransformClasses(toRetransform.toArray(Class[]::new));
         } catch (UnmodifiableClassException e) {
-            // FIXME: How to report this? How to deal with classes that got skipped?
-            e.printStackTrace();
+            logException(e);
         }
 
         return true;
@@ -284,6 +293,35 @@ public final class SecurityAgent {
 
     public static synchronized boolean isActivated() {
         return cAgent != null;
+    }
+
+    private static void logException(Throwable ex) {
+        String message = ex.getMessage();
+        if (message == null) {
+            message = ex.toString();
+        }
+        logException(message, ex);
+    }
+
+    private static void logException(String message, Throwable ex) {
+        log(System.Logger.Level.ERROR, message, ex);
+    }
+
+    private static void log(System.Logger.Level level, String message, Throwable ex) {
+        try {
+            System.getLogger(SecurityAgent.class.getName()).log(level, message, ex);
+        } catch (Throwable e) {
+            // Last resort.
+            synchronized (System.err) {
+                e.printStackTrace(System.err);
+                if (message != null) {
+                    System.err.println(message);
+                }
+                if (ex != null) {
+                    ex.printStackTrace(System.err);
+                }
+            }
+        }
     }
 
     private final Controller mController;
@@ -335,13 +373,10 @@ public final class SecurityAgent {
                 try {
                     return doTransform(module, className, classBeingRedefined, classBuffer);
                 } catch (Throwable e) {
+                    logException("Failed to transform class: " + className, e);
                     // FIXME: Any exception thrown from this method is discarded! That's bad!
                     // Instead, return a new class which throws a SecurityException from every
                     // method and constructor.
-                    e.printStackTrace();
-                    if (e instanceof IllegalClassFormatException ex) {
-                        throw ex;
-                    }
                     throw new IllegalClassFormatException(e.toString());
                 }
             }
