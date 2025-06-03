@@ -3,13 +3,13 @@ Boxtin is a customizable Java security manager agent, intended to replace the or
 
 Project status: Under heavy development, and many more tests are needed.
 
-Boxtin provides an [instrumentation agent](https://docs.oracle.com/en/java/javase/24/docs/api/java.instrument/java/lang/instrument/package-summary.html) which modifies classes to include the necessary security checks. It's launched with a custom [controller](https://github.com/cojen/Boxtin/blob/main/agent/src/main/java/org/cojen/boxtin/Controller.java), which decides what operations are allowed for a given module.
+Boxtin provides an [instrumentation agent](https://docs.oracle.com/en/java/javase/24/docs/api/java.instrument/java/lang/instrument/package-summary.html) which modifies classes to include the necessary security checks. It's launched with a custom [controller](https://cojen.github.io/Boxtin/javadoc/org.cojen.boxtin/org/cojen/boxtin/Controller.html) which decides what operations are allowed for a given module.
 
 ```
 java -javaagent:Boxtin.jar=my.app.SecurityController ...
 ```
 
-If the controller is specified as "default", then a default is selected which only allows limited access to the [`java.base`](https://github.com/cojen/Boxtin/blob/main/agent/src/main/java/org/cojen/boxtin/JavaBaseApplier.java) module. If no controller is specified, then then the [`activate`](https://github.com/cojen/Boxtin/blob/96e3cdd4d8cfc832f8b5600d2f863679b36437b4/agent/src/main/java/org/cojen/boxtin/SecurityAgent.java#L207) method must be called later, preferably from the main method.
+If the controller is specified as "default", then a default is selected which only allows limited access to the [`java.base`](https://cojen.github.io/Boxtin/javadoc/org.cojen.boxtin/org/cojen/boxtin/RulesApplier.html#java_base()) module. If no controller is specified, then then the [`activate`](https://cojen.github.io/Boxtin/javadoc/org.cojen.boxtin/org/cojen/boxtin/SecurityAgent.html#activate(org.cojen.boxtin.Controller)) method must be called later, preferably from the main method.
 
 Boxtin is designed to restrict operations for "plugins", much like the original security manager was designed for restricting applet permissions. There are a few key differences, however:
 
@@ -20,7 +20,7 @@ Boxtin is designed to restrict operations for "plugins", much like the original 
 
 A _caller_ is the plugin code, represented by a [module](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Module.html), possibly unnamed. A _target_ is the code which is being called by the caller, represented by a rule. A rule logically maps target methods or constructors to an "allow" or "deny" outcome.
 
-The controller decides which set of rules apply for a given module. For convenience, a [`RulesApplier`](https://github.com/cojen/Boxtin/blob/main/agent/src/main/java/org/cojen/boxtin/RulesApplier.java) can define a standard set of rules, by name or category. For example: [`java.base`](https://github.com/cojen/Boxtin/blob/main/agent/src/main/java/org/cojen/boxtin/JavaBaseApplier.java)
+The controller decides which set of rules apply for a given module. For convenience, a [`RulesApplier`](https://cojen.github.io/Boxtin/javadoc/org.cojen.boxtin/org/cojen/boxtin/RulesApplier.html) can define a standard set of rules, by name or category. For example: [`java.base`](https://github.com/cojen/Boxtin/blob/main/agent/src/main/java/org/cojen/boxtin/JavaBaseApplier.java)
 
 Rules cannot allow access to operations beyond the boundaries already established by modules. As an example, a rule cannot be defined to allow access to the internal JDK classes. The existing Java `--add-exports` and `--add-opens` options must be used instead.
 
