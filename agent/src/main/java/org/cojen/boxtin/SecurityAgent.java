@@ -17,7 +17,6 @@
 package org.cojen.boxtin;
 
 import java.lang.instrument.ClassFileTransformer;
-import java.lang.instrument.IllegalClassFormatException;
 import java.lang.instrument.Instrumentation;
 import java.lang.instrument.UnmodifiableClassException;
 
@@ -368,16 +367,27 @@ public final class SecurityAgent {
                                     Class<?> classBeingRedefined,
                                     ProtectionDomain protectionDomain,
                                     byte[] classBuffer)
-                throws IllegalClassFormatException
             {
                 try {
                     return doTransform(module, className, classBeingRedefined, classBuffer);
                 } catch (Throwable e) {
+                    if (e instanceof ClassFormatException cfe && cfe.ignore) {
+                        return classBuffer;
+                    }
+
                     logException("Failed to transform class: " + className, e);
-                    // FIXME: Any exception thrown from this method is discarded! That's bad!
-                    // Instead, return a new class which throws a SecurityException from every
-                    // method and constructor.
-                    throw new IllegalClassFormatException(e.toString());
+
+                    // Any exception thrown from this method is discarded, and the class won't
+                    // be transformed. Instead, return a fake class to be fail-secure.
+
+                    try {
+                        return EmptyClassMaker.make(className);
+                    } catch (Throwable e2) {
+                        // Everything is broken.
+                        logException(e2);
+                        Runtime.getRuntime().halt(1);
+                        throw e2;
+                    }
                 }
             }
         };

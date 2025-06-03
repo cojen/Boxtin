@@ -103,6 +103,19 @@ final class ConstantPool {
         mMethodHandleOffsets = methodHandleOffsets;
     }
 
+    /**
+     * Creates an empty constant pool, ready to be extended.
+     */
+    ConstantPool() {
+        mDecoder = new BufferDecoder(new byte[0]);
+        mEndOffset = 0;
+        mOffsets = new int[0];
+        mMethodHandleOffsets = null;
+        mMappedConstants = new HashMap<>();
+        mAddedConstants = new ArrayList<>();
+        mConstants = new Constant[0];
+    }
+
     byte[] buffer() {
         return mDecoder.buffer();
     }
@@ -355,16 +368,24 @@ final class ConstantPool {
     }
 
     void writeTo(BufferEncoder encoder) throws IOException, ClassFormatException {
-        int count = mOffsets.length + 1;
+        final int originalCount = mOffsets.length + 1;
+        int count = originalCount;
+
         if (mAddedConstants != null) {
             count += mAddedConstants.size();
         }
+
         if (count > 65535) {
             throw new ClassFormatException("Constant pool is full");
         }
+
         encoder.writeShort(count);
-        int startOffset = mOffsets[0];
-        encoder.write(buffer(), startOffset, mEndOffset - startOffset);
+
+        if (originalCount > 1) {
+            int startOffset = mOffsets[0];
+            encoder.write(buffer(), startOffset, mEndOffset - startOffset);
+        }
+
         for (Constant c : mAddedConstants) {
             if (c != null) {
                 c.writeTo(encoder);

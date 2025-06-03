@@ -24,20 +24,35 @@ package org.cojen.boxtin;
 final class ClassFormatException extends IllegalStateException {
     private static final long serialVersionUID = 1L;
 
+    final boolean ignore;
+
     public ClassFormatException() {
         super();
+        ignore = false;
     }
 
     public ClassFormatException(String message) {
         super(message);
+        ignore = false;
     }
 
     public ClassFormatException(Throwable cause) {
         super(cause);
+        ignore = false;
     }
 
     public ClassFormatException(String message, Throwable cause) {
         super(message, cause);
+        ignore = false;
+    }
+
+    /**
+     * @param ignore pass true to ignore reporting the exception and use the original
+     * untransformed class
+     */
+    ClassFormatException(boolean ignore) {
+        super();
+        this.ignore = ignore;
     }
 
     /**

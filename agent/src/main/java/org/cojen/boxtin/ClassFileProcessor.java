@@ -58,7 +58,8 @@ final class ClassFileProcessor {
         throws IOException, ClassFormatException
     {
         if (decoder.readInt() != 0xCAFEBABE) {
-            throw new ClassFormatException();
+            // Can be ignored because the class cannot be loaded anyhow.
+            throw new ClassFormatException(true);
         }
 
         int minor = decoder.readUnsignedShort();
