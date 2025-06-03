@@ -21,7 +21,7 @@ package org.cojen.boxtin;
  *
  * @author Brian S. O'Neill
  */
-public class ClassFormatException extends IllegalStateException {
+final class ClassFormatException extends IllegalStateException {
     private static final long serialVersionUID = 1L;
 
     public ClassFormatException() {
