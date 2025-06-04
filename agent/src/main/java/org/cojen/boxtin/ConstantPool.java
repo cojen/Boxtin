@@ -925,6 +925,16 @@ final class ConstantPool {
                     case 'L', '[' -> {
                         encoder.writeByte(ALOAD);
                         encoder.writeByte(numPushed++);
+
+                        if (c == '[') {
+                            // Skip all array prefixes.
+                            while (offset < endOffset && (c = buffer[offset++] & 0xff) == '[');
+                            if (c != 'L') {
+                                // Assume parameter is a primitive array.
+                                continue;
+                            }
+                        }
+
                         // Find the ';' terminator.
                         while (offset < endOffset && (buffer[offset++] & 0xff) != ';');
                     }
