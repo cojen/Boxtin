@@ -1184,69 +1184,54 @@ final class ClassFileProcessor {
 
         int slot = 0;
         MethodType mt = mhi.getMethodType();
-        String invokeDesc = mt.descriptorString();
 
-        loop: for (int i = 0; i < invokeDesc.length(); ) {
-            int c = invokeDesc.charAt(i++);
-            switch (c) {
-                default -> {
-                    break loop;
+        int count = mt.parameterCount();
+        for (int i=0; i<count; i++) {
+            Class<?> type = mt.parameterType(i);
+            if (type.isPrimitive()) {
+                switch (type.descriptorString()) {
+                    case "Z", "B", "S", "C", "I" -> {
+                        encoder.writeByte(ILOAD);
+                        encoder.writeByte(slot++);
+                        pushed++;
+                    }
+                    case "J" -> {
+                        encoder.writeByte(LLOAD);
+                        encoder.writeByte(slot); slot += 2;
+                        pushed += 2;
+                    }
+                    case "F" -> {
+                        encoder.writeByte(FLOAD);
+                        encoder.writeByte(slot++);
+                        pushed++;
+                    }
+                    case "D" -> {
+                        encoder.writeByte(DLOAD);
+                        encoder.writeByte(slot); slot += 2;
+                        pushed += 2;
+                    }
                 }
-                case '(', 'V' -> {}
-                case 'Z', 'B', 'S', 'C', 'I' -> {
-                    encoder.writeByte(ILOAD);
-                    encoder.writeByte(slot++);
-                    pushed++;
-                }
-                case 'J' -> {
-                    encoder.writeByte(LLOAD);
-                    encoder.writeByte(slot); slot += 2;
-                    pushed += 2;
-                }
-                case 'F' -> {
-                    encoder.writeByte(FLOAD);
-                    encoder.writeByte(slot++);
-                    pushed++;
-                }
-                case 'D' -> {
-                    encoder.writeByte(DLOAD);
-                    encoder.writeByte(slot); slot += 2;
-                    pushed += 2;
-                }
-                case 'L', '[' -> {
-                    if (i == 2 && mt.parameterType(0) == Class.class) {
-                        // Pass the caller class.
-                        if (callerSlot < 0) {
-                            encoder.writeByte(LDC_W);
-                            encoder.writeShort(mThisClassIndex);
-                        } else {
-                            encoder.writeByte(ALOAD);
-                            encoder.writeByte(callerSlot);
-                        }
+            } else {
+                if (i == 0 && type == Class.class) {
+                    // Pass the caller class.
+                    if (callerSlot < 0) {
+                        encoder.writeByte(LDC_W);
+                        encoder.writeShort(mThisClassIndex);
                     } else {
                         encoder.writeByte(ALOAD);
-                        encoder.writeByte(slot++);
+                        encoder.writeByte(callerSlot);
                     }
-
-                    pushed++;
-
-                    int j = invokeDesc.indexOf(';', i) + 1;
-
-                    if (j > 0) {
-                        i = j;
-                    } else if (c == '[') {
-                        while (i < invokeDesc.length() && invokeDesc.charAt(i++) == '[');
-                    } else {
-                        // Descriptor is broken.
-                        i--;
-                        break;
-                    }
+                } else {
+                    encoder.writeByte(ALOAD);
+                    encoder.writeByte(slot++);
                 }
+
+                pushed++;
             }
         }
 
         C_MemberRef invokeRef = mConstantPool.addMethodRef
-            (MethodHandle.class.getName().replace('.', '/'), "invoke", invokeDesc);
+            (MethodHandle.class.getName().replace('.', '/'), "invoke", mt.descriptorString());
 
         encoder.writeByte(INVOKEVIRTUAL);
         encoder.writeShort(invokeRef.mIndex);
