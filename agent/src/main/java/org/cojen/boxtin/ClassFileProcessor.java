@@ -1899,7 +1899,13 @@ final class ClassFileProcessor {
                 return proxyMethod;
             }
             if (type != PT_REFLECTION) {
-                proxyDesc = cp.addWithFullSignature(op, methodRef);
+                C_Class instanceType;
+                if (op != INVOKESPECIAL) {
+                    instanceType = methodRef.mClass;
+                } else {
+                    instanceType = cp.findConstant(mThisClassIndex, C_Class.class);
+                }
+                proxyDesc = cp.addWithFullSignature(op, instanceType, methodRef);
             } else {
                 proxyDesc = methodRef.mNameAndType.mTypeDesc;
             }

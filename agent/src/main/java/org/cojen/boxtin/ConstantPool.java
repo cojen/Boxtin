@@ -481,20 +481,20 @@ final class ConstantPool {
 
     /**
      * If necessary, adds a type signature constant which has been adapted such that the first
-     * argument is an instance type from the given methodRef. If the op is NEW, then a return
-     * type is defined. The `extend` method must have already been called.
+     * argument is an instance type, typically from the given methodRef. If the op is NEW, then
+     * a return type is defined. The `extend` method must have already been called.
      *
      * @param op must be an INVOKE* or NEW operation
      * @return method type descriptor
      */
-    C_UTF8 addWithFullSignature(int op, C_MemberRef methodRef) {
+    C_UTF8 addWithFullSignature(int op, C_Class instanceType, C_MemberRef methodRef) {
         C_UTF8 typeDesc = methodRef.mNameAndType.mTypeDesc;
 
         if (op == INVOKESTATIC) {
             return typeDesc;
         }
 
-        C_UTF8 className = methodRef.mClass.mValue;
+        C_UTF8 className = instanceType.mValue;
         int classNameLen = className.mLength;
 
         byte[] newTypeBuf;
