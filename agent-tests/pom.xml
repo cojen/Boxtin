@@ -32,6 +32,12 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.cojen</groupId>
+      <artifactId>cojen-maker</artifactId>
+      <version>[2.7,)</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>[4.13,)</version>

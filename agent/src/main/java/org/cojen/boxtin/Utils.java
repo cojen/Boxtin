@@ -73,6 +73,16 @@ final class Utils {
         return (long) cLongArrayBEHandle.get(b, offset);
     }
 
+    public static int roundUpPower2(int i) {
+        // Hacker's Delight figure 3-3.
+        i--;
+        i |= i >> 1;
+        i |= i >> 2;
+        i |= i >> 4;
+        i |= i >> 8;
+        return (i | (i >> 16)) + 1;
+    }
+
     /**
      * @return true if the given member is public or protected
      */

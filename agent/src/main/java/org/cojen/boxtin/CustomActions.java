@@ -16,6 +16,10 @@
 
 package org.cojen.boxtin;
 
+import java.nio.ByteBuffer;
+
+import java.security.ProtectionDomain;
+
 /**
  * Used by JavaBaseApplier for selecting custom deny actions. The methods must be accessible,
  * which is why a separate class is used.
@@ -47,5 +51,23 @@ public final class CustomActions {
     // Custom deny action for System.getProperty.
     public static String stringValue(String name, String value) {
         return value;
+    }
+
+    // Check for ClassLoader.defineClass.
+    public static boolean checkDefineClass(Class<?> caller, ClassLoader loader,
+                                           String name, byte[] b, int off, int len,
+                                           ProtectionDomain protectionDomain)
+    {
+        // Denied when attempting to specify a ProtectionDomain.
+        return protectionDomain != null;
+    }
+
+    // Check for ClassLoader.defineClass.
+    public static boolean checkDefineClass(Class<?> caller, ClassLoader loader,
+                                           String name, ByteBuffer b,
+                                           ProtectionDomain protectionDomain)
+    {
+        // Denied when attempting to specify a ProtectionDomain.
+        return protectionDomain != null;
     }
 }

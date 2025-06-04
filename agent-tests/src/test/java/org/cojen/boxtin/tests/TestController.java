@@ -16,9 +16,16 @@
 
 package org.cojen.boxtin.tests;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodHandleInfo;
+import java.lang.invoke.MethodType;
+
+import java.security.ProtectionDomain;
+
 import java.util.Set;
 
 import org.cojen.boxtin.Controller;
+import org.cojen.boxtin.DenyAction;
 import org.cojen.boxtin.Rules;
 import org.cojen.boxtin.RulesBuilder;
 
@@ -30,7 +37,39 @@ import org.cojen.boxtin.RulesBuilder;
 public final class TestController implements Controller {
     private final Rules mRules;
 
+    public static boolean checkDefineClass(Class<?> caller, ClassLoader loader,
+                                           String name, byte[] b, int off, int len,
+                                           ProtectionDomain protectionDomain)
+    {
+        // Denied when attempting to specify a ProtectionDomain.
+        return protectionDomain != null;
+    }
+
+    private static MethodType mt(Class<?> rtype, Class<?>... ptypes) {
+        return MethodType.methodType(rtype, ptypes);
+    }
+
+    private MethodHandleInfo findMethod(MethodHandles.Lookup lookup, String name, MethodType mt)
+        throws NoSuchMethodException, IllegalAccessException
+    {
+        return lookup.revealDirect(lookup.findStatic(TestController.class, name, mt));
+    }
+
     public TestController() {
+        MethodHandleInfo cdc;
+
+        try {
+            MethodHandles.Lookup lookup = MethodHandles.lookup();
+
+            cdc = findMethod(lookup, "checkDefineClass",
+                             mt(boolean.class, Class.class, ClassLoader.class, String.class,
+                                byte[].class, int.class, int.class, ProtectionDomain.class));
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
         var builder = new RulesBuilder();
 
         builder.allowAll()
@@ -61,7 +100,6 @@ public final class TestController implements Controller {
             .callerCheck()
             .denyMethod("forName")
             .allowVariant(String.class)
-            .denyMethod("getClassLoader")
             .denyMethod("getClasses")
             .denyMethod("getConstructor")
             .denyMethod("getConstructors")
@@ -82,6 +120,12 @@ public final class TestController implements Controller {
             .denyMethod("getProtectionDomain")
             .denyMethod("getRecordComponents")
             .denyMethod("newInstance") // deprecated
+
+            .forClass("ClassLoader")
+            .callerCheck()
+            .denyMethod("defineClass")
+            .denyVariant(DenyAction.checked(cdc, DenyAction.standard()),
+                         "Ljava/lang/String;[BIILjava/security/ProtectionDomain;")
 
             .forClass("Process")
             .denyMethod("children")

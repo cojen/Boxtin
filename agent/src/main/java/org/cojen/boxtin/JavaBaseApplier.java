@@ -20,6 +20,10 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodHandleInfo;
 import java.lang.invoke.MethodType;
 
+import java.nio.ByteBuffer;
+
+import java.security.ProtectionDomain;
+
 /**
  * Defines a set of rules to deny operations in the java.base module which could be considered
  * harmful.
@@ -32,27 +36,33 @@ final class JavaBaseApplier implements RulesApplier {
         return MethodType.methodType(rtype, ptypes);
     }
 
+    private MethodHandleInfo findMethod(MethodHandles.Lookup lookup, String name, MethodType mt)
+        throws NoSuchMethodException, IllegalAccessException
+    {
+        return lookup.revealDirect(lookup.findStatic(CustomActions.class, name, mt));
+    }
+
     @Override
     public void applyRulesTo(RulesBuilder b) {
         MethodHandleInfo iv1, iv2, lv1, lv2, sv1;
+        MethodHandleInfo cdc1, cdc2;
 
         try {
             MethodHandles.Lookup lookup = MethodHandles.lookup();
 
-            iv1 = lookup.revealDirect(lookup.findStatic(CustomActions.class, "intValue",
-                  mt(Integer.class, String.class, int.class)));
+            iv1 = findMethod(lookup, "intValue", mt(Integer.class, String.class, int.class));
+            iv2 = findMethod(lookup, "intValue", mt(Integer.class, String.class, Integer.class));
+            lv1 = findMethod(lookup, "longValue", mt(Long.class, String.class, long.class));
+            lv2 = findMethod(lookup, "longValue", mt(Long.class, String.class, Long.class));
+            sv1 = findMethod(lookup, "stringValue", mt(String.class, String.class, String.class));
 
-            iv2 = lookup.revealDirect(lookup.findStatic(CustomActions.class, "intValue",
-                  mt(Integer.class, String.class, Integer.class)));
+            cdc1 = findMethod(lookup, "checkDefineClass",
+                              mt(boolean.class, Class.class, ClassLoader.class, String.class,
+                                 byte[].class, int.class, int.class, ProtectionDomain.class));
+            cdc2 = findMethod(lookup, "checkDefineClass",
+                              mt(boolean.class, Class.class, ClassLoader.class, String.class,
+                                 ByteBuffer.class, ProtectionDomain.class));
 
-            lv1 = lookup.revealDirect(lookup.findStatic(CustomActions.class, "longValue",
-                  mt(Long.class, String.class, long.class)));
-
-            lv2 = lookup.revealDirect(lookup.findStatic(CustomActions.class, "longValue",
-                  mt(Long.class, String.class, Long.class)));
-
-            sv1 = lookup.revealDirect(lookup.findStatic(CustomActions.class, "stringValue",
-                  mt(String.class, String.class, String.class)));
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
@@ -158,7 +168,6 @@ final class JavaBaseApplier implements RulesApplier {
             .callerCheck()
             .denyMethod("forName")
             .allowVariant(String.class)
-            .denyMethod("getClassLoader")
             .denyMethod("getClasses")
             .denyMethod("getConstructor")
             .denyMethod("getConstructors")
@@ -183,16 +192,12 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("newInstance") // deprecated
 
             .forClass("ClassLoader")
-            .denyAllConstructors()
             .denyMethod("clearAssertionStatus")
             .denyMethod("findResource")
             .denyMethod("findResources")
-            .denyMethod("getParent")
-            .denyMethod("getPlatformClassLoader")
             .denyMethod("getResource")
             .denyMethod("getResourceAsStream")
             .denyMethod("getResources")
-            .denyMethod("getSystemClassLoader")
             .denyMethod("getSystemResource")
             .denyMethod("getSystemResourceAsStream")
             .denyMethod("getSystemResources")
@@ -200,6 +205,14 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("setClassAssertionStatus")
             .denyMethod("setDefaultAssertionStatus")
             .denyMethod("setPackageAssertionStatus")
+            .callerCheck()
+            .allowMethod("defineClass")
+            .denyVariant("[BII") // deprecated
+            // Cannot specify a ProtectionDomain when defining a class.
+            .denyVariant(DenyAction.checked(cdc1, DenyAction.standard()),
+                         "Ljava/lang/String;[BIILjava/security/ProtectionDomain;")
+            .denyVariant(DenyAction.checked(cdc2, DenyAction.standard()),
+                         "Ljava/lang/String;Ljava/nio/ByteBuffer;Ljava/security/ProtectionDomain;")
 
             .forClass("Integer")
             .callerCheck()
@@ -221,7 +234,6 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forClass("Module")
             .callerCheck()
-            .denyMethod("getClassLoader")
             .denyMethod("getResourceAsStream")
 
             .forClass("ModuleLayer")

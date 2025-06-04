@@ -85,12 +85,12 @@ final class ClassFileProcessor {
             skipAttributes(decoder);
         }
 
-        return new ClassFileProcessor(cp, accessFlags, thisClassIndex, decoder);
+        return new ClassFileProcessor(cp, accessFlags, thisClassIndex, superClassIndex, decoder);
     }
 
     private final ConstantPool mConstantPool;
     private final int mAccessFlags;
-    private final int mThisClassIndex;
+    private final int mThisClassIndex, mSuperClassIndex;
     private final BufferDecoder mDecoder;
     private final int mMethodsStartOffset;
     private final int mMethodsCount;
@@ -110,6 +110,8 @@ final class ClassFileProcessor {
 
     private boolean mReflectionChecks;
 
+    private MethodMap mDeclaredMethods;
+
     private Map<Integer, Replacement> mReplacements;
 
     private Map<Integer, C_MemberRef> mNewMethods;
@@ -128,12 +130,13 @@ final class ClassFileProcessor {
     private int mMethodAccessFlags;
 
     private ClassFileProcessor(ConstantPool cp, int accessFlags,
-                               int thisClassIndex, BufferDecoder decoder)
+                               int thisClassIndex, int superClassIndex, BufferDecoder decoder)
         throws IOException
     {
         mConstantPool = cp;
         mAccessFlags = accessFlags;
         mThisClassIndex = thisClassIndex;
+        mSuperClassIndex = superClassIndex;
         mDecoder = decoder;
         mMethodsStartOffset = decoder.offset();
         mMethodsCount = decoder.readUnsignedShort();
@@ -162,10 +165,30 @@ final class ClassFileProcessor {
 
         mReflectionChecks = reflectionChecks;
 
+        // Gather up all the method declarations, to be used later by the local forClass method.
+
+        mDeclaredMethods = new MethodMap(mMethodsCount);
+
+        final ConstantPool cp = mConstantPool;
+        final byte[] cpBuffer = cp.buffer();
+        final BufferDecoder decoder = mDecoder;
+        final int methodsOffset = decoder.offset();
+
+        for (int i = mMethodsCount; --i >= 0; ) {
+            int access_flags = decoder.readUnsignedShort();
+            int name_index = decoder.readUnsignedShort();
+            int desc_index = decoder.readUnsignedShort();
+            mDeclaredMethods.put(cp, name_index, desc_index);
+            skipAttributes(decoder);
+        }
+
+        // Restore the offset for checking the methods again later.
+        decoder.offset(methodsOffset);
+
         // Check the MethodHandle constants.
 
-        mConstantPool.visitMethodHandleRefs((kind, offset, methodRef) -> {
-            Rules.ForClass forClass = forClass(forCaller, methodRef);
+        cp.visitMethodHandleRefs((kind, offset, methodRef) -> {
+            Rules.ForClass forClass = forClass(forCaller, kind, methodRef);
 
             if (forClass.isAllAllowed()) {
                 return;
@@ -215,9 +238,6 @@ final class ClassFileProcessor {
 
         // Check the methods.
 
-        final byte[] cpBuffer = mConstantPool.buffer();
-        final BufferDecoder decoder = mDecoder;
-
         for (int i = mMethodsCount; --i >= 0; ) {
             int startOffset = decoder.offset();
             mMethodAccessFlags = decoder.readUnsignedShort();
@@ -229,14 +249,14 @@ final class ClassFileProcessor {
             ConstantPool.C_UTF8 name, desc; // both can be null when !targetCodeChecked
 
             if (!targetClassChecked || !isAccessible(mMethodAccessFlags) ||
-                (name = mConstantPool.findConstantUTF8(name_index)).isClinit())
+                (name = cp.findConstantUTF8(name_index)).isClinit())
             {
                 targetCodeChecked = false;
                 targetRule = null;
                 name = null;
                 desc = null;
             } else {
-                desc = mConstantPool.findConstantUTF8(desc_index);
+                desc = cp.findConstantUTF8(desc_index);
 
                 if (name.isConstructor()) {
                     // Constructor check must only be in the target class. The code
@@ -261,10 +281,10 @@ final class ClassFileProcessor {
                 // First, rename the native method to start with NATIVE_PREFIX, and make it
                 // private and synthetic.
 
-                mConstantPool.extend();
+                cp.extend();
 
                 String newNameStr = SecurityAgent.NATIVE_PREFIX + name.str();
-                ConstantPool.C_UTF8 newName = mConstantPool.addUTF8(newNameStr);
+                ConstantPool.C_UTF8 newName = cp.addUTF8(newNameStr);
 
                 var replacement = new Replacement(4, 4);
                 int newFlags = mMethodAccessFlags & ~(Modifier.PUBLIC | Modifier.PROTECTED);
@@ -279,8 +299,8 @@ final class ClassFileProcessor {
 
                 byte op = Modifier.isStatic(mMethodAccessFlags) ? INVOKESTATIC : INVOKEVIRTUAL;
 
-                C_Class thisClass = mConstantPool.findConstant(mThisClassIndex, C_Class.class);
-                C_MemberRef methodRef = mConstantPool.addMethodRef(thisClass, newName, desc);
+                C_Class thisClass = cp.findConstant(mThisClassIndex, C_Class.class);
+                C_MemberRef methodRef = cp.addMethodRef(thisClass, newName, desc);
 
                 addProxyMethod(targetRule, op, PT_NATIVE, methodRef,
                                mMethodAccessFlags & ~Modifier.NATIVE, name, desc);
@@ -291,7 +311,7 @@ final class ClassFileProcessor {
                 int attrNameIndex = decoder.readUnsignedShort();
                 int originalOffset = decoder.offset(); // offset of the attribute_length field
                 long attrLength = decoder.readUnsignedInt();
-                int cpOffset = mConstantPool.findConstantOffset(attrNameIndex);
+                int cpOffset = cp.findConstantOffset(attrNameIndex);
                 int tag = cpBuffer[cpOffset++];
 
                 examine: {
@@ -1622,7 +1642,7 @@ final class ClassFileProcessor {
                     methodRef = mConstantPool.findConstant(methodRefIndex, C_MemberRef.class);
                     offset += op != INVOKEINTERFACE ? 2 : 4;
 
-                    Rules.ForClass forClass = forClass(forCaller, methodRef);
+                    Rules.ForClass forClass = forClass(forCaller, op, methodRef);
 
                     if (!forClass.isAnyDeniedAtCaller()) {
                         continue;
@@ -1803,9 +1823,25 @@ final class ClassFileProcessor {
 
     /**
      * Returns ForClass rules from the calling side, to a target.
+     *
+     * @param kind a REF_invoke kind or an INVOKE opcode
      */
-    private Rules.ForClass forClass(Rules forCaller, C_MemberRef methodRef) {
-        if (methodRef.mClass.mIndex == mThisClassIndex) {
+    private Rules.ForClass forClass(Rules forCaller, int kind, C_MemberRef methodRef) {
+        C_Class clazz = methodRef.mClass;
+
+        if (isInvokingThisClass(methodRef)) invokeThis: {
+            // Check if the method should be invoking the superclass.
+
+            switch (kind) {
+                case REF_invokeVirtual, REF_invokeSpecial, INVOKEVIRTUAL, INVOKESPECIAL -> {
+                    if (!mDeclaredMethods.contains(methodRef)) {
+                        // Invoke the superclass.
+                        clazz = mConstantPool.findConstant(mSuperClassIndex, C_Class.class);
+                        break invokeThis;
+                    }
+                }
+            }
+
             // Calling into the same class, which is always allowed.
             return Rule.allow();
         }
@@ -1818,9 +1854,16 @@ final class ClassFileProcessor {
             mClassName = className = mConstantPool.new C_UTF8();
         }
 
-        methodRef.mClass.split(packageName, className);
+        clazz.split(packageName, className);
 
         return forCaller.forClass(packageName, className);
+    }
+
+    private boolean isInvokingThisClass(C_MemberRef methodRef) {
+        int thisIndex = mThisClassIndex;
+        int otherIndex = methodRef.mClass.mIndex;
+        return thisIndex == otherIndex ||
+            mConstantPool.findConstant(thisIndex).equals(mConstantPool.findConstant(otherIndex));
     }
 
     private static final byte PT_PLAIN = 0, PT_CALLER = 1, PT_NATIVE = 2, PT_REFLECTION = 3;
@@ -1959,7 +2002,18 @@ final class ClassFileProcessor {
                 encoder.writeByte(INVOKEVIRTUAL);
                 encoder.writeShort(getModuleIndex);
                 encoder.writeByte(LDC_W);
-                encoder.writeShort(methodRef.mClass.mIndex);
+
+                if (!isInvokingThisClass(methodRef) || mDeclaredMethods.contains(methodRef)) {
+                    encoder.writeShort(methodRef.mClass.mIndex);
+                } else {
+                    // The local forClass method returns "allow" when invoking this class,
+                    // except when the superclass should be invoked instead. When it returns
+                    // allow, no proxy method is defined, and so this case should only be
+                    // reached when the superclass should be invoked. The above check against
+                    // the mDeclaredMethods map confirms this.
+                    encoder.writeShort(mSuperClassIndex);
+                }
+
                 encoder.writeByte(INVOKEVIRTUAL);
                 encoder.writeShort(getModuleIndex);
                 encoder.writeByte(IF_ACMPEQ);
