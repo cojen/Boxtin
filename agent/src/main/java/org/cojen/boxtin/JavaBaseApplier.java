@@ -95,7 +95,6 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod(DenyAction.value(false), "isDirectory")
             .denyMethod(DenyAction.value(false), "isFile")
             .denyMethod(DenyAction.value(false), "isHidden")
-            .denyMethod(DenyAction.value(false), "isHidden")
             .denyMethod(DenyAction.value(false), "mkdir")
             .denyMethod(DenyAction.value(false), "mkdirs")
             .denyMethod(DenyAction.value(false), "renameTo")
