@@ -159,31 +159,28 @@ final class JavaBaseApplier implements RulesApplier {
             // Always return false.
             .denyMethod(DenyAction.value("false"), "getBoolean")
 
-            // Note: The methods which return Constructors and Methods are treated specially,
-            // and denying access here only denies access to those methods themselves. Checks
-            // are put in place for when callers obtain members, ensuring that access is
-            // allowed to the underlying class member as if it was called directly.
+            // Note: The methods which return Constructors, Methods, and RecordComponents are
+            // treated specially. Denying access here only denies access to those methods
+            // themselves. Checks are put in place for when callers obtain members, ensuring
+            // that access is allowed to the underlying class member as if it was called
+            // directly. See the Reflection class.
             .forClass("Class")
             .callerCheck()
+            // FIXME: Consider allowing the variant which has the initialize parameter, but
+            // always treat it as false.
             .denyMethod("forName")
             .allowVariant(String.class)
-            .denyMethod("getClasses")
+            .allowVariant(Module.class, String.class)
             .denyMethod("getConstructor")
             .denyMethod("getConstructors")
-            .denyMethod("getDeclaredClasses")
             .denyMethod("getDeclaredConstructor")
             .denyMethod("getDeclaredConstructors")
             .denyMethod("getDeclaredMethod")
             .denyMethod("getDeclaredMethods")
-            .denyMethod("getDeclaringClass")
-            .denyMethod("getEnclosingClass")
             .denyMethod("getEnclosingConstructor")
             .denyMethod("getEnclosingMethod")
             .denyMethod("getMethod")
             .denyMethod("getMethods")
-            .denyMethod("getNestHost")
-            .denyMethod("getNestMembers")
-            .denyMethod("getPermittedSubclasses")
             .denyMethod("getProtectionDomain")
             .denyMethod("getRecordComponents")
             .denyMethod("getResource")
@@ -284,6 +281,7 @@ final class JavaBaseApplier implements RulesApplier {
             .forClass("System")
             .callerCheck()
             .denyAll()
+            // FIXME: Allow access to a subset of the standard properties.
             .denyMethod("getProperty")
             // Always return null.
             .denyVariant(DenyAction.value(null), "Ljava/lang/String;")
@@ -415,9 +413,6 @@ final class JavaBaseApplier implements RulesApplier {
             .allowMethod("unreflectSetter")
             .allowMethod("unreflectSpecial")
             .allowMethod("unreflectVarHandle")
-
-            .forClass("MethodType")
-            .denyMethod("fromMethodDescriptorString")
 
             .forPackage("java.lang.module")
             .allowAll()
