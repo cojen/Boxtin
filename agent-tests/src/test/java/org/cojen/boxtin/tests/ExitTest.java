@@ -22,6 +22,7 @@ import java.lang.invoke.MethodType;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 
 import java.util.OptionalInt;
 
@@ -147,6 +148,24 @@ public class ExitTest {
 
         try {
             Class.class.getMethod("getMethod", String.class, Class[].class);
+            fail();
+        } catch (SecurityException e) {
+            // Expected.
+        }
+    }
+
+    @Test
+    public void proxy() throws Exception {
+        ClassLoader loader = ClassLoader.getPlatformClassLoader();
+        Class<?>[] interfaces = {Runnable.class};
+
+        var r = (Runnable) Proxy.newProxyInstance(loader, interfaces, (proxy, method, args) -> {
+            System.exit(1);
+            return null;
+        });
+
+        try {
+            r.run();
             fail();
         } catch (SecurityException e) {
             // Expected.

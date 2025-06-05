@@ -462,7 +462,6 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forClass("Proxy")
             .denyMethod("getProxyClass") // deprecated
-            .denyMethod("newProxyInstance")
 
             .forPackage("java.lang.runtime").allowAll()
 
