@@ -70,4 +70,23 @@ public final class CustomActions {
         // Denied when attempting to specify a ProtectionDomain.
         return protectionDomain != null;
     }
+
+    // Check for Class.getResource and getResourceAsStream.
+    public static boolean checkGetResource(Class<?> caller, Class<?> clazz, String name) {
+        Module module = clazz.getModule();
+        return module.isNamed() ? checkGetResource(caller, module, name)
+            : checkGetResource(caller, clazz.getClassLoader(), name);
+    }
+
+    // Check for ClassLoader.getResource, getResourceAsStream, getResources, and resources.
+    public static boolean checkGetResource(Class<?> caller, ClassLoader loader, String name) {
+        // Deny the caller ClassLoader is different than the ClassLoader being invoked.
+        return caller.getClassLoader() != loader;
+    }
+
+    // Check for Module.getResourceAsStream.
+    public static boolean checkGetResource(Class<?> caller, Module module, String name) {
+        // Denied when the caller Module is different than the Module being invoked.
+        return caller.getModule() != module;
+    }
 }

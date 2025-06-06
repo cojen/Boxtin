@@ -46,6 +46,7 @@ final class JavaBaseApplier implements RulesApplier {
     public void applyRulesTo(RulesBuilder b) {
         MethodHandleInfo iv1, iv2, lv1, lv2, sv1;
         MethodHandleInfo cdc1, cdc2;
+        MethodHandleInfo cgr1, cgr2, cgr3;
 
         try {
             MethodHandles.Lookup lookup = MethodHandles.lookup();
@@ -62,6 +63,13 @@ final class JavaBaseApplier implements RulesApplier {
             cdc2 = findMethod(lookup, "checkDefineClass",
                               mt(boolean.class, Class.class, ClassLoader.class, String.class,
                                  ByteBuffer.class, ProtectionDomain.class));
+
+            cgr1 = findMethod(lookup, "checkGetResource",
+                              mt(boolean.class, Class.class, Class.class, String.class));
+            cgr2 = findMethod(lookup, "checkGetResource",
+                              mt(boolean.class, Class.class, ClassLoader.class, String.class));
+            cgr3 = findMethod(lookup, "checkGetResource",
+                              mt(boolean.class, Class.class, Module.class, String.class));
 
         } catch (RuntimeException e) {
             throw e;
@@ -183,25 +191,23 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("getMethods")
             .denyMethod("getProtectionDomain")
             .denyMethod("getRecordComponents")
-            .denyMethod("getResource")
-            .denyMethod("getResourceAsStream")
             .denyMethod("newInstance") // deprecated
+            .denyMethod(DenyAction.checked(cgr1, DenyAction.value(null)), "getResource")
+            .denyMethod(DenyAction.checked(cgr1, DenyAction.value(null)), "getResourceAsStream")
 
             .forClass("ClassLoader")
             .denyMethod("clearAssertionStatus")
-            .denyMethod("findResource")
-            .denyMethod("findResources")
-            .denyMethod("getResource")
-            .denyMethod("getResourceAsStream")
-            .denyMethod("getResources")
             .denyMethod("getSystemResource")
             .denyMethod("getSystemResourceAsStream")
             .denyMethod("getSystemResources")
-            .denyMethod("resources")
             .denyMethod("setClassAssertionStatus")
             .denyMethod("setDefaultAssertionStatus")
             .denyMethod("setPackageAssertionStatus")
             .callerCheck()
+            .denyMethod(DenyAction.checked(cgr2, DenyAction.value(null)), "getResource")
+            .denyMethod(DenyAction.checked(cgr2, DenyAction.value(null)), "getResourceAsStream")
+            .denyMethod(DenyAction.checked(cgr2, DenyAction.empty()), "getResources")
+            .denyMethod(DenyAction.checked(cgr2, DenyAction.empty()), "resources")
             .allowMethod("defineClass")
             .denyVariant("[BII") // deprecated
             // Cannot specify a ProtectionDomain when defining a class.
@@ -230,7 +236,7 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forClass("Module")
             .callerCheck()
-            .denyMethod("getResourceAsStream")
+            .denyMethod(DenyAction.checked(cgr3, DenyAction.value(null)), "getResourceAsStream")
 
             .forClass("ModuleLayer")
             .denyMethod("defineModules")
