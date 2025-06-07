@@ -30,6 +30,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 
+import java.util.function.Consumer;
+
 import static org.cojen.boxtin.Rule.*;
 import static org.cojen.boxtin.Utils.*;
 
@@ -120,7 +122,7 @@ public final class RulesBuilder {
         throws ClassNotFoundException, NoSuchMethodException
     {
         // FIXME: Validate inheritance when using caller checks. Also check
-        // for @CallerSensitive methods, which must rely on caller checks. Validate DenyActions.
+        // for @CallerSensitive methods, which must rely on caller checks.
 
         Objects.requireNonNull(layer);
 
@@ -248,9 +250,7 @@ public final class RulesBuilder {
         throw new NoSuchMethodException("Invalid descriptor: " + descriptor);
     }
 
-    private static Constructor<?> tryFindConstructor(final Class<?> clazz,
-                                                     final Class<?>... paramTypes)
-    {
+    private static Constructor<?> tryFindConstructor(Class<?> clazz, Class<?>... paramTypes) {
         for (Constructor<?> c : clazz.getDeclaredConstructors()) {
             if (isAccessible(c) && Arrays.equals(c.getParameterTypes(), paramTypes)) {
                 return c;
@@ -260,43 +260,64 @@ public final class RulesBuilder {
         return null;
     }
 
-    /**
-     * Tries to find a method by name, ignoring the parameter types.
-     */
-    private static Method tryFindAnyMethod(boolean allowAbstract, Class<?> clazz, String name) {
-        return tryFindMethod(allowAbstract, clazz, name, (Class<?>[]) null);
-    }
-
-    private static Method tryFindMethod(final boolean allowAbstract,
-                                        final Class<?> clazz, final String name,
-                                        final Class<?>... paramTypes)
+    private static Method tryFindMethod(boolean checkInherited,
+                                        Class<?> clazz, String name, Class<?>... paramTypes)
     {
         for (Method m : clazz.getDeclaredMethods()) {
-            if (allowAbstract || !Modifier.isAbstract(m.getModifiers())) {
-                if (isAccessible(m) && m.getName().equals(name)) {
-                    if (paramTypes == null || Arrays.equals(m.getParameterTypes(), paramTypes)) {
-                        return m;
-                    }
-                }
+            if (isAccessible(m) && m.getName().equals(name) &&
+                Arrays.equals(m.getParameterTypes(), paramTypes))
+            {
+                return m;
             }
+        }
+
+        if (!checkInherited) {
+            return null;
         }
 
         Class<?> superclass = clazz.getSuperclass();
         if (superclass != null) {
-            Method m = tryFindMethod(allowAbstract, superclass, name, paramTypes);
+            Method m = tryFindMethod(true, superclass, name, paramTypes);
             if (m != null) {
                 return m;
             }
         }
 
         for (Class<?> iface : clazz.getInterfaces()) {
-            Method m = tryFindMethod(allowAbstract, iface, name, paramTypes);
+            Method m = tryFindMethod(true, iface, name, paramTypes);
             if (m != null) {
                 return m;
             }
         }
 
         return null;
+    }
+
+    private static int forAllMethods(boolean checkInherited, boolean allowAbstract,
+                                     Class<?> clazz, String name, Consumer<Method> consumer)
+    {
+        int count = 0;
+
+        for (Method m : clazz.getDeclaredMethods()) {
+            if ((allowAbstract || !Modifier.isAbstract(m.getModifiers())) &&
+                (isAccessible(m) && m.getName().equals(name)))
+            {
+                count++;
+                consumer.accept(m);
+            }
+        }
+
+        if (checkInherited) {
+            Class<?> superclass = clazz.getSuperclass();
+            if (superclass != null) {
+                count += forAllMethods(true, allowAbstract, superclass, name, consumer);
+            }
+            for (Class<?> iface : clazz.getInterfaces()) {
+                count += forAllMethods(true, allowAbstract, iface, name, consumer);
+            }
+        }
+
+        return count;
     }
 
     /**
@@ -1147,59 +1168,100 @@ public final class RulesBuilder {
             throws ClassNotFoundException, NoSuchMethodException
         {
             if (isEmpty(mVariants)) {
-                // Assume that a constructor exists.
+                int count = 0;
+
+                for (Constructor<?> ctor : clazz.getDeclaredConstructors()) {
+                    if (!isAccessible(ctor)) {
+                        continue;
+                    }
+                    count++;
+                    validateConstructor(ctor, mDefaultRule);
+                }
+
+                if (count == 0) {
+                    throw new NoSuchMethodException("Constructor not found: " + clazz);
+                }
+
                 return;
             }
 
-            for (CharSequence descriptor : mVariants.keySet()) {
-                Class<?>[] paramTypes = paramTypesFor(loader, descriptor.toString());
+            for (Map.Entry<CharSequence, Rule> e : mVariants.entrySet()) {
+                Class<?>[] paramTypes = paramTypesFor(loader, e.getKey().toString());
+
+                Constructor ctor;
                 try {
-                    clazz.getConstructor(paramTypes);
-                } catch (NoSuchMethodException e) {
-                    if (tryFindConstructor(clazz, paramTypes) == null) {
-                        throw e;
+                    ctor = clazz.getConstructor(paramTypes);
+                } catch (NoSuchMethodException ex) {
+                    ctor = tryFindConstructor(clazz, paramTypes);
+                    if (ctor == null) {
+                        throw ex;
                     }
                 }
+
+                validateConstructor(ctor, e.getValue());
             }
+        }
+
+        private static void validateConstructor(Constructor ctor, Rule rule) {
+            DenyAction action = rule.denyAction();
+            if (action == null) {
+                return;
+            }
+
+            action.validateParameters(ctor);
         }
 
         void validateMethod(ClassLoader loader, Class<?> clazz, String name)
             throws ClassNotFoundException, NoSuchMethodException
         {
             if (isEmpty(mVariants)) {
-                Method method = tryFindAnyMethod(false, clazz, name);
-                if (method != null) {
-                    validateMethod(method, mDefaultRule);
-                    return;
+                Rule rule = mDefaultRule;
+
+                // If target-side, don't examine inherited and abstract methods, because no
+                // code modifications can be made against them.
+                boolean forTarget = rule.isDeniedAtTarget();
+
+                int count = forAllMethods(!forTarget, !forTarget, clazz, name, method -> {
+                    validateMethod(method, rule);
+                });
+
+                if (count == 0) {
+                    throw new NoSuchMethodException("Method not found: " + clazz + "." + name);
                 }
-                method = tryFindAnyMethod(true, clazz, name);
-                if (method != null) {
-                    validateMethod(method, mDefaultRule);
-                    return;
-                }
-                throw new NoSuchMethodException(clazz + "." + name);
+
+                return;
             }
 
             for (Map.Entry<CharSequence, Rule> e : mVariants.entrySet()) {
                 Class<?>[] paramTypes = paramTypesFor(loader, e.getKey().toString());
+                Rule rule = e.getValue();
 
+                Method method;
                 try {
-                    Method method = clazz.getMethod(name, paramTypes);
-                    validateMethod(method, e.getValue());
+                    method = clazz.getMethod(name, paramTypes);
                 } catch (NoSuchMethodException ex) {
-                    Method method = tryFindMethod(true, clazz, name, paramTypes);
+                    method = tryFindMethod(!rule.isDeniedAtTarget(), clazz, name, paramTypes);
                     if (method == null) {
                         throw ex;
                     }
-                    validateMethod(method, e.getValue());
                 }
+
+                validateMethod(method, rule);
             }
         }
 
         private static void validateMethod(Method method, Rule rule) {
+            DenyAction action = rule.denyAction();
+            if (action == null) {
+                return;
+            }
+
             if (rule.isDeniedAtTarget() && Modifier.isAbstract(method.getModifiers())) {
                 throw new IllegalArgumentException("Target method is abstract: " + method);
             }
+
+            action.validateReturnType(method);
+            action.validateParameters(method);
         }
 
         /**

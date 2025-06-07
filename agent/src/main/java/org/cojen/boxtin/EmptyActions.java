@@ -33,6 +33,16 @@ import static org.cojen.boxtin.ConstantPool.C_NameAndType;
 public final class EmptyActions {
     static final String CLASS_NAME = EmptyActions.class.getName().replace('.', '/');
 
+    static boolean isSupported(Class<?> type) {
+        String name = type.getName().replace('.', '_');
+
+        try {
+            return EmptyActions.class.getMethod(name).getReturnType() == type;
+        } catch (NoSuchMethodException e) {
+            return false;
+        }
+    }
+
     /**
      * @param cp constant can be added into here
      * @param desc type descriptor 

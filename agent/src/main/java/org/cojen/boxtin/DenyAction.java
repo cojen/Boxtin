@@ -22,8 +22,10 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 
 import java.lang.reflect.Array;
+import java.lang.reflect.Executable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 
 import java.util.Objects;
 
@@ -186,6 +188,69 @@ public abstract sealed class DenyAction {
         return false;
     }
 
+    abstract void validateReturnType(Method method) throws IllegalArgumentException;
+
+    abstract void validateParameters(Executable exec) throws IllegalArgumentException;
+
+    private static void validateHookParameters(Executable exec, MethodHandleInfo hook)
+        throws IllegalArgumentException
+    {
+        Class<?>[] fromTypes = exec.getParameterTypes();
+
+        MethodType toMT = hook.getMethodType();
+        int toCount = toMT.parameterCount();
+
+        boolean requireInstance = !Modifier.isStatic(exec.getModifiers());
+
+        boolean failed = false;
+        int fromIx = 0, toIx = 0;
+
+        for (; fromIx < fromTypes.length && toIx < toCount; toIx++) {
+            Class<?> to = toMT.parameterType(toIx);
+
+            if (toIx == 0 && to == Class.class) {
+                // The optional caller class parameter has been consumed.
+                continue;
+            }
+
+            if (requireInstance) {
+                if (!canConvert(exec.getDeclaringClass(), to)) {
+                    failed = true;
+                    break;
+                }
+                // The instance parameter has been consumed.
+                requireInstance = false;
+                continue;
+            }
+
+            if (!canConvert(fromTypes[fromIx], to)) {
+                failed = true;
+                break;
+            }
+
+            fromIx++;
+        }
+
+        if (failed) {
+            throw new IllegalArgumentException("Cannot convert from parameter " + fromIx + " of `" +
+                                               exec + "` to parameter " + toIx + " + of `" + 
+                                               hook + '`');
+        }
+
+        if (fromIx != fromTypes.length || toIx != toCount) {
+            throw new IllegalArgumentException("Mismatched parameters from `" +
+                                               exec + "` to `" + hook + '`');
+        }
+    }
+
+    private static boolean canConvert(Class<?> from, Class<?> to) {
+        if (to.isAssignableFrom(from)) {
+            return true;
+        }
+        // TODO: Permit widening and boxing of primitives.
+        return false;
+    }
+
     static MethodHandle resolveMethodHandle(MethodHandleInfo mhi, Class<?> caller) {
         MethodHandles.Lookup lookup = MethodHandles.lookup();
 
@@ -232,6 +297,16 @@ public abstract sealed class DenyAction {
             }
 
             throw ex;
+        }
+
+        @Override
+        final void validateReturnType(Method method) {
+            // Can always throw an exception.
+        }
+
+        @Override
+        final void validateParameters(Executable exec) {
+            // Can always throw an exception.
         }
 
         @Override
@@ -329,6 +404,17 @@ public abstract sealed class DenyAction {
         }
 
         @Override
+        void validateReturnType(Method method) {
+            // Can always return a value, even when the type is incompatible. See the
+            // description in the DenyAction.value(Object) method.
+        }
+
+        @Override
+        void validateParameters(Executable exec) {
+            // Parameters aren't considered.
+        }
+
+        @Override
         public int hashCode() {
             return 434596572 ^ Objects.hashCode(value);
         }
@@ -406,6 +492,36 @@ public abstract sealed class DenyAction {
         }
 
         @Override
+        void validateReturnType(Method method) throws IllegalArgumentException {
+            // See the description in DenyAction.empty() regarding valid return types.
+
+            Class<?> returnType = method.getReturnType();
+
+            if (returnType.isPrimitive() || returnType.isArray() ||
+                EmptyActions.isSupported(returnType))
+            {
+                return;
+            }
+
+            if (Modifier.isPublic(returnType.getModifiers())) {
+                try {
+                    if (Modifier.isPublic(returnType.getConstructor().getModifiers())) {
+                        return;
+                    }
+                } catch (NoSuchMethodException e) {
+                }
+            }
+
+            throw new IllegalArgumentException
+                ("Empty value not supported for method's return type: " + method);
+        }
+
+        @Override
+        void validateParameters(Executable exec) {
+            // Parameters aren't considered.
+        }
+
+        @Override
         public int hashCode() {
             return 1539211235;
         }
@@ -431,6 +547,21 @@ public abstract sealed class DenyAction {
         @Override
         boolean requiresCaller() {
             return true;
+        }
+
+        @Override
+        void validateReturnType(Method method) throws IllegalArgumentException {
+            Class<?> from = method.getReturnType();
+            Class<?> to = mhi.getMethodType().returnType();
+            if (!canConvert(from, to)) {
+                throw new IllegalArgumentException("Cannot convert method return type from " +
+                                                   from + " to " + to);
+            }
+        }
+
+        @Override
+        void validateParameters(Executable exec) throws IllegalArgumentException {
+            validateHookParameters(exec, mhi);
         }
 
         @Override
@@ -476,6 +607,17 @@ public abstract sealed class DenyAction {
         }
 
         @Override
+        void validateReturnType(Method method) throws IllegalArgumentException {
+            action.validateReturnType(method);
+        }
+
+        @Override
+        void validateParameters(Executable exec) throws IllegalArgumentException {
+            validateHookParameters(exec, predicate);
+            action.validateParameters(exec);
+        }
+
+        @Override
         public int hashCode() {
             return 920768027 ^ predicate.hashCode() ^ action.hashCode();
         }
@@ -507,6 +649,16 @@ public abstract sealed class DenyAction {
         @Override
         final boolean requiresCaller() {
             return true;
+        }
+
+        @Override
+        final void validateReturnType(Method method) {
+            // Should never be called.
+        }
+
+        @Override
+        final void validateParameters(Executable exec) {
+            // Should never be called.
         }
 
         @Override
