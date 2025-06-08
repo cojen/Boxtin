@@ -327,7 +327,13 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forClass("Thread")
             .denyAll()
+            .denyMethod(DenyAction.value(1), "activeCount")
+            .denyMethod(DenyAction.value(0), "enumerate")  // do nothing
+            .denyMethod(DenyAction.empty(), "setDaemon")   // do nothing
+            .denyMethod(DenyAction.empty(), "setName")     // do nothing
+            .denyMethod(DenyAction.empty(), "setPriority") // do nothing
             .allowAllConstructors()
+            .allowMethod("clone") // always throws an exception anyhow
             .allowMethod("currentThread")
             .allowMethod("dumpStack")
             .allowMethod("getDefaultUncaughtExceptionHandler")
@@ -348,7 +354,6 @@ final class JavaBaseApplier implements RulesApplier {
             .allowMethod("ofVirtual")
             .allowMethod("onSpinWait")
             .allowMethod("run")
-            .allowMethod("setDaemon")
             .allowMethod("sleep")
             .allowMethod("start")
             .allowMethod("startVirtualThread")
@@ -360,13 +365,15 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("priority")
 
             .forClass("ThreadGroup")
-            .denyMethod("enumerate")
+            .denyMethod(DenyAction.value(1), "activeCount")
+            .denyMethod(DenyAction.value(1), "activeGroupCount")
+            .denyMethod(DenyAction.value(0), "enumerate")  // do nothing
             .denyMethod("getParent")
             .denyMethod("interrupt")
-            .denyMethod("list")
+            .denyMethod(DenyAction.empty(), "list") // do nothing
             .denyMethod("parentOf")
-            .denyMethod("setDaemon")
-            .denyMethod("setMaxPriority")
+            .denyMethod(DenyAction.empty(), "setDaemon")      // do nothing
+            .denyMethod(DenyAction.empty(), "setMaxPriority") // do nothing
 
             .forPackage("java.lang.annotation")
             .allowAll()
