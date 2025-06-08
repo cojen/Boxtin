@@ -718,7 +718,7 @@ final class ClassFileProcessor {
 
         if (action instanceof DenyAction.Checked checked) {
             checkedPushed = encodeMethodHandleInvoke(encoder, callerSlot, checked.predicate);
-            encoder.write(IFEQ); // if false, then the operation isn't denied
+            encoder.write(IFNE); // if true, then the operation is actually allowed
             checkedOffset = encoder.length();
             encoder.writeShort(0); // branch offset; to be filled in properly later
             action = checked.action;

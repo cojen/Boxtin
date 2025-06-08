@@ -41,8 +41,8 @@ public final class TestController implements Controller {
                                            String name, byte[] b, int off, int len,
                                            ProtectionDomain protectionDomain)
     {
-        // Denied when attempting to specify a ProtectionDomain.
-        return protectionDomain != null;
+        // Allowed when no ProtectionDomain is given.
+        return protectionDomain == null;
     }
 
     private static MethodType mt(Class<?> rtype, Class<?>... ptypes) {

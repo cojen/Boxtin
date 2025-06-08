@@ -144,13 +144,13 @@ public abstract sealed class DenyAction {
 
     /**
      * Returns a deny action which checks a predicate to determine if the operation should
-     * actually be denied. The parameters given to the predicate are the caller class (if
+     * actually be allowed. The parameters given to the predicate are the caller class (if
      * specified), the instance (if applicable), and the original method parameters. The return
      * type must be boolean. If the predicate format is incompatible, then a {@code
      * LinkageError} is thrown at runtime.
      *
      * @param predicate the predicate checking method which returns true when the operation is
-     * denied
+     * allowed
      * @param action the action to perform when the operation is denied
      * @throws IllegalArgumentException if the predicate doesn't return a boolean or if the
      * given action is checked
@@ -591,9 +591,9 @@ public abstract sealed class DenyAction {
 
         @Override
         Object apply(Class<?> caller, Class<?> returnType, Object[] args) throws Throwable {
-            var denied = (boolean) resolveMethodHandle(predicate, caller).invokeWithArguments(args);
-            // Returning the args object signals that the operation isn't actually denied.
-            return denied ? action.apply(caller, returnType, args) : args;
+            var allow = (boolean) resolveMethodHandle(predicate, caller).invokeWithArguments(args);
+            // Returning the args object signals that the operation is actually allowed.
+            return allow ? args : action.apply(caller, returnType, args);
         }
 
         @Override

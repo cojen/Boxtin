@@ -140,7 +140,7 @@ public class DynamicTransformTest extends TransformTest {
     }
 
     public static boolean c_op24(int a) {
-        return a < 0; // deny negative inputs
+        return a >= 0; // deny negative inputs
     }
 
     @Test

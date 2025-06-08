@@ -58,8 +58,8 @@ public final class CustomActions {
                                            String name, byte[] b, int off, int len,
                                            ProtectionDomain protectionDomain)
     {
-        // Denied when attempting to specify a ProtectionDomain.
-        return protectionDomain != null;
+        // Allowed when no ProtectionDomain is given.
+        return protectionDomain == null;
     }
 
     // Check for ClassLoader.defineClass.
@@ -67,8 +67,8 @@ public final class CustomActions {
                                            String name, ByteBuffer b,
                                            ProtectionDomain protectionDomain)
     {
-        // Denied when attempting to specify a ProtectionDomain.
-        return protectionDomain != null;
+        // Allowed when no ProtectionDomain is given.
+        return protectionDomain == null;
     }
 
     // Check for Class.getResource and getResourceAsStream.
@@ -80,13 +80,13 @@ public final class CustomActions {
 
     // Check for ClassLoader.getResource, getResourceAsStream, getResources, and resources.
     public static boolean checkGetResource(Class<?> caller, ClassLoader loader, String name) {
-        // Deny the caller ClassLoader is different than the ClassLoader being invoked.
-        return caller.getClassLoader() != loader;
+        // Allowed when the caller ClassLoader is the same as the ClassLoader being invoked.
+        return caller.getClassLoader() == loader;
     }
 
     // Check for Module.getResourceAsStream.
     public static boolean checkGetResource(Class<?> caller, Module module, String name) {
-        // Denied when the caller Module is different than the Module being invoked.
-        return caller.getModule() != module;
+        // Allowed when the caller Module is the same as the Module being invoked.
+        return caller.getModule() == module;
     }
 }

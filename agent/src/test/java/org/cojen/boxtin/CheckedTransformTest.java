@@ -69,16 +69,16 @@ public class CheckedTransformTest extends TransformTest {
     }
 
     public static boolean c_op1(int a) {
-        return a < 0; // deny negative inputs
+        return a >= 0; // deny negative inputs
     }
 
     public static boolean c_op2(int a, long b) {
-        return a < 0 || b < 0; // deny negative inputs
+        return a >= 0 && b >= 0; // deny negative inputs
     }
 
     public static boolean c_op3(Class<?> caller, String a) {
         assertSame(caller, CheckedTransformTest.class);
-        return "magic".equals(a); // deny magic string
+        return !"magic".equals(a); // deny magic string
     }
 
     @Test
