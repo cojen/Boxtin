@@ -29,28 +29,52 @@ import java.security.ProtectionDomain;
  */
 public final class CustomActions {
     // Custom deny action for Integer.getInteger.
-    public static Integer intValue(String name, int value) {
-        return value;
+    public static Integer intValue(String name, int defaultValue) {
+        return defaultValue;
     }
 
     // Custom deny action for Integer.getInteger.
-    public static Integer intValue(String name, Integer value) {
-        return value;
+    public static Integer intValue(String name, Integer defaultValue) {
+        return defaultValue;
     }
 
     // Custom deny action for Long.getLong.
-    public static Long longValue(String name, long value) {
-        return value;
+    public static Long longValue(String name, long defaultValue) {
+        return defaultValue;
     }
 
     // Custom deny action for Long.getLong.
-    public static Long longValue(String name, Long value) {
-        return value;
+    public static Long longValue(String name, Long defaultValue) {
+        return defaultValue;
     }
 
     // Custom deny action for System.getProperty.
-    public static String stringValue(String name, String value) {
-        return value;
+    public static String stringValue(String name, String defaultValue) {
+        return defaultValue;
+    }
+
+    // Check for System.getProperty, returning true if access is allowed.
+    public static boolean checkGetProperty(Class<?> caller, String name) {
+        return switch (name) {
+            default -> false;
+
+            case "java.version", "java.version.date",
+                "java.vendor", "java.vendor.url", "java.vendor.version",
+                "java.vm.specification.version", "java.vm.specification.vendor",
+                "java.vm.specification.name", "java.vm.version", "java.vm.vendor", "java.vm.name",
+                "java.specification.version", "java.specification.maintenance.version",
+                "java.specification.vendor", "java.specification.name",
+                "java.class.version",
+                "os.name", "os.arch", "os.version",
+                "file.separator", "path.separator", "line.separator",
+                "native.encoding", "stdout.encoding", "stderr.encoding"
+                -> true;
+        };
+    }
+
+    // Check for System.getProperty, returning true if access is allowed.
+    public static boolean checkGetProperty(Class<?> caller, String name, String defaultValue) {
+        return checkGetProperty(caller, name);
     }
 
     // Check for ClassLoader.defineClass.

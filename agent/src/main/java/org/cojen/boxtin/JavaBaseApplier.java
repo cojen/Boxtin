@@ -45,6 +45,7 @@ final class JavaBaseApplier implements RulesApplier {
     @Override
     public void applyRulesTo(RulesBuilder b) {
         MethodHandleInfo iv1, iv2, lv1, lv2, sv1;
+        MethodHandleInfo cgp1, cgp2;
         MethodHandleInfo cdc1, cdc2;
         MethodHandleInfo cgr1, cgr2, cgr3;
 
@@ -56,6 +57,11 @@ final class JavaBaseApplier implements RulesApplier {
             lv1 = findMethod(lookup, "longValue", mt(Long.class, String.class, long.class));
             lv2 = findMethod(lookup, "longValue", mt(Long.class, String.class, Long.class));
             sv1 = findMethod(lookup, "stringValue", mt(String.class, String.class, String.class));
+
+            cgp1 = findMethod(lookup, "checkGetProperty",
+                              mt(boolean.class, Class.class, String.class));
+            cgp2 = findMethod(lookup, "checkGetProperty",
+                              mt(boolean.class, Class.class, String.class, String.class));
 
             cdc1 = findMethod(lookup, "checkDefineClass",
                               mt(boolean.class, Class.class, ClassLoader.class, String.class,
@@ -287,12 +293,12 @@ final class JavaBaseApplier implements RulesApplier {
             .forClass("System")
             .callerCheck()
             .denyAll()
-            // FIXME: Allow access to a subset of the standard properties.
             .denyMethod("getProperty")
-            // Always return null.
-            .denyVariant(DenyAction.value(null), "Ljava/lang/String;")
-            // Always return the default value.
-            .denyVariant(DenyAction.custom(sv1), "Ljava/lang/String;Ljava/lang/String;")
+            // Return null if not allowed.
+            .denyVariant(DenyAction.checked(cgp1, DenyAction.value(null)), "Ljava/lang/String;")
+            // Return the default value if not allowed.
+            .denyVariant(DenyAction.checked(cgp2, DenyAction.custom(sv1)),
+                         "Ljava/lang/String;Ljava/lang/String;")
             .allowMethod("arraycopy")
             .allowMethod("currentTimeMillis")
             .allowMethod("gc")
