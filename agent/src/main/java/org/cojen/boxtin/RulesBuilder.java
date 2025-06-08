@@ -295,6 +295,7 @@ public final class RulesBuilder {
 
     private static int forAllMethods(boolean checkInherited, boolean allowAbstract,
                                      Class<?> clazz, String name, Consumer<Method> consumer)
+        throws ClassNotFoundException
     {
         int count = 0;
 
@@ -1175,7 +1176,7 @@ public final class RulesBuilder {
                         continue;
                     }
                     count++;
-                    validateConstructor(ctor, mDefaultRule);
+                    validateConstructor(loader, ctor, mDefaultRule);
                 }
 
                 if (count == 0) {
@@ -1198,16 +1199,19 @@ public final class RulesBuilder {
                     }
                 }
 
-                validateConstructor(ctor, e.getValue());
+                validateConstructor(loader, ctor, e.getValue());
             }
         }
 
-        private static void validateConstructor(Constructor ctor, Rule rule) {
+        private static void validateConstructor(ClassLoader loader, Constructor ctor, Rule rule)
+            throws ClassNotFoundException
+        {
             DenyAction action = rule.denyAction();
             if (action == null) {
                 return;
             }
 
+            action.validateDependencies(loader);
             action.validateParameters(ctor);
         }
 
@@ -1222,7 +1226,11 @@ public final class RulesBuilder {
                 boolean forTarget = rule.isDeniedAtTarget();
 
                 int count = forAllMethods(!forTarget, !forTarget, clazz, name, method -> {
-                    validateMethod(method, rule);
+                    try {
+                        validateMethod(loader, method, rule);
+                    } catch (ClassNotFoundException e) {
+                        throw rethrow(e);
+                    }
                 });
 
                 if (count == 0) {
@@ -1246,11 +1254,13 @@ public final class RulesBuilder {
                     }
                 }
 
-                validateMethod(method, rule);
+                validateMethod(loader, method, rule);
             }
         }
 
-        private static void validateMethod(Method method, Rule rule) {
+        private static void validateMethod(ClassLoader loader, Method method, Rule rule)
+            throws ClassNotFoundException
+        {
             DenyAction action = rule.denyAction();
             if (action == null) {
                 return;
@@ -1260,6 +1270,7 @@ public final class RulesBuilder {
                 throw new IllegalArgumentException("Target method is abstract: " + method);
             }
 
+            action.validateDependencies(loader);
             action.validateReturnType(method);
             action.validateParameters(method);
         }

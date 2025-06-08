@@ -188,6 +188,8 @@ public abstract sealed class DenyAction {
         return false;
     }
 
+    abstract void validateDependencies(ClassLoader loader) throws ClassNotFoundException;
+
     abstract void validateReturnType(Method method) throws IllegalArgumentException;
 
     abstract void validateParameters(Executable exec) throws IllegalArgumentException;
@@ -288,8 +290,7 @@ public abstract sealed class DenyAction {
         Object apply(Class<?> caller, Class<?> returnType, Object[] args) throws Throwable {
             Throwable ex;
             try {
-                String name = className.replace('/', '.');
-                ex = (Throwable) Class.forName(name).getConstructor().newInstance();
+                ex = (Throwable) loadClass(caller.getClassLoader()).getConstructor().newInstance();
             } catch (SecurityException e) {
                 throw e;
             } catch (java.lang.Exception e) {
@@ -297,6 +298,15 @@ public abstract sealed class DenyAction {
             }
 
             throw ex;
+        }
+
+        final Class<?> loadClass(ClassLoader loader) throws ClassNotFoundException {
+            return Class.forName(className.replace('/', '.'), false, loader);
+        }
+
+        @Override
+        void validateDependencies(ClassLoader loader) throws ClassNotFoundException {
+            loadClass(loader);
         }
 
         @Override
@@ -338,6 +348,11 @@ public abstract sealed class DenyAction {
         }
 
         @Override
+        void validateDependencies(ClassLoader loader) {
+            // Nothing to check.
+        }
+
+        @Override
         public int hashCode() {
             return 50737076;
         }
@@ -360,8 +375,7 @@ public abstract sealed class DenyAction {
         Object apply(Class<?> caller, Class<?> returnType, Object[] args) throws Throwable {
             Throwable ex;
             try {
-                String name = className.replace('/', '.');
-                ex = (Throwable) Class.forName(name)
+                ex = (Throwable) loadClass(caller.getClassLoader())
                     .getConstructor(String.class).newInstance(message);
             } catch (SecurityException e) {
                 throw e;
@@ -401,6 +415,11 @@ public abstract sealed class DenyAction {
         @Override
         Object apply(Class<?> caller, Class<?> returnType, Object[] args) {
             return value;
+        }
+
+        @Override
+        void validateDependencies(ClassLoader loader) {
+            // Nothing to check.
         }
 
         @Override
@@ -492,6 +511,11 @@ public abstract sealed class DenyAction {
         }
 
         @Override
+        void validateDependencies(ClassLoader loader) {
+            // Nothing to check.
+        }
+
+        @Override
         void validateReturnType(Method method) throws IllegalArgumentException {
             // See the description in DenyAction.empty() regarding valid return types.
 
@@ -550,6 +574,11 @@ public abstract sealed class DenyAction {
         }
 
         @Override
+        void validateDependencies(ClassLoader loader) {
+            // Nothing to check.
+        }
+
+        @Override
         void validateReturnType(Method method) throws IllegalArgumentException {
             Class<?> from = method.getReturnType();
             Class<?> to = mhi.getMethodType().returnType();
@@ -594,6 +623,11 @@ public abstract sealed class DenyAction {
             var allow = (boolean) resolveMethodHandle(predicate, caller).invokeWithArguments(args);
             // Returning the args object signals that the operation is actually allowed.
             return allow ? args : action.apply(caller, returnType, args);
+        }
+
+        @Override
+        void validateDependencies(ClassLoader loader) {
+            // Nothing to check.
         }
 
         @Override
@@ -644,6 +678,11 @@ public abstract sealed class DenyAction {
         final Object apply(Class<?> caller, Class<?> returnType, Object[] args) {
             // Should never be called.
             throw new SecurityException();
+        }
+
+        @Override
+        final void validateDependencies(ClassLoader loader) {
+            // Nothing to check.
         }
 
         @Override
