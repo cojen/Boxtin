@@ -50,7 +50,7 @@ final class JavaBaseApplier implements RulesApplier {
         MethodHandleInfo cgr1, cgr2, cgr3;
         MethodHandleInfo cna1;
 
-        DenyAction restricted;
+        DenyAction restricted, inaccessible;
 
         try {
             MethodHandles.Lookup lookup = MethodHandles.lookup();
@@ -82,6 +82,8 @@ final class JavaBaseApplier implements RulesApplier {
 
             restricted = DenyAction.checked
                 (cna1, DenyAction.exception("java.lang.IllegalCallerException"));
+
+            inaccessible = DenyAction.exception("java.lang.reflect.InaccessibleObjectException");
 
         } catch (RuntimeException e) {
             throw e;
@@ -469,20 +471,20 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forClass("AccessibleObject")
             .callerCheck()
-            .denyMethod("setAccessible")
-            .denyMethod("trySetAccessible")
+            .denyMethod(inaccessible, "setAccessible")
+            .denyMethod(DenyAction.value(false), "trySetAccessible")
 
             .forClass("Constructor")
             .callerCheck()
-            .denyMethod("setAccessible")
+            .denyMethod(inaccessible, "setAccessible")
 
             .forClass("Field")
             .callerCheck()
-            .denyMethod("setAccessible")
+            .denyMethod(inaccessible, "setAccessible")
 
             .forClass("Method")
             .callerCheck()
-            .denyMethod("setAccessible")
+            .denyMethod(inaccessible, "setAccessible")
 
             .forClass("RecordComponent")
             .denyMethod("getAccessor")
