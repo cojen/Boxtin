@@ -111,7 +111,7 @@ loadScripts(document, 'script');</script>
  <a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Returns a deny action which checks a predicate to determine if the operation should
- actually be denied.</div>
+ actually be allowed.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#custom(java.lang.invoke.MethodHandleInfo)" class="member-name-link">custom</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/invoke/MethodHandleInfo.html" title="class or interface in java.lang.invoke" class="external-link">MethodHandleInfo</a>&nbsp;mhi)</code></div>
@@ -281,14 +281,14 @@ loadScripts(document, 'script');</script>
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></span>&nbsp;<span class="element-name">checked</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/invoke/MethodHandleInfo.html" title="class or interface in java.lang.invoke" class="external-link">MethodHandleInfo</a>&nbsp;predicate,
  <a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</span></div>
 <div class="block">Returns a deny action which checks a predicate to determine if the operation should
- actually be denied. The parameters given to the predicate are the caller class (if
+ actually be allowed. The parameters given to the predicate are the caller class (if
  specified), the instance (if applicable), and the original method parameters. The return
  type must be boolean. If the predicate format is incompatible, then a <code>
  LinkageError</code> is thrown at runtime.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>predicate</code> - the predicate checking method which returns true when the operation is
- denied</dd>
+ allowed</dd>
 <dd><code>action</code> - the action to perform when the operation is denied</dd>
 <dt>Throws:</dt>
 <dd><code><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/IllegalArgumentException.html" title="class or interface in java.lang" class="external-link">IllegalArgumentException</a></code> - if the predicate doesn't return a boolean or if the
