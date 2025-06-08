@@ -262,7 +262,7 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forClass("Package")
             .callerCheck()
-            .denyMethod("getPackage")
+            .denyMethod("getPackage") // deprecated
 
             .forClass("Process")
             .denyMethod("children")
@@ -288,12 +288,12 @@ final class JavaBaseApplier implements RulesApplier {
             .denyAll()
             .denyMethod(restricted, "load")
             .denyMethod(restricted, "loadLibrary")
+            .denyMethod(DenyAction.empty(), "gc") // do nothing
+            .denyMethod(DenyAction.empty(), "runFinalization") // do nothing
             .allowMethod("availableProcessors")
             .allowMethod("freeMemory")
-            .allowMethod("gc")
             .allowMethod("getRuntime")
             .allowMethod("maxMemory")
-            .allowMethod("runFinalization")
             .allowMethod("totalMemory")
             .allowMethod("version")
 
@@ -313,14 +313,14 @@ final class JavaBaseApplier implements RulesApplier {
             // Return the default value if not allowed.
             .denyVariant(DenyAction.checked(cgp1, DenyAction.custom(sv1)),
                          "Ljava/lang/String;Ljava/lang/String;")
+            .denyMethod(DenyAction.empty(), "gc") // do nothing
+            .denyMethod(DenyAction.empty(), "runFinalization") // do nothing
             .allowMethod("arraycopy")
             .allowMethod("currentTimeMillis")
-            .allowMethod("gc")
             .allowMethod("getLogger")
             .allowMethod("identityHashCode")
             .allowMethod("lineSeparator")
             .allowMethod("nanoTime")
-            .allowMethod("runFinalization")
 
             .forClass("System.LoggerFinder")
             .denyAll()
