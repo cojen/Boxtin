@@ -500,12 +500,12 @@ final class JavaBaseApplier implements RulesApplier {
             .allowAll()
 
             .forClass("Authenticator")
-            .denyMethod("getDefault")
+            .denyMethod(DenyAction.value(null), "getDefault")
             .denyMethod("setDefault")
             .denyMethod("requestPasswordAuthentication")
 
             .forClass("CookieHandler")
-            .denyMethod("getDefault")
+            .denyMethod(DenyAction.value(null), "getDefault")
             .denyMethod("setDefault")
 
             .forClass("DatagramSocket")
@@ -538,14 +538,14 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("leaveGroup")
             .denyMethod("send")
 
-            .forClass("ResponseCache")
-            .denyAllConstructors()
-            .denyMethod("getDefault")
-            .denyMethod("setDefault")
-
             .forClass("ProxySelector")
             .denyAllConstructors()
-            .denyMethod("getDefault")
+            .denyMethod(DenyAction.value(null), "getDefault")
+            .denyMethod("setDefault")
+
+            .forClass("ResponseCache")
+            .denyAllConstructors()
+            .denyMethod(DenyAction.value(null), "getDefault")
             .denyMethod("setDefault")
 
             .forClass("ServerSocket")
