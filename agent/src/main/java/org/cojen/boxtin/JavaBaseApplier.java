@@ -293,6 +293,11 @@ final class JavaBaseApplier implements RulesApplier {
             .forClass("System")
             .callerCheck()
             .denyAll()
+            .denyMethod("getenv")
+            // Return null for all environment variables.
+            .denyVariant(DenyAction.value(null))
+            // Return an empty map of environment variables.
+            .denyVariant(DenyAction.empty(), "Ljava/lang/String;")
             .denyMethod("getProperty")
             // Return null if not allowed.
             .denyVariant(DenyAction.checked(cgp1, DenyAction.value(null)), "Ljava/lang/String;")
