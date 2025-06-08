@@ -237,8 +237,8 @@ public abstract sealed class DenyAction {
                                                hook + '`');
         }
 
-        if (fromIx != fromTypes.length || toIx != toCount) {
-            throw new IllegalArgumentException("Mismatched parameters from `" +
+        if (toIx < toCount) {
+            throw new IllegalArgumentException("Too few parameters from `" +
                                                exec + "` to `" + hook + '`');
         }
     }

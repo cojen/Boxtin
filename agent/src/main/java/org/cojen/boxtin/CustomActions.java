@@ -72,11 +72,6 @@ public final class CustomActions {
         };
     }
 
-    // Check for System.getProperty, returning true if access is allowed.
-    public static boolean checkGetProperty(Class<?> caller, String name, String defaultValue) {
-        return checkGetProperty(caller, name);
-    }
-
     // Check for ClassLoader.defineClass.
     public static boolean checkDefineClass(Class<?> caller, ClassLoader loader,
                                            String name, byte[] b, int off, int len,
