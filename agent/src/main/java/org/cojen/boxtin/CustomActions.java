@@ -91,20 +91,20 @@ public final class CustomActions {
     }
 
     // Check for Class.getResource and getResourceAsStream.
-    public static boolean checkGetResource(Class<?> caller, Class<?> clazz, String name) {
+    public static boolean checkGetResource(Class<?> caller, Class<?> clazz) {
         Module module = clazz.getModule();
-        return module.isNamed() ? checkGetResource(caller, module, name)
-            : checkGetResource(caller, clazz.getClassLoader(), name);
+        return module.isNamed() ? checkGetResource(caller, module)
+            : checkGetResource(caller, clazz.getClassLoader());
     }
 
     // Check for ClassLoader.getResource, getResourceAsStream, getResources, and resources.
-    public static boolean checkGetResource(Class<?> caller, ClassLoader loader, String name) {
+    public static boolean checkGetResource(Class<?> caller, ClassLoader loader) {
         // Allowed when the caller ClassLoader is the same as the ClassLoader being invoked.
         return caller.getClassLoader() == loader;
     }
 
     // Check for Module.getResourceAsStream.
-    public static boolean checkGetResource(Class<?> caller, Module module, String name) {
+    public static boolean checkGetResource(Class<?> caller, Module module) {
         // Allowed when the caller Module is the same as the Module being invoked.
         return caller.getModule() == module;
     }

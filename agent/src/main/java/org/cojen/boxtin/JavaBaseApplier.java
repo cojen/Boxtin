@@ -72,11 +72,11 @@ final class JavaBaseApplier implements RulesApplier {
                                  ByteBuffer.class, ProtectionDomain.class));
 
             cgr1 = findMethod(lookup, "checkGetResource",
-                              mt(boolean.class, Class.class, Class.class, String.class));
+                              mt(boolean.class, Class.class, Class.class));
             cgr2 = findMethod(lookup, "checkGetResource",
-                              mt(boolean.class, Class.class, ClassLoader.class, String.class));
+                              mt(boolean.class, Class.class, ClassLoader.class));
             cgr3 = findMethod(lookup, "checkGetResource",
-                              mt(boolean.class, Class.class, Module.class, String.class));
+                              mt(boolean.class, Class.class, Module.class));
 
             cna1 = findMethod(lookup, "checkNativeAccess", mt(boolean.class, Class.class));
 
