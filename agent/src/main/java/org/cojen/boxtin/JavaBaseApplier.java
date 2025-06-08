@@ -48,6 +48,9 @@ final class JavaBaseApplier implements RulesApplier {
         MethodHandleInfo cgp1;
         MethodHandleInfo cdc1, cdc2;
         MethodHandleInfo cgr1, cgr2, cgr3;
+        MethodHandleInfo cna1;
+
+        DenyAction restricted;
 
         try {
             MethodHandles.Lookup lookup = MethodHandles.lookup();
@@ -74,6 +77,11 @@ final class JavaBaseApplier implements RulesApplier {
                               mt(boolean.class, Class.class, ClassLoader.class, String.class));
             cgr3 = findMethod(lookup, "checkGetResource",
                               mt(boolean.class, Class.class, Module.class, String.class));
+
+            cna1 = findMethod(lookup, "checkNativeAccess", mt(boolean.class, Class.class));
+
+            restricted = DenyAction.checked
+                (cna1, DenyAction.exception("java.lang.IllegalCallerException"));
 
         } catch (RuntimeException e) {
             throw e;
@@ -249,9 +257,8 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("findLoader")
 
             .forClass("ModuleLayer.Controller")
-            // Is @CallerSensitive and @Restricted, and so this check might be redundant.
             .callerCheck()
-            .denyMethod("enableNativeAccess")
+            .denyMethod(restricted, "enableNativeAccess")
 
             .forClass("Package")
             .callerCheck()
@@ -279,6 +286,8 @@ final class JavaBaseApplier implements RulesApplier {
             .forClass("Runtime")
             .callerCheck()
             .denyAll()
+            .denyMethod(restricted, "load")
+            .denyMethod(restricted, "loadLibrary")
             .allowMethod("availableProcessors")
             .allowMethod("freeMemory")
             .allowMethod("gc")
@@ -291,6 +300,8 @@ final class JavaBaseApplier implements RulesApplier {
             .forClass("System")
             .callerCheck()
             .denyAll()
+            .denyMethod(restricted, "load")
+            .denyMethod(restricted, "loadLibrary")
             .denyMethod("getenv")
             // Return null for all environment variables.
             .denyVariant(DenyAction.value(null))
@@ -377,27 +388,21 @@ final class JavaBaseApplier implements RulesApplier {
             .allowAll()
 
             .forClass("AddressLayout")
-            // Is @CallerSensitive and @Restricted, and so this check might be redundant.
             .callerCheck()
-            .denyMethod("withTargetLayout")
+            .denyMethod(restricted, "withTargetLayout")
 
             .forClass("Linker")
-            // Is @CallerSensitive and @Restricted, and so these checks might be redundant.
             .callerCheck()
-            .denyMethod("downcallHandle")
-            .denyMethod("upcallStub")
+            .denyMethod(restricted, "downcallHandle")
+            .denyMethod(restricted, "upcallStub")
 
             .forClass("MemorySegment")
-            // Is @CallerSensitive and @Restricted, and so this check might be redundant.
             .callerCheck()
-            .denyMethod("reinterpret")
+            .denyMethod(restricted, "reinterpret")
 
             .forClass("SymbolLookup")
-            // Is @CallerSensitive, but is also defined in a non-sealed interface, and so this
-            // check isn't really effective. The method is @Restricted, so assume that the
-            // checks for restricted methods are sufficient.
             .callerCheck()
-            .denyMethod("libraryLookup")
+            .denyMethod(restricted, "libraryLookup")
 
             .forPackage("java.lang.invoke")
             .allowAll()

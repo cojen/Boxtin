@@ -108,4 +108,15 @@ public final class CustomActions {
         // Allowed when the caller Module is the same as the Module being invoked.
         return caller.getModule() == module;
     }
+
+    // Check for @Restricted methods: ModuleLayer.enableNativeAccess,
+    // AddressLayout.withTargetLayout, Linker.downcallHandle, Linker.upcallStub,
+    // MemorySegment.reinterpret, and SymbolLookup.libraryLookup, Runtime.load,
+    // Runtime.loadLibrary, System.load, and System.loadLibrary
+    public static boolean checkNativeAccess(Class<?> caller) {
+        // Allowed for named modules for which access has been granted using the
+        // --enable-native-access option.
+        Module module = caller.getModule();
+        return module.isNamed() && module.isNativeAccessEnabled();
+    }
 }
