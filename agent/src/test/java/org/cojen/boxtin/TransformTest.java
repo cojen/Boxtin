@@ -109,6 +109,10 @@ public abstract class TransformTest {
         }
     }
 
+    protected Class<?> inject(Class<?> original) throws Throwable {
+        return ((Injector) getClass().getClassLoader()).inject(original);
+    }
+
     private static class Injector extends ClassLoader {
         private final SecurityAgent mAgent;
         private final Controller mController;

@@ -1833,7 +1833,9 @@ final class ClassFileProcessor {
             // Check if the method should be invoking the superclass.
 
             switch (kind) {
-                case REF_invokeVirtual, REF_invokeSpecial, INVOKEVIRTUAL, INVOKESPECIAL -> {
+                case REF_invokeVirtual, REF_invokeSpecial, REF_invokeStatic,
+                    INVOKEVIRTUAL, INVOKESPECIAL, INVOKESTATIC ->
+                {
                     if (!mDeclaredMethods.contains(methodRef)) {
                         // Invoke the superclass.
                         clazz = mConstantPool.findConstant(mSuperClassIndex, C_Class.class);

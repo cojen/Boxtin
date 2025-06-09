@@ -803,18 +803,13 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("setDefault")
 
 
-            /* FIXME: Cannot call getCallerClass() from a @CallerSensitive method. Tagging these
-                      methods using callerCheck() doesn't work because ResourceBundle can be
-                      subclassed, providing access to the inherited static methods. Determine
-                      if the existing checks are sufficient to deny access to resources from
-                      other Modules or ClassLoaders.
             .forClass("ResourceBundle")
+            .callerCheck()
             .denyMethod("getBundle")
             .allowVariant("Ljava/lang.String;")
             .allowVariant("Ljava/lang.String;Ljava/util/Locale;")
             .allowVariant("Ljava/lang.String;Ljava/util/ResourceBundle$Control;")
             .allowVariant("Ljava/lang.String;Ljava/util/Locale;Ljava/util/ResourceBundle$Control;")
-            */
 
             .forClass("TimeZone")
             .denyMethod("setDefault")
