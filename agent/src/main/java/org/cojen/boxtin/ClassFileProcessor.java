@@ -1824,30 +1824,64 @@ final class ClassFileProcessor {
     /**
      * Returns ForClass rules from the calling side, to a target.
      *
+     * @param methodRef target method
      * @param kind a REF_invoke kind or an INVOKE opcode
      */
-    private Rules.ForClass forClass(Rules forCaller, int kind, C_MemberRef methodRef) {
-        C_Class clazz = methodRef.mClass;
-
-        if (isInvokingThisClass(methodRef)) invokeThis: {
-            // Check if the method should be invoking the superclass.
-
-            switch (kind) {
-                case REF_invokeVirtual, REF_invokeSpecial, REF_invokeStatic,
-                    INVOKEVIRTUAL, INVOKESPECIAL, INVOKESTATIC ->
-                {
-                    if (!mDeclaredMethods.contains(methodRef)) {
-                        // Invoke the superclass.
-                        clazz = mConstantPool.findConstant(mSuperClassIndex, C_Class.class);
-                        break invokeThis;
-                    }
-                }
-            }
-
-            // Calling into the same class, which is always allowed.
-            return Rule.allow();
+    private Rules.ForClass forClass(Rules forCaller, int kind, C_MemberRef methodRef)
+        throws IOException
+    {
+        if (!isInvokingThisClass(methodRef)) {
+            return forClass(forCaller, methodRef.mClass);
         }
 
+        // Check if the method should be checked against the superclass.
+
+        switch (kind) {
+            case REF_invokeVirtual, REF_invokeSpecial, REF_invokeStatic,
+                INVOKEVIRTUAL, INVOKESPECIAL, INVOKESTATIC ->
+            {
+                if (mDeclaredMethods.contains(methodRef)) {
+                    // Is declared locally.
+                    break;
+                }
+
+                C_Class clazz = mConstantPool.findConstant(mSuperClassIndex, C_Class.class);
+                Rules.ForClass forClass = forClass(forCaller, clazz);
+
+                if (!forClass.isAnyDeniedAtCaller()) {
+                    break;
+                }
+
+                // Check the superclass.
+
+                if (kind == REF_invokeStatic || kind == INVOKESTATIC) {
+                    // Subclasses must also check against the superclass, so create a chain of
+                    // proxy methods. This technique doesn't work for virtual methods, because
+                    // when declared as final they cannot be overridden.
+
+                    C_NameAndType nat = methodRef.mNameAndType;
+                    Rule rule = forClass.ruleForMethod(nat.mName, nat.mTypeDesc);
+                    C_MemberRef proxyRef = addProxyMethod(rule, INVOKESTATIC, PT_CALLER, methodRef);
+
+                    addProxyMethod(null, INVOKESTATIC, PT_PLAIN, proxyRef,
+                                   Modifier.PROTECTED | Modifier.STATIC | 0x1000, // | synthetic
+                                   nat.mName, nat.mTypeDesc);
+                }
+
+                return forClass;
+            }
+        }
+
+        // Calling into the same class, which is always allowed.
+        return Rule.allow();
+    }
+
+    /**
+     * Returns ForClass rules from the calling side, to a target.
+     *
+     * @param target target class
+     */
+    private Rules.ForClass forClass(Rules forCaller, C_Class target) {
         ConstantPool.C_UTF8 packageName = mPackageName;
         ConstantPool.C_UTF8 className = mClassName;
 
@@ -1856,7 +1890,7 @@ final class ClassFileProcessor {
             mClassName = className = mConstantPool.new C_UTF8();
         }
 
-        clazz.split(packageName, className);
+        target.split(packageName, className);
 
         return forCaller.forClass(packageName, className);
     }
@@ -1901,7 +1935,7 @@ final class ClassFileProcessor {
      *     return r.Class_getMethod(clazz, name, paramTypes);
      * }
      *
-     * @param rule must be a deny rule
+     * @param rule is required for PT_CALLER and PT_NATIVE, and it must be a deny rule.
      * @param op must be an INVOKE* or NEW operation
      * @param type PT_*
      */
@@ -1920,8 +1954,6 @@ final class ClassFileProcessor {
                                        ConstantPool.C_UTF8 proxyName, ConstantPool.C_UTF8 proxyDesc)
         throws IOException
     {
-        assert rule.isDenied();
-
         ConstantPool cp = mConstantPool;
 
         if (mNewMethods == null) {

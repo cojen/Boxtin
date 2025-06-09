@@ -44,12 +44,14 @@ public class ResourceBundleTransformTest extends TransformTest {
 
     @BeforeClass
     public static void setup() {
-        System.getProperties().put(PROP_KEY, Sub.class);
+        System.getProperties().put(PROP_KEY + ".Sub", Sub.class);
+        System.getProperties().put(PROP_KEY + ".SubSub", SubSub.class);
     }
 
     @AfterClass
     public static void teardown() {
-        System.getProperties().remove(PROP_KEY);
+        System.getProperties().remove(PROP_KEY + ".Sub");
+        System.getProperties().remove(PROP_KEY + ".SubSub");
     }
 
     @Test
@@ -72,13 +74,25 @@ public class ResourceBundleTransformTest extends TransformTest {
         // Verify that subclassing doesn't bypass the caller-side access check to an inherited
         // static method.
 
-        Class<?> sub = inject((Class) System.getProperties().get(PROP_KEY));
-
-        Object instance = sub.getConstructor().newInstance();
+        Class<?> sub = inject((Class) System.getProperties().get(PROP_KEY + ".Sub"));
+        Object subObj = sub.getConstructor().newInstance();
 
         try {
             sub.getMethod("getBundle_", String.class, Module.class)
-                .invoke(instance, name, String.class.getModule());
+                .invoke(subObj, name, String.class.getModule());
+            fail();
+        } catch (InvocationTargetException e) {
+            Throwable cause = e.getCause();
+            assertTrue(cause instanceof SecurityException);
+        }
+
+        Class<?> subsub = inject((Class) System.getProperties().get(PROP_KEY + ".SubSub"));
+        Object subsubObj = subsub.getConstructor().newInstance();
+
+        try {
+            subsub.getMethod("getBundle_", String.class, Module.class)
+                .invoke(subsubObj, name, String.class.getModule());
+            fail();
         } catch (InvocationTargetException e) {
             Throwable cause = e.getCause();
             assertTrue(cause instanceof SecurityException);
@@ -96,6 +110,13 @@ public class ResourceBundleTransformTest extends TransformTest {
             return null;
         }
 
+        public ResourceBundle getBundle_(String name, Module module) {
+            return getBundle(name, module);
+        }
+    }
+
+    public static class SubSub extends Sub {
+        @Override
         public ResourceBundle getBundle_(String name, Module module) {
             return getBundle(name, module);
         }
