@@ -47,6 +47,7 @@ final class JavaBaseApplier implements RulesApplier {
         MethodHandleInfo iv1, iv2, lv1, lv2, sv1;
         MethodHandleInfo cgp1;
         MethodHandleInfo cdc1, cdc2;
+        MethodHandleInfo cfn1;
         MethodHandleInfo cgr1, cgr2, cgr3;
         MethodHandleInfo cna1;
 
@@ -70,6 +71,10 @@ final class JavaBaseApplier implements RulesApplier {
             cdc2 = findMethod(lookup, "checkDefineClass",
                               mt(boolean.class, Class.class, ClassLoader.class, String.class,
                                  ByteBuffer.class, ProtectionDomain.class));
+
+            cfn1 = findMethod(lookup, "checkForName",
+                              mt(boolean.class, Class.class, String.class, boolean.class,
+                                 ClassLoader.class));
 
             cgr1 = findMethod(lookup, "checkGetResource",
                               mt(boolean.class, Class.class, Class.class));
@@ -188,11 +193,11 @@ final class JavaBaseApplier implements RulesApplier {
             // directly. See the Reflection class.
             .forClass("Class")
             .callerCheck()
-            // FIXME: Consider allowing the variant which has the initialize parameter, but
-            // always treat it as false.
             .denyMethod("forName")
             .allowVariant(String.class)
             .allowVariant(Module.class, String.class)
+            .denyVariant(DenyAction.checked(cfn1, DenyAction.standard()),
+                         String.class, boolean.class, ClassLoader.class)
             .denyMethod("getConstructor")
             .denyMethod("getConstructors")
             .denyMethod("getDeclaredConstructor")
@@ -801,7 +806,6 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forClass("Locale")
             .denyMethod("setDefault")
-
 
             .forClass("ResourceBundle")
             .callerCheck()

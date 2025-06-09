@@ -102,4 +102,27 @@ public class ResourceTransformTest extends TransformTest {
 
         assertNull(original.getResourceAsStream(ABS_RESOURCE));
     }
+
+    @Test
+    public void classForName() throws Exception {
+        if (runWith(RULES)) {
+            return;
+        }
+
+        Class.forName("java.util.HashMap");
+
+        Class.forName(String.class.getModule(), "java.util.ArrayList");
+
+        try {
+            Class.forName("java.util.Random", true, String.class.getClassLoader());
+            fail();
+        } catch (SecurityException e) {
+        }
+
+        // Okay if not asked to be initialized.
+        Class.forName("java.util.Random", false, String.class.getClassLoader());
+
+        // Okay if the ClassLoader is the same.
+        Class.forName(getClass().getName(), true, getClass().getClassLoader());
+    }
 }

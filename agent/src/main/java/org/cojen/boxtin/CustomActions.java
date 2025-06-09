@@ -90,6 +90,14 @@ public final class CustomActions {
         return protectionDomain == null;
     }
 
+    // Check for Class.forName(String, boolean, ClassLoader).
+    public static boolean checkForName(Class<?> caller,
+                                       String name, boolean initialize, ClassLoader loader)
+    {
+        // Allowed when not asked to initialize or when the caller's loader is the same.
+        return !initialize || caller.getClassLoader() == loader;
+    }
+
     // Check for Class.getResource and getResourceAsStream.
     public static boolean checkGetResource(Class<?> caller, Class<?> clazz) {
         Module module = clazz.getModule();
