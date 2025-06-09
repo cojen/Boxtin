@@ -438,13 +438,15 @@ final class RuleSet implements Rules {
         }
 
         boolean isDeniedAtCaller() {
-            if (mVariants == null) {
-                return mDefaultRule.isDeniedAtCaller();
+            if (mDefaultRule.isDeniedAtCaller()) {
+                return true;
             }
 
-            for (Rule rule : mVariants.values()) {
-                if (rule.isDeniedAtCaller()) {
-                    return true;
+            if (mVariants != null) {
+                for (Rule rule : mVariants.values()) {
+                    if (rule.isDeniedAtCaller()) {
+                        return true;
+                    }
                 }
             }
 
@@ -452,8 +454,8 @@ final class RuleSet implements Rules {
         }
 
         boolean isDeniedAtTarget() {
-            if (mVariants == null) {
-                return mDefaultRule.isDeniedAtTarget();
+            if (mDefaultRule.isDeniedAtTarget()) {
+                return true;
             }
 
             if (mVariants != null) {
