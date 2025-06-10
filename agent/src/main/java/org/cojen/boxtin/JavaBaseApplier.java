@@ -261,7 +261,6 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("defineModules")
             .denyMethod("defineModulesWithOneLoader")
             .denyMethod("defineModulesWithManyLoaders")
-            .denyMethod("findLoader")
 
             .forClass("ModuleLayer.Controller")
             .callerCheck()
