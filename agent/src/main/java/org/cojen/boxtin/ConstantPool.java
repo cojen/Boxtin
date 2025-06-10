@@ -557,6 +557,13 @@ final class ConstantPool {
         return addConstant(new C_MemberRef(10, clazz, nat));
     }
 
+    /**
+     * Adds a member reference with a different class reference.
+     */
+    C_MemberRef addWithClass(C_MemberRef memberRef, C_Class clazz) {
+        return addConstant(new C_MemberRef(memberRef.mTag, clazz, memberRef.mNameAndType));
+    }
+
     @SuppressWarnings("unchecked")
     private <C extends Constant> C addConstant(C constant) {
         Constant existing = mMappedConstants.putIfAbsent(constant, constant);

@@ -1859,9 +1859,18 @@ final class ClassFileProcessor {
                     // proxy methods. This technique doesn't work for virtual methods, because
                     // when declared as final they cannot be overridden.
 
+                    mConstantPool.extend();
+                    methodRef = mConstantPool.addWithClass(methodRef, clazz);
+
                     C_NameAndType nat = methodRef.mNameAndType;
                     Rule rule = forClass.ruleForMethod(nat.mName, nat.mTypeDesc);
-                    C_MemberRef proxyRef = addProxyMethod(rule, INVOKESTATIC, PT_CALLER, methodRef);
+
+                    C_MemberRef proxyRef;
+                    if (rule.isDeniedAtCaller()) {
+                        proxyRef = addProxyMethod(rule, INVOKESTATIC, PT_CALLER, methodRef);
+                    } else {
+                        proxyRef = methodRef;
+                    }
 
                     addProxyMethod(null, INVOKESTATIC, PT_PLAIN, proxyRef,
                                    Modifier.PROTECTED | Modifier.STATIC | 0x1000, // | synthetic
