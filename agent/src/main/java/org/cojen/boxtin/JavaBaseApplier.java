@@ -334,6 +334,7 @@ final class JavaBaseApplier implements RulesApplier {
             .forClass("Thread")
             .denyAll()
             .denyMethod(DenyAction.value(1), "activeCount")
+            .denyMethod(DenyAction.value(null), "getContextClassLoader")
             .denyMethod(DenyAction.value(0), "enumerate")  // do nothing
             .denyMethod(DenyAction.empty(), "setDaemon")   // do nothing
             .denyMethod(DenyAction.empty(), "setName")     // do nothing
