@@ -2114,7 +2114,7 @@ final class ClassFileProcessor {
             encoder.writeByte(0);
         }
 
-        proxyDesc.returnValue(encoder);
+        pushed = Math.max(pushed, proxyDesc.returnValue(encoder));
 
         // Update max_stack, max_locals, and code_length.
         byte[] buffer = encoder.buffer();
