@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-package org.cojen.boxtin;
+package org.cojen.boxtin.tt;
 
 import org.junit.Ignore;
 
@@ -25,5 +25,8 @@ import org.junit.Ignore;
  * @see TransformTest.Injector
  */
 @Ignore
-public final class T_InterfaceOperationsImpl implements T_InterfaceOperations {
+public interface T_InterfaceOperations {
+    default int op1(int a) {
+        return a + 1;
+    }
 }

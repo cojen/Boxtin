@@ -19,6 +19,8 @@ package org.cojen.boxtin;
 import org.junit.*;
 import static org.junit.Assert.*;
 
+import org.cojen.boxtin.tt.T_EmptyOperations;
+
 /**
  * 
  *
@@ -36,7 +38,7 @@ public class EmptyTransformTest extends TransformTest {
     static {
         var b = new RulesBuilder();
 
-        var forClass = b.forModule("xxx").forPackage("org.cojen.boxtin")
+        var forClass = b.forModule("xxx").forPackage("org.cojen.boxtin.tt")
             .forClass("T_EmptyOperations")
             .allowAllConstructors().denyVariant(DenyAction.empty());
 

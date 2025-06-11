@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-package org.cojen.boxtin;
+package org.cojen.boxtin.tt;
 
 import org.junit.Ignore;
 
@@ -25,20 +25,5 @@ import org.junit.Ignore;
  * @see TransformTest.Injector
  */
 @Ignore
-public class T_CheckedOperations {
-
-    public T_CheckedOperations() {
-    }
-
-    public static String op1(int a) {
-        return "" + a;
-    }
-
-    public static long op2(int a, long b) {
-        return a + b;
-    }
-
-    public static String[] op3(String a) {
-        return new String[] {a};
-    }
+public final class T_InterfaceOperationsImpl implements T_InterfaceOperations {
 }

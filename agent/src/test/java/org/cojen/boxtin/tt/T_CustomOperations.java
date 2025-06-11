@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-package org.cojen.boxtin;
+package org.cojen.boxtin.tt;
 
 import org.junit.Ignore;
 

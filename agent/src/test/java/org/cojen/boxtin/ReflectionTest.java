@@ -272,9 +272,10 @@ public class ReflectionTest {
         SecurityAgent.testActivate(new TestController());
         Reflection r = SecurityAgent.reflection();
 
-        String name = "boxtin.ReflectionTest.TestRecord";
+        MethodHandles.Lookup modLookup = TestUtils.newModule(getClass());
+        Class<?> modClass = modLookup.lookupClass();
 
-        ClassMaker cm = ClassMaker.beginExternal(name).public_();
+        ClassMaker cm = ClassMaker.begin(modClass.getName(), modLookup).public_();
 
         cm.addField(String.class, "a");
         cm.addField(int.class, "b");

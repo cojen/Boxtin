@@ -16,6 +16,8 @@
 
 package org.cojen.boxtin;
 
+import java.lang.invoke.MethodHandles;
+
 import java.lang.reflect.InvocationTargetException;
 
 import java.io.InputStream;
@@ -126,8 +128,9 @@ public abstract class TransformTest {
         @Override
         protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
             // Check if the class name starts with a special prefix which indicates that it
-            // should be transformed, but with target rules only.
-            if (!name.startsWith("org.cojen.boxtin.T_")) {
+            // should be transformed, but with target rules only. A separate package is needed
+            // because packages cannot be defined across multiple modules.
+            if (!name.startsWith("org.cojen.boxtin.tt.T_")) {
                 return super.loadClass(name, resolve);
             }
 
@@ -180,11 +183,11 @@ public abstract class TransformTest {
                     xbytes = processor.redefine();
 
                     // Must be in a different module in order for checks to be applied.
-                    return new ClassLoader(this) {
-                        Class<?> inject(byte[] b) {
-                            return defineClass(className, b, 0, b.length);
-                        }
-                    }.inject(xbytes);
+
+                    MethodHandles.Lookup modLookup = TestUtils.newModule
+                        (this, getUnnamedModule(), getClass().getModule());
+
+                    return modLookup.defineClass(xbytes);
                 }
 
                 xbytes = null;

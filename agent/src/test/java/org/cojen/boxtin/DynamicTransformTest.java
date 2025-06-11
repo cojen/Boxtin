@@ -24,6 +24,8 @@ import java.lang.invoke.MethodType;
 import org.junit.*;
 import static org.junit.Assert.*;
 
+import org.cojen.boxtin.tt.T_DynamicOperations;
+
 /**
  * 
  *
@@ -40,7 +42,7 @@ public class DynamicTransformTest extends TransformTest {
         try {
             var b1 = new RulesBuilder();
 
-            b1.forModule("xxx").forPackage("org.cojen.boxtin")
+            b1.forModule("xxx").forPackage("org.cojen.boxtin.tt")
                 .forClass("T_DynamicOperations")
                 .allowAllConstructors()
                 .denyVariant(DenyAction.empty(), int.class)

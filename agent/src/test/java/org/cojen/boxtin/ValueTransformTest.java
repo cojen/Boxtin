@@ -19,6 +19,8 @@ package org.cojen.boxtin;
 import org.junit.*;
 import static org.junit.Assert.*;
 
+import org.cojen.boxtin.tt.T_ValueOperations;
+
 /**
  * 
  *
@@ -34,7 +36,7 @@ public class ValueTransformTest extends TransformTest {
     static {
         var b = new RulesBuilder();
 
-        b.forModule("xxx").forPackage("org.cojen.boxtin")
+        b.forModule("xxx").forPackage("org.cojen.boxtin.tt")
             .forClass("T_ValueOperations")
             .allowAllConstructors()
             .denyVariant(DenyAction.value(null))

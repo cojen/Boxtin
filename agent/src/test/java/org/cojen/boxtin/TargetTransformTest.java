@@ -24,6 +24,8 @@ import java.util.function.Supplier;
 import org.junit.*;
 import static org.junit.Assert.*;
 
+import org.cojen.boxtin.tt.T_Operations;
+
 /**
  * 
  *
@@ -39,7 +41,7 @@ public class TargetTransformTest extends TransformTest {
     static {
         var b = new RulesBuilder();
 
-        b.forModule("xxx").forPackage("org.cojen.boxtin").forClass("T_Operations")
+        b.forModule("xxx").forPackage("org.cojen.boxtin.tt").forClass("T_Operations")
             .denyAllConstructors().allowVariant(int.class)
             .denyMethod(DenyAction.exception(Exception.class.getName(), "hello"), "op3")
             .denyMethod(DenyAction.empty(), "op5");

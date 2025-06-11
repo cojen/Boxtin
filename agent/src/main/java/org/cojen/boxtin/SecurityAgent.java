@@ -671,6 +671,10 @@ public final class SecurityAgent {
             .computeIfAbsent(target, k -> new ConcurrentHashMap<>(4))
             .computeIfAbsent(fname, k -> new ConcurrentHashMap<>(4))
             .computeIfAbsent(desc, k -> {
+                if (!target.getModule().isNamed()) {
+                    // Unnamed modules cannot have target checks applied.
+                    return Rule.allow();
+                }
                 Rules rules = mController.rulesForCaller(callerModule);
                 if (rules == null) {
                     return Rule.allow();

@@ -19,6 +19,9 @@ package org.cojen.boxtin;
 import org.junit.*;
 import static org.junit.Assert.*;
 
+import org.cojen.boxtin.tt.T_InterfaceOperations;
+import org.cojen.boxtin.tt.T_InterfaceOperationsImpl;
+
 /**
  * 
  *
@@ -34,7 +37,7 @@ public class TargetInterfaceTransformTest extends TransformTest {
     static {
         var b = new RulesBuilder();
 
-        b.forModule("xxx").forPackage("org.cojen.boxtin")
+        b.forModule("xxx").forPackage("org.cojen.boxtin.tt")
             .forClass("T_InterfaceOperationsImpl").allowAllConstructors()
             .forClass("T_InterfaceOperations").denyAll()
             ;

@@ -21,6 +21,8 @@ import java.util.Random;
 import org.junit.*;
 import static org.junit.Assert.*;
 
+import org.cojen.boxtin.tt.T_Operations;
+
 /**
  * Tests transformations against caller-side code which is complicated.
  *
@@ -36,7 +38,7 @@ public class ComplexTransformTest extends TransformTest {
     static {
         var b = new RulesBuilder();
 
-        b.forModule("xxx").forPackage("org.cojen.boxtin").forClass("T_Operations")
+        b.forModule("xxx").forPackage("org.cojen.boxtin.tt").forClass("T_Operations")
             .callerCheck()
             .denyAllConstructors().allowVariant(int.class)
             .denyMethod(DenyAction.exception(Exception.class.getName(), "hello"), "op3")

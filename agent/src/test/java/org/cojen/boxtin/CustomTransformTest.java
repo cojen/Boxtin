@@ -24,6 +24,8 @@ import java.lang.invoke.MethodType;
 import org.junit.*;
 import static org.junit.Assert.*;
 
+import org.cojen.boxtin.tt.T_CustomOperations;
+
 /**
  * 
  *
@@ -40,7 +42,7 @@ public class CustomTransformTest extends TransformTest {
         try {
             var b = new RulesBuilder();
 
-            b.forModule("xxx").forPackage("org.cojen.boxtin")
+            b.forModule("xxx").forPackage("org.cojen.boxtin.tt")
                 .forClass("T_CustomOperations")
                 .allowAllConstructors()
                 .denyVariant(custom(void.class, null), int.class)
