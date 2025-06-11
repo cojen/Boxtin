@@ -1745,7 +1745,8 @@ final class ClassFileProcessor {
                     offset += pad(offset - startOffset);
                     offset += 4; // skip the default jump target
                     // skip the value and jump target pairs
-                    offset = skip(offset, decodeIntBE(buffer, offset) * 8L);
+                    int npairs = decodeIntBE(buffer, offset); offset += 4;
+                    offset = skip(offset, npairs * 8L);
                     continue;
                 }
             } // end switch
