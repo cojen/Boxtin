@@ -530,15 +530,20 @@ final class ConstantPool {
      * already been called.
      */
     C_MemberRef addUniqueMethod(C_Class clazz, C_UTF8 typeDesc) {
-        var nameBuf = new byte[1 + 9]; // one prefix byte plus up to nine digits
-        nameBuf[0] = '$';
-        int nameLength = 2; // start with one random digit
+        final int prefixLen = 8;
+
+        var nameBuf = new byte[8 + 9]; // prefix length plus up to nine digits
+
+        nameBuf[0] = '$'; nameBuf[1] = 'b'; nameBuf[2] = 'o'; nameBuf[3] = 'x';
+        nameBuf[4] = 't'; nameBuf[5] = 'i'; nameBuf[6] = 'n'; nameBuf[7] = '$';
+
+        int nameLength = prefixLen + 1; // start with one random digit
 
         var rnd = ThreadLocalRandom.current();
         C_UTF8 name;
 
         while (true) {
-            for (int i=1; i<nameLength; i++) {
+            for (int i=prefixLen; i<nameLength; i++) {
                 nameBuf[i] = (byte) ('0' + rnd.nextInt(10));
             }
             name = new C_UTF8(1, nameBuf, 0, nameLength);
