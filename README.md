@@ -52,11 +52,11 @@ Here's an example transform applied to a caller method, which calls a synthetic 
 
     // transformed
     public void fail() {
-        $3(1);
+        $boxtin$3(1);
     }
 
     // synthetic proxy method
-    private static void $3(int param) {
+    private static void $boxtin$3(int param) {
         if (Caller.class.getModule() != System.class.getModule()) {
             throw new SecurityException();
         }
@@ -80,11 +80,11 @@ The Java classfile format supports defining [`MethodHandle`](https://docs.oracle
 
     // transformed
     public void fail() {
-        OptionalInt.of(1).ifPresent(param -> $5(param));
+        OptionalInt.of(1).ifPresent(param -> $boxtin$5(param));
     }
 
     // synthetic proxy method
-    private static void $5(int param) {
+    private static void $boxtin$5(int param) {
         if (Caller.class.getModule() != System.class.getModule()) {
             throw new SecurityException();
         }
@@ -130,12 +130,12 @@ Access is guarded when `Constructor` and `Method` instances are acquired, and no
     // transformed
     public void run() {
         // An exception is thrown if access is denied.
-        Method m = $9(Widget.class, "open");
+        Method m = $boxtin$9(Widget.class, "open");
         ...
     }
 
     // synthetic proxy method
-    private static Method $9(Class clazz, String name, Class... paramTypes) {
+    private static Method $boxtin$9(Class clazz, String name, Class... paramTypes) {
         // This captures the caller class.
         Reflection r = SecurityAgent.reflection();
         // This might throw an exception.
