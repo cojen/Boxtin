@@ -473,7 +473,7 @@ public final class SecurityAgent {
      * modules differ, and the corresponding rule set denies access.
      *
      * @param caller the class which is calling the target
-     * @param target the class which has an operation which potentially denied for the caller
+     * @param target the class which has an operation which is potentially denied for the caller
      * @param name target method name, or null/"<init>" if a constructor
      * @param desc target method or constructor descriptor
      * @hidden
@@ -491,7 +491,7 @@ public final class SecurityAgent {
      * modules are the same or if the corresponding rule set allows access.
      *
      * @param caller the class which is calling the target
-     * @param target the class which has an operation which potentially denied for the caller
+     * @param target the class which has an operation which is potentially denied for the caller
      * @param name target method name, or null/"<init>" if a constructor
      * @param desc target method or constructor descriptor
      * @hidden
