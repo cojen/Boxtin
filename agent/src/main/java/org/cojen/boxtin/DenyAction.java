@@ -204,10 +204,9 @@ public abstract sealed class DenyAction {
 
         boolean requireInstance = !Modifier.isStatic(exec.getModifiers());
 
-        boolean failed = false;
         int fromIx = 0, toIx = 0;
 
-        for (; fromIx < fromTypes.length && toIx < toCount; toIx++) {
+        for (; toIx < toCount; toIx++) {
             Class<?> to = toMT.parameterType(toIx);
 
             if (toIx == 0 && to == Class.class) {
@@ -217,26 +216,25 @@ public abstract sealed class DenyAction {
 
             if (requireInstance) {
                 if (!canConvert(exec.getDeclaringClass(), to)) {
-                    failed = true;
-                    break;
+                    throw new IllegalArgumentException
+                        ("Cannot convert instance to parameter " + toIx + " + of `" + hook + '`');
                 }
                 // The instance parameter has been consumed.
                 requireInstance = false;
                 continue;
             }
 
-            if (!canConvert(fromTypes[fromIx], to)) {
-                failed = true;
+            if (fromIx >= fromTypes.length) {
                 break;
             }
 
-            fromIx++;
-        }
+            if (!canConvert(fromTypes[fromIx], to)) {
+                throw new IllegalArgumentException
+                    ("Cannot convert from parameter " + fromIx + " of `" +
+                     exec + "` to parameter " + toIx + " + of `" +  hook + '`');
+            }
 
-        if (failed) {
-            throw new IllegalArgumentException("Cannot convert from parameter " + fromIx + " of `" +
-                                               exec + "` to parameter " + toIx + " + of `" + 
-                                               hook + '`');
+            fromIx++;
         }
 
         if (toIx < toCount) {
