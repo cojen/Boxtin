@@ -24,6 +24,8 @@ import java.nio.ByteBuffer;
 
 import java.security.ProtectionDomain;
 
+import java.util.Properties;
+
 /**
  * Defines a set of rules to deny operations in the java.base module which could be considered
  * harmful.
@@ -45,7 +47,7 @@ final class JavaBaseApplier implements RulesApplier {
     @Override
     public void applyRulesTo(RulesBuilder b) {
         MethodHandleInfo iv1, iv2, lv1, lv2, sv1;
-        MethodHandleInfo cgp1;
+        MethodHandleInfo fp1, fp2, fp3, fp4, fp5, fp6;
         MethodHandleInfo cdc1, cdc2;
         MethodHandleInfo cfn1;
         MethodHandleInfo cgr1, cgr2, cgr3;
@@ -62,8 +64,16 @@ final class JavaBaseApplier implements RulesApplier {
             lv2 = findMethod(lookup, "longValue", mt(Long.class, String.class, Long.class));
             sv1 = findMethod(lookup, "stringValue", mt(String.class, String.class, String.class));
 
-            cgp1 = findMethod(lookup, "checkGetProperty",
-                              mt(boolean.class, Class.class, String.class));
+            fp1 = findMethod(lookup, "getProperties", mt(Properties.class, Class.class));
+            fp2 = findMethod(lookup, "getProperty",
+                             mt(String.class, Class.class, String.class));
+            fp3 = findMethod(lookup, "getProperty",
+                             mt(String.class, Class.class, String.class, String.class));
+            fp4 = findMethod(lookup, "setProperties",
+                             mt(void.class, Class.class, Properties.class));
+            fp5 = findMethod(lookup, "setProperty",
+                             mt(String.class, Class.class, String.class, String.class));
+            fp6 = findMethod(lookup, "clearProperty", mt(String.class, Class.class, String.class));
 
             cdc1 = findMethod(lookup, "checkDefineClass",
                               mt(boolean.class, Class.class, ClassLoader.class, String.class,
@@ -313,12 +323,14 @@ final class JavaBaseApplier implements RulesApplier {
             .denyVariant(DenyAction.value(null))
             // Return an empty map of environment variables.
             .denyVariant(DenyAction.empty(), "Ljava/lang/String;")
+            // Return a filtered set of properties.
+            .denyMethod(DenyAction.custom(fp1), "getProperties")
             .denyMethod("getProperty")
-            // Return null if not allowed.
-            .denyVariant(DenyAction.checked(cgp1, DenyAction.value(null)), "Ljava/lang/String;")
-            // Return the default value if not allowed.
-            .denyVariant(DenyAction.checked(cgp1, DenyAction.custom(sv1)),
-                         "Ljava/lang/String;Ljava/lang/String;")
+            .denyVariant(DenyAction.custom(fp2), "Ljava/lang/String;")
+            .denyVariant(DenyAction.custom(fp3), "Ljava/lang/String;Ljava/lang/String;")
+            .denyMethod(DenyAction.custom(fp4), "setProperties")
+            .denyMethod(DenyAction.custom(fp5), "setProperty")
+            .denyMethod(DenyAction.custom(fp6), "clearProperty")
             .denyMethod(DenyAction.empty(), "gc") // do nothing
             .denyMethod(DenyAction.empty(), "runFinalization") // do nothing
             .allowMethod("arraycopy")

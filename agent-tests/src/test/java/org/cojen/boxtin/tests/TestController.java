@@ -22,9 +22,11 @@ import java.lang.invoke.MethodType;
 
 import java.security.ProtectionDomain;
 
+import java.util.Properties;
 import java.util.Set;
 
 import org.cojen.boxtin.Controller;
+import org.cojen.boxtin.CustomActions;
 import org.cojen.boxtin.DenyAction;
 import org.cojen.boxtin.Rules;
 import org.cojen.boxtin.RulesBuilder;
@@ -45,6 +47,10 @@ public final class TestController implements Controller {
         return protectionDomain == null;
     }
 
+    public static Properties getProperties(Class<?> caller) {
+        return CustomActions.getProperties(caller);
+    }
+
     private static MethodType mt(Class<?> rtype, Class<?>... ptypes) {
         return MethodType.methodType(rtype, ptypes);
     }
@@ -57,6 +63,7 @@ public final class TestController implements Controller {
 
     public TestController() {
         MethodHandleInfo cdc;
+        MethodHandleInfo fp1;
 
         try {
             MethodHandles.Lookup lookup = MethodHandles.lookup();
@@ -64,6 +71,8 @@ public final class TestController implements Controller {
             cdc = findMethod(lookup, "checkDefineClass",
                              mt(boolean.class, Class.class, ClassLoader.class, String.class,
                                 byte[].class, int.class, int.class, ProtectionDomain.class));
+
+            fp1 = findMethod(lookup, "getProperties", mt(Properties.class, Class.class));
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
@@ -161,6 +170,7 @@ public final class TestController implements Controller {
             .forClass("System")
             .callerCheck()
             .denyAll()
+            .denyMethod(DenyAction.custom(fp1), "getProperties")
             .allowMethod("arraycopy")
             .allowMethod("currentTimeMillis")
             .allowMethod("gc")

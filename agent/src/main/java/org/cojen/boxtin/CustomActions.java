@@ -20,6 +20,8 @@ import java.nio.ByteBuffer;
 
 import java.security.ProtectionDomain;
 
+import java.util.Properties;
+
 /**
  * Used by JavaBaseApplier for selecting custom deny actions. The methods must be accessible,
  * which is why a separate class is used.
@@ -53,23 +55,34 @@ public final class CustomActions {
         return defaultValue;
     }
 
-    // Check for System.getProperty, returning true if access is allowed.
-    public static boolean checkGetProperty(Class<?> caller, String name) {
-        return switch (name) {
-            default -> false;
+    // Custom deny action for System.getProperties.
+    public static Properties getProperties(Class<?> caller) {
+        return FilteredProperties.getProperties(caller.getModule());
+    }
 
-            case "java.version", "java.version.date",
-                "java.vendor", "java.vendor.url", "java.vendor.version",
-                "java.vm.specification.version", "java.vm.specification.vendor",
-                "java.vm.specification.name", "java.vm.version", "java.vm.vendor", "java.vm.name",
-                "java.specification.version", "java.specification.maintenance.version",
-                "java.specification.vendor", "java.specification.name",
-                "java.class.version",
-                "os.name", "os.arch", "os.version",
-                "file.separator", "path.separator", "line.separator",
-                "native.encoding", "stdout.encoding", "stderr.encoding"
-                -> true;
-        };
+    // Custom deny action for System.getProperty.
+    public static String getProperty(Class<?> caller, String name) {
+        return FilteredProperties.getProperty(caller.getModule(), name);
+    }
+
+    // Custom deny action for System.getProperty.
+    public static String getProperty(Class<?> caller, String name, String def) {
+        return FilteredProperties.getProperty(caller.getModule(), name, def);
+    }
+
+    // Custom deny action for System.setProperties.
+    public static void setProperties(Class<?> caller, Properties props) {
+        FilteredProperties.setProperties(caller.getModule(), props);
+    }
+
+    // Custom deny action for System.setProperty.
+    public static String setProperty(Class<?> caller, String name, String value) {
+        return FilteredProperties.setProperty(caller.getModule(), name, value);
+    }
+
+    // Custom deny action for System.clearProperty.
+    public static String clearProperty(Class<?> caller, String name) {
+        return FilteredProperties.clearProperty(caller.getModule(), name);
     }
 
     // Check for ClassLoader.defineClass.
