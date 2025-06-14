@@ -98,7 +98,10 @@ final class JavaBaseApplier implements RulesApplier {
             restricted = DenyAction.checked
                 (cna1, DenyAction.exception("java.lang.IllegalCallerException"));
 
-            inaccessible = DenyAction.exception("java.lang.reflect.InaccessibleObjectException");
+            inaccessible = DenyAction.checked
+                (findMethod(lookup, "checkSetAccessible",
+                            mt(boolean.class, Class.class, Object.class, boolean.class)),
+                 DenyAction.exception("java.lang.reflect.InaccessibleObjectException"));
 
         } catch (RuntimeException e) {
             throw e;
@@ -494,14 +497,17 @@ final class JavaBaseApplier implements RulesApplier {
             .forClass("Constructor")
             .callerCheck()
             .denyMethod(inaccessible, "setAccessible")
+            .denyMethod(DenyAction.value(false), "trySetAccessible")
 
             .forClass("Field")
             .callerCheck()
             .denyMethod(inaccessible, "setAccessible")
+            .denyMethod(DenyAction.value(false), "trySetAccessible")
 
             .forClass("Method")
             .callerCheck()
             .denyMethod(inaccessible, "setAccessible")
+            .denyMethod(DenyAction.value(false), "trySetAccessible")
 
             .forClass("RecordComponent")
             .denyMethod("getAccessor")

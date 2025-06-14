@@ -217,7 +217,7 @@ public abstract sealed class DenyAction {
             if (requireInstance) {
                 if (!canConvert(exec.getDeclaringClass(), to)) {
                     throw new IllegalArgumentException
-                        ("Cannot convert instance to parameter " + toIx + " + of `" + hook + '`');
+                        ("Cannot convert instance to parameter " + toIx + " of `" + hook + '`');
                 }
                 // The instance parameter has been consumed.
                 requireInstance = false;
@@ -231,7 +231,7 @@ public abstract sealed class DenyAction {
             if (!canConvert(fromTypes[fromIx], to)) {
                 throw new IllegalArgumentException
                     ("Cannot convert from parameter " + fromIx + " of `" +
-                     exec + "` to parameter " + toIx + " + of `" +  hook + '`');
+                     exec + "` to parameter " + toIx + " of `" +  hook + '`');
             }
 
             fromIx++;

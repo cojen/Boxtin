@@ -65,8 +65,6 @@ public class TestUtils {
                                                  Module... dependencies)
         throws Exception
     {
-        System.out.println("dependencies: " + java.util.Arrays.toString(dependencies));
-
         // There's got to be an easier way to do this.
 
         String className = pkgName + ".Bootstrap";

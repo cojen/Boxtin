@@ -16,6 +16,8 @@
 
 package org.cojen.boxtin;
 
+import java.lang.reflect.Member;
+
 import java.nio.ByteBuffer;
 
 import java.security.ProtectionDomain;
@@ -139,5 +141,18 @@ public final class CustomActions {
         // --enable-native-access option.
         Module module = caller.getModule();
         return module.isNamed() && module.isNativeAccessEnabled();
+    }
+
+    // Check for AccessibleObject.setAccessible.
+    public static boolean checkSetAccessible(Class<?> caller, Object obj, boolean set) {
+        if (!set) {
+            // Allowed when not enabling access.
+            return true;
+        }
+        if (obj instanceof Member m) {
+            // Allowed when the caller Module is the same as the Module being accessed.
+            return caller.getModule() == m.getDeclaringClass().getModule();
+        }
+        return false;
     }
 }
