@@ -117,25 +117,58 @@ public final class RulesBuilder {
      *
      * @param layer required
      * @return this
+     * @throws NullPointerException if layer is null
+     * @throws IllegalStateException if validation fails
      */
-    public RulesBuilder validate(ModuleLayer layer)
-        throws ClassNotFoundException, NoSuchMethodException
-    {
+    public RulesBuilder validate(ModuleLayer layer) {
+        return validate(layer, null);
+    }
+
+    /**
+     * Validates that all classes are loadable, and that all class members are found. An
+     * exception is thrown if validation fails.
+     *
+     * @param layer required
+     * @param reporter pass non-null for reporting multiple validation failures
+     * @return this
+     * @throws NullPointerException if layer is null
+     * @throws IllegalStateException if validation fails
+     */
+    public RulesBuilder validate(ModuleLayer layer, Consumer<String> reporter) {
         // FIXME: Validate inheritance when using caller checks. Also check
         // for @CallerSensitive methods, which must rely on caller checks.
 
         Objects.requireNonNull(layer);
 
+        var actualReporter = new Consumer<String>() {
+            String firstMessage;
+
+            public void accept(String message) {
+                if (reporter == null) {
+                    throw new IllegalStateException(message);
+                }
+                if (firstMessage == null) {
+                    firstMessage = message;
+                }
+                reporter.accept(message);
+            }
+        };
+
         if (mModules != null) {
             var packageNames = new HashSet<String>();
 
             for (ModuleScope ms : mModules.values()) {
-                ms.preValidate(packageNames);
+                ms.preValidate(packageNames, actualReporter);
             }
 
             for (ModuleScope ms : mModules.values()) {
-                ms.validate(layer);
+                ms.validate(layer, actualReporter);
             }
+        }
+
+        String message = actualReporter.firstMessage;
+        if (message != null) {
+            throw new IllegalStateException(message);
         }
 
         return this;
@@ -295,7 +328,6 @@ public final class RulesBuilder {
 
     private static int forAllMethods(boolean checkInherited, boolean allowAbstract,
                                      Class<?> clazz, String name, Consumer<Method> consumer)
-        throws ClassNotFoundException
     {
         int count = 0;
 
@@ -427,11 +459,10 @@ public final class RulesBuilder {
             return end().forModule(module);
         }
 
-        void preValidate(Set<String> packageNames) {
+        void preValidate(Set<String> packageNames, Consumer<String> reporter) {
             for (String name : mPackages.keySet()) {
                 if (!packageNames.add(name)) {
-                    throw new IllegalStateException
-                        ("Package is defined in multiple modules: " + name);
+                    reporter.accept("Package is defined in multiple modules: " + name);
                 }
             }
         }
@@ -440,27 +471,28 @@ public final class RulesBuilder {
          * Validates that all classes are loadable, and that all class members are found.
          *
          * @param layer required
-         * @throws IllegalStateException if validation fails
          */
-        void validate(ModuleLayer layer) throws ClassNotFoundException, NoSuchMethodException {
+        void validate(ModuleLayer layer, Consumer<String> reporter) {
             Module module = layer.findModule(mName).orElse(null);
 
             if (module == null) {
-                throw new IllegalStateException("Module isn't found: " + mName);
+                reporter.accept("Module isn't found: " + mName);
+                return;
             }
 
             ClassLoader loader;
             try {
                 loader = layer.findLoader(mName);
             } catch (IllegalArgumentException e) {
-                throw new IllegalStateException("Module isn't found: " + mName);
+                reporter.accept("Module isn't found: " + mName);
+                return;
             }
 
             Set<String> packages = module.getPackages();
 
             if (mPackages != null) {
                 for (PackageScope ps : mPackages.values()) {
-                    ps.validate(packages, loader);
+                    ps.validate(packages, loader, reporter);
                 }
             }
         }
@@ -617,20 +649,16 @@ public final class RulesBuilder {
 
         /**
          * Validates that all classes are loadable, and that all class members are found.
-         *
-         * @throws IllegalStateException if validation fails
          */
-        void validate(Set<String> packages, ClassLoader loader)
-            throws ClassNotFoundException, NoSuchMethodException
-        {
+        void validate(Set<String> packages, ClassLoader loader, Consumer<String> reporter) {
             if (!packages.contains(mName)) {
-                throw new IllegalStateException
-                    ("Package isn't found: " + mParent.mName + '/' + mName);
+                reporter.accept("Package isn't found: " + mParent.mName + '/' + mName);
+                return;
             }
 
             if (mClasses != null) {
                 for (ClassScope cs : mClasses.values()) {
-                    cs.validate(loader);
+                    cs.validate(loader, reporter);
                 }
             }
         }
@@ -1021,26 +1049,30 @@ public final class RulesBuilder {
         }
 
         /**
-         * Validates that all classes are loadable, and that all class members are found.
-         *
-         * @throws IllegalStateException if validation fails
+         * Validates all class members.
          */
-        void validate(ClassLoader loader) throws ClassNotFoundException, NoSuchMethodException {
+        void validate(ClassLoader loader, Consumer<String> reporter) {
             String className = mName;
             String pkg = mParent.mName;
             if (!pkg.isEmpty()) {
                 className = pkg.replace('/', '.') + '.' + className;
             }
 
-            Class<?> clazz = Class.forName(className, false, loader);
+            Class<?> clazz;
+            try {
+                clazz = Class.forName(className, false, loader);
+            } catch (ClassNotFoundException e) {
+                reporter.accept(e.toString());
+                return;
+            }
 
             if (mConstructors != null) {
-                mConstructors.validateConstructor(loader, clazz);
+                mConstructors.validateConstructor(loader, clazz, reporter);
             }
 
             if (mMethods != null) {
                 for (Map.Entry<String, MethodScope> e : mMethods.entrySet()) {
-                    e.getValue().validateMethod(loader, clazz, e.getKey());
+                    e.getValue().validateMethod(loader, clazz, e.getKey(), reporter);
                 }
             }
         }
@@ -1165,9 +1197,7 @@ public final class RulesBuilder {
             return this;
         }
 
-        void validateConstructor(ClassLoader loader, Class<?> clazz)
-            throws ClassNotFoundException, NoSuchMethodException
-        {
+        void validateConstructor(ClassLoader loader, Class<?> clazz, Consumer<String> reporter) {
             if (isEmpty(mVariants)) {
                 int count = 0;
 
@@ -1176,18 +1206,24 @@ public final class RulesBuilder {
                         continue;
                     }
                     count++;
-                    validateConstructor(loader, ctor, mDefaultRule);
+                    validateConstructor(loader, ctor, mDefaultRule, reporter);
                 }
 
                 if (count == 0) {
-                    throw new NoSuchMethodException("Constructor not found: " + clazz);
+                    reporter.accept("Constructor not found: " + clazz);
                 }
 
                 return;
             }
 
             for (Map.Entry<CharSequence, Rule> e : mVariants.entrySet()) {
-                Class<?>[] paramTypes = paramTypesFor(loader, e.getKey().toString());
+                Class<?>[] paramTypes;
+                try {
+                    paramTypes = paramTypesFor(loader, e.getKey().toString());
+                } catch (ClassNotFoundException | NoSuchMethodException ex) {
+                    reporter.accept(ex.toString());
+                    continue;
+                }
 
                 Constructor ctor;
                 try {
@@ -1195,28 +1231,34 @@ public final class RulesBuilder {
                 } catch (NoSuchMethodException ex) {
                     ctor = tryFindConstructor(clazz, paramTypes);
                     if (ctor == null) {
-                        throw ex;
+                        reporter.accept(ex.toString());
+                        continue;
                     }
                 }
 
-                validateConstructor(loader, ctor, e.getValue());
+                validateConstructor(loader, ctor, e.getValue(), reporter);
             }
         }
 
-        private static void validateConstructor(ClassLoader loader, Constructor ctor, Rule rule)
-            throws ClassNotFoundException
+        private static void validateConstructor(ClassLoader loader, Constructor ctor, Rule rule,
+                                                Consumer<String> reporter)
         {
             DenyAction action = rule.denyAction();
             if (action == null) {
                 return;
             }
 
-            action.validateDependencies(loader);
+            try {
+                action.validateDependencies(loader);
+            } catch (ClassNotFoundException e) {
+                reporter.accept(e.toString());
+            }
+
             action.validateParameters(ctor);
         }
 
-        void validateMethod(ClassLoader loader, Class<?> clazz, String name)
-            throws ClassNotFoundException, NoSuchMethodException
+        void validateMethod(ClassLoader loader, Class<?> clazz, String name,
+                            Consumer<String> reporter)
         {
             if (isEmpty(mVariants)) {
                 Rule rule = mDefaultRule;
@@ -1226,22 +1268,25 @@ public final class RulesBuilder {
                 boolean forTarget = rule.isDeniedAtTarget();
 
                 int count = forAllMethods(!forTarget, !forTarget, clazz, name, method -> {
-                    try {
-                        validateMethod(loader, method, rule);
-                    } catch (ClassNotFoundException e) {
-                        throw rethrow(e);
-                    }
+                    validateMethod(loader, method, rule, reporter);
                 });
 
                 if (count == 0) {
-                    throw new NoSuchMethodException("Method not found: " + clazz + "." + name);
+                    reporter.accept("Method not found: " + clazz + "." + name);
                 }
 
                 return;
             }
 
             for (Map.Entry<CharSequence, Rule> e : mVariants.entrySet()) {
-                Class<?>[] paramTypes = paramTypesFor(loader, e.getKey().toString());
+                Class<?>[] paramTypes;
+                try {
+                    paramTypes = paramTypesFor(loader, e.getKey().toString());
+                } catch (ClassNotFoundException | NoSuchMethodException ex) {
+                    reporter.accept(ex.toString());
+                    continue;
+                }
+
                 Rule rule = e.getValue();
 
                 Method method;
@@ -1250,16 +1295,17 @@ public final class RulesBuilder {
                 } catch (NoSuchMethodException ex) {
                     method = tryFindMethod(!rule.isDeniedAtTarget(), clazz, name, paramTypes);
                     if (method == null) {
-                        throw ex;
+                        reporter.accept(ex.toString());
+                        continue;
                     }
                 }
 
-                validateMethod(loader, method, rule);
+                validateMethod(loader, method, rule, reporter);
             }
         }
 
-        private static void validateMethod(ClassLoader loader, Method method, Rule rule)
-            throws ClassNotFoundException
+        private static void validateMethod(ClassLoader loader, Method method, Rule rule,
+                                           Consumer<String> reporter)
         {
             DenyAction action = rule.denyAction();
             if (action == null) {
@@ -1267,10 +1313,15 @@ public final class RulesBuilder {
             }
 
             if (rule.isDeniedAtTarget() && Modifier.isAbstract(method.getModifiers())) {
-                throw new IllegalArgumentException("Target method is abstract: " + method);
+                reporter.accept("Target method is abstract: " + method);
             }
 
-            action.validateDependencies(loader);
+            try {
+                action.validateDependencies(loader);
+            } catch (ClassNotFoundException e) {
+                reporter.accept(e.toString());
+            }
+
             action.validateReturnType(method);
             action.validateParameters(method);
         }
