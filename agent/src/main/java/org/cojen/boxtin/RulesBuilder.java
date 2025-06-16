@@ -16,6 +16,8 @@
 
 package org.cojen.boxtin;
 
+import java.io.IOException;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -47,6 +49,8 @@ public final class RulesBuilder {
 
     // Default is selected when no map entry is found.
     private Rule mDefaultRule;
+
+    private Rules mBuiltRules;
 
     public RulesBuilder() {
         denyAll();
@@ -83,6 +87,7 @@ public final class RulesBuilder {
     }
 
     RulesBuilder ruleForAll(Rule rule) {
+        modified();
         mModules = null;
         mDefaultRule = rule;
         return this;
@@ -94,6 +99,7 @@ public final class RulesBuilder {
      * @param name fully qualified module name
      */
     public ModuleScope forModule(String name) {
+        modified();
         Objects.requireNonNull(name);
         Map<String, ModuleScope> modules = mModules;
         if (modules == null) {
@@ -135,8 +141,26 @@ public final class RulesBuilder {
      * @throws IllegalStateException if validation fails
      */
     public RulesBuilder validate(ModuleLayer layer, Consumer<String> reporter) {
-        // FIXME: Validate inheritance when using caller checks. Also check
-        // for @CallerSensitive methods, which must rely on caller checks.
+        return validate(layer, reporter, false);
+    }
+
+    /**
+     * Validates that all classes are loadable, and that all class members are found. This
+     * variant also examines the entire class hierarchy, for validating caller-side rules. An
+     * exception is thrown if validation fails.
+     *
+     * @param layer required
+     * @param reporter pass non-null for reporting multiple validation failures
+     * @return this
+     * @throws NullPointerException if layer is null
+     * @throws IllegalStateException if validation fails
+     */
+    public RulesBuilder validateDeep(ModuleLayer layer, Consumer<String> reporter) {
+        return validate(layer, reporter, true);
+    }
+
+    private RulesBuilder validate(ModuleLayer layer, Consumer<String> reporter, boolean deep) {
+        // FIXME: Check for @CallerSensitive methods, which must rely on caller checks.
 
         Objects.requireNonNull(layer);
 
@@ -164,6 +188,18 @@ public final class RulesBuilder {
             for (ModuleScope ms : mModules.values()) {
                 ms.validate(layer, actualReporter);
             }
+
+            if (deep) {
+                try {
+                    Map<String, ClassInfo> allClasses = ClassInfo.decodeModules(mModules.keySet());
+                    Rules rules = build();
+                    for (ClassInfo ci : allClasses.values()) {
+                        ci.validate(rules, actualReporter);
+                    }
+                } catch (IOException e) {
+                    actualReporter.accept(e.toString());
+                }
+            }
         }
 
         String message = actualReporter.firstMessage;
@@ -180,6 +216,10 @@ public final class RulesBuilder {
      * @throws IllegalStateException if a package is defined in multiple modules
      */
     public Rules build() {
+        if (mBuiltRules != null) {
+            return mBuiltRules;
+        }
+
         Map<String, RuleSet.PackageScope> builtPackages;
 
         if (isEmpty(mModules)) {
@@ -191,7 +231,11 @@ public final class RulesBuilder {
             }
         }
 
-        return new RuleSet(builtPackages, mDefaultRule);
+        return mBuiltRules = new RuleSet(builtPackages, mDefaultRule);
+    }
+
+    void modified() {
+        mBuiltRules = null;
     }
 
     private static String nameFor(Class<?> clazz) {
@@ -405,6 +449,7 @@ public final class RulesBuilder {
          * @return this
          */
         ModuleScope ruleForAll(Rule rule) {
+            modified();
             mPackages = null;
             mDefaultRule = rule;
             return this;
@@ -417,6 +462,7 @@ public final class RulesBuilder {
          * @param name fully qualified package name
          */
         public PackageScope forPackage(String name) {
+            modified();
             final String dottedName = name.replace('/', '.');
             Map<String, PackageScope> packages = mPackages;
             if (packages == null) {
@@ -497,6 +543,10 @@ public final class RulesBuilder {
             }
         }
 
+        void modified() {
+            mParent.modified();
+        }
+
         private void buildInto(Map<String, RuleSet.PackageScope> builtPackages) {
             for (Map.Entry<String, PackageScope> e : mPackages.entrySet()) {
                 RuleSet.PackageScope scope = e.getValue().build(mDefaultRule);
@@ -563,6 +613,7 @@ public final class RulesBuilder {
          * @return this
          */
         PackageScope ruleForAll(Rule rule) {
+            modified();
             mClasses = null;
             mDefaultRule = rule;
             return this;
@@ -576,6 +627,7 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope forClass(String name) {
+            modified();
             final String vmName = name.replace('.', '$');
             Map<String, ClassScope> classes = mClasses;
             if (classes == null) {
@@ -661,6 +713,10 @@ public final class RulesBuilder {
                     cs.validate(loader, reporter);
                 }
             }
+        }
+
+        void modified() {
+            mParent.modified();
         }
 
         /**
@@ -771,6 +827,7 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope denyAllConstructors() {
+            modified();
             mConstructors = null;
             mDefaultConstructorRule = mDenyRule;
             mVariantScope = mConstructors = new MethodScope().ruleForAll(mDenyRule);
@@ -783,6 +840,7 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope denyAllConstructors(DenyAction action) {
+            modified();
             mConstructors = null;
             Rule rule = mDenyRule.withDenyAction(action);
             mDefaultConstructorRule = rule;
@@ -796,6 +854,7 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope denyAllMethods() {
+            modified();
             mMethods = null;
             mDefaultMethodRule = mDenyRule;
             mVariantScope = null;
@@ -808,6 +867,7 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope denyAllMethods(DenyAction action) {
+            modified();
             mMethods = null;
             mDefaultMethodRule = mDenyRule.withDenyAction(action);
             mVariantScope = null;
@@ -821,7 +881,6 @@ public final class RulesBuilder {
          * @throws IllegalArgumentException if not a valid method name
          */
         public ClassScope denyMethod(String name) {
-            checkMethodName(name);
             mVariantScope = forMethod(name).ruleForAll(mDenyRule);
             return this;
         }
@@ -833,7 +892,6 @@ public final class RulesBuilder {
          * @throws IllegalArgumentException if not a valid method name
          */
         public ClassScope denyMethod(DenyAction action, String name) {
-            checkMethodName(name);
             mVariantScope = forMethod(name).ruleForAll(mDenyRule.withDenyAction(action));
             return this;
         }
@@ -849,6 +907,7 @@ public final class RulesBuilder {
          * variants are explicitly allowed
          */
         public ClassScope allowVariant(String descriptor) {
+            modified();
             if (mVariantScope == null) {
                 throw new IllegalStateException("No current constructor or method");
             }
@@ -885,6 +944,7 @@ public final class RulesBuilder {
          * @return this
          */
         ClassScope ruleForAll(Rule rule) {
+            modified();
             mConstructors = null;
             mDefaultConstructorRule = rule;
             mMethods = null;
@@ -899,6 +959,7 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope allowAllConstructors() {
+            modified();
             mConstructors = null;
             mDefaultConstructorRule = allow();
             mVariantScope = mConstructors = new MethodScope().allowAll();
@@ -911,6 +972,7 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope allowAllMethods() {
+            modified();
             mMethods = null;
             mDefaultMethodRule = allow();
             mVariantScope = null;
@@ -924,7 +986,6 @@ public final class RulesBuilder {
          * @throws IllegalArgumentException if not a valid method name
          */
         public ClassScope allowMethod(String name) {
-            checkMethodName(name);
             mVariantScope = forMethod(name).allowAll();
             return this;
         }
@@ -940,6 +1001,7 @@ public final class RulesBuilder {
          * variants are explicitly denied
          */
         public ClassScope denyVariant(String descriptor) {
+            modified();
             if (mVariantScope == null) {
                 throw new IllegalStateException("No current constructor or method");
             }
@@ -960,6 +1022,7 @@ public final class RulesBuilder {
          * @throws IllegalStateException if no current constructor or method
          */
         public ClassScope denyVariant(DenyAction action, String descriptor) {
+            modified();
             if (mVariantScope == null) {
                 throw new IllegalStateException("No current constructor or method");
             }
@@ -1077,11 +1140,16 @@ public final class RulesBuilder {
             }
         }
 
+        void modified() {
+            mParent.modified();
+        }
+
         /**
          * Caller must call allowAll or denyAll on the returned MethodScope.
          */
         private MethodScope forMethod(String name) {
-            Objects.requireNonNull(name);
+            modified();
+            checkMethodName(name);
             Map<String, MethodScope> methods = mMethods;
             if (methods == null) {
                 mMethods = methods = new HashMap<>();

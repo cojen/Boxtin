@@ -791,8 +791,8 @@ final class ConstantPool {
         @Override
         public boolean equals(Object obj) {
             return this == obj || obj instanceof C_UTF8 other
-                &&  Arrays.equals(mBuffer, mOffset, mOffset + mLength,
-                                  other.mBuffer, other.mOffset, other.mOffset + other.mLength)
+                && Arrays.equals(mBuffer, mOffset, mOffset + mLength,
+                                 other.mBuffer, other.mOffset, other.mOffset + other.mLength)
                 || obj instanceof CharSequence seq && contentEquals(seq);
         }
 

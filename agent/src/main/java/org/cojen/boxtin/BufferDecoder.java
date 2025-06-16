@@ -67,6 +67,16 @@ final class BufferDecoder extends DataInputStream {
         b.offset(offset + len);
     }
 
+    /**
+     * Skip classfile attributes.
+     */
+    void skipAttributes() throws IOException {
+        for (int i = readUnsignedShort(); --i >= 0;) {
+            readUnsignedShort(); // attribute_name_index
+            skipNBytes(readUnsignedInt());
+        }
+    }
+
     private static final class Buffer extends ByteArrayInputStream {
         Buffer(byte[] buffer) {
             super(buffer);

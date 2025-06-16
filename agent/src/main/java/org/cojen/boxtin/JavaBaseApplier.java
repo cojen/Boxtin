@@ -478,6 +478,7 @@ final class JavaBaseApplier implements RulesApplier {
             .forClass("ModuleReader")
             .callerCheck()
             .denyAll()
+            .allowMethod("close")
 
             .forClass("ModuleReference")
             .allowAll()
@@ -697,26 +698,32 @@ final class JavaBaseApplier implements RulesApplier {
             .forClass("AclFileAttributeView")
             .callerCheck()
             .denyAll()
+            .allowMethod("name")
 
             .forClass("BasicFileAttributeView")
             .callerCheck()
             .denyAll()
+            .allowMethod("name")
 
             .forClass("DosFileAttributeView")
             .callerCheck()
             .denyAll()
+            .allowMethod("name")
 
             .forClass("FileOwnerAttributeView")
             .callerCheck()
             .denyAll()
+            .allowMethod("name")
 
             .forClass("PosixFileAttributeView")
             .callerCheck()
             .denyAll()
+            .allowMethod("name")
 
             .forClass("UserDefinedFileAttributeView")
             .callerCheck()
             .denyAll()
+            .allowMethod("name")
 
             .forClass("UserPrincipalLookupService")
             .denyAll()

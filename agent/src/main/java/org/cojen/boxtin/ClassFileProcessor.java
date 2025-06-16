@@ -75,14 +75,14 @@ final class ClassFileProcessor {
         int thisClassIndex = decoder.readUnsignedShort();
         int superClassIndex = decoder.readUnsignedShort();
 
-        // Skip interfaces.
+        // Skip the super interfaces.
         decoder.skipNBytes(decoder.readUnsignedShort() * 2);
 
-        // Skip fields.
+        // Skip the fields.
         for (int i = decoder.readUnsignedShort(); --i >= 0;) {
             // Skip access_flags, name_index, and descriptor_index.
             decoder.skipNBytes(2 + 2 + 2);
-            skipAttributes(decoder);
+            decoder.skipAttributes();
         }
 
         return new ClassFileProcessor(cp, accessFlags, thisClassIndex, superClassIndex, decoder);
@@ -179,7 +179,7 @@ final class ClassFileProcessor {
             int name_index = decoder.readUnsignedShort();
             int desc_index = decoder.readUnsignedShort();
             mDeclaredMethods.put(cp, name_index, desc_index);
-            skipAttributes(decoder);
+            decoder.skipAttributes();
         }
 
         // Restore the offset for checking the methods again later.
@@ -273,7 +273,7 @@ final class ClassFileProcessor {
             }
 
             if (!targetCodeChecked && forCaller.isAllAllowed()) {
-                skipAttributes(decoder);
+                decoder.skipAttributes();
                 continue;
             }
 
@@ -345,7 +345,7 @@ final class ClassFileProcessor {
                     decoder.skipNBytes(decoder.readUnsignedShort() * (2 + 2 + 2 + 2));
 
                     // Skip the attributes of the Code attribute.
-                    skipAttributes(decoder);
+                    decoder.skipAttributes();
                 }
 
                 if ((originalOffset + 4 + attrLength) != decoder.offset()) {
@@ -2167,12 +2167,5 @@ final class ClassFileProcessor {
             throw new ClassFormatException();
         }
         return (int) updated;
-    }
-
-    private static void skipAttributes(BufferDecoder decoder) throws IOException {
-        for (int i = decoder.readUnsignedShort(); --i >= 0;) {
-            decoder.readUnsignedShort(); // attribute_name_index
-            decoder.skipNBytes(decoder.readUnsignedInt());
-        }
     }
 }

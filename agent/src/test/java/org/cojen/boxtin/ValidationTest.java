@@ -31,6 +31,8 @@ public class ValidationTest {
 
     @Test
     public void java_base() throws Exception {
-        new RulesBuilder().applyRules(RulesApplier.java_base()).validate(ModuleLayer.boot());
+        new RulesBuilder().applyRules(RulesApplier.java_base()).validateDeep
+            (ModuleLayer.boot(), message -> System.out.println("validation failure: " + message))
+            .build();
     }
 }
