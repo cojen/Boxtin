@@ -187,8 +187,8 @@ final class ClassInfo {
         if (isMethodDefined(name, desc)) {
             Rule rule = rules.forClass(mPackageName, mClassName).ruleForMethod(name, desc);
             if (!rule.isDeniedAtTarget() && !rule.equals(expect)) {
-                reporter.accept("Rule defined at " + base + '(' + desc + ") is " + expect +
-                                ", but rule inherited from " + this + " is " + rule);
+                reporter.accept("Rule defined at " + base + '.' + name + '(' + desc + ") is " +
+                                expect + ", but rule inherited from " + this + " is " + rule);
             }
         } else if (mSuperClasses != null) {
             for (ClassInfo sup : mSuperClasses) {
