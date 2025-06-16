@@ -18,6 +18,8 @@ package org.cojen.boxtin;
 
 import java.io.IOException;
 
+import java.lang.annotation.Annotation;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -160,8 +162,6 @@ public final class RulesBuilder {
     }
 
     private RulesBuilder validate(ModuleLayer layer, Consumer<String> reporter, boolean deep) {
-        // FIXME: Check for @CallerSensitive methods, which must rely on caller checks.
-
         Objects.requireNonNull(layer);
 
         var actualReporter = new Consumer<String>() {
@@ -1380,8 +1380,18 @@ public final class RulesBuilder {
                 return;
             }
 
-            if (rule.isDeniedAtTarget() && Modifier.isAbstract(method.getModifiers())) {
-                reporter.accept("Target method is abstract: " + method);
+            if (rule.isDeniedAtTarget()) {
+                if (Modifier.isAbstract(method.getModifiers())) {
+                    reporter.accept("Target method is abstract: " + method);
+                }
+                for (Annotation ann : method.getDeclaredAnnotations()) {
+                    if (ann.annotationType().getName()
+                        .equals("jdk.internal.reflect.CallerSensitive"))
+                    {
+                        reporter.accept("Target method is CallerSensitive and should instead " +
+                                        "be caller-side checked: " + method);
+                    }
+                }
             }
 
             try {
