@@ -88,12 +88,20 @@ public interface Rules {
          */
         public boolean isAllAllowed();
 
+        /**
+         * @param descriptor descriptor for the parameters, not including parenthesis or the
+         * return type
+         */
         public Rule ruleForConstructor(CharSequence descriptor);
 
         public default Rule ruleForConstructor(Class<?>... paramTypes) {
             return ruleForConstructor(Utils.partialDescriptorFor(paramTypes));
         }
 
+        /**
+         * @param descriptor descriptor for the parameters, not including parenthesis or the
+         * return type
+         */
         public Rule ruleForMethod(CharSequence name, CharSequence descriptor);
 
         public default Rule ruleForMethod(Class<?> returnType,

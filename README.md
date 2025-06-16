@@ -161,5 +161,5 @@ Currently, the only way to prevent this problem with named modules is to create 
 
 ## Object methods
 
-The common `hashCode`, `equals`, and `toString` methods cannot be denied, even when done so explicitly. Access cannot be denied with a caller-side check, because a cast to `Object` will circumvent it. A target-side check might work, but it's still very odd to deny access to these common methods.
+The common `hashCode`, `equals`, and `toString` methods cannot be denied, even when done so explicitly.
 

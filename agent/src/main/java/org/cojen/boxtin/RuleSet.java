@@ -385,11 +385,11 @@ final class RuleSet implements Rules {
             // means that UTF8 constants don't need to be fully decoded into Strings.
 
             if (name.equals("hashCode")) {
-                return descriptor.equals("()I");
+                return descriptor.equals("");
             } else if (name.equals("equals")) {
-                return descriptor.equals("(Ljava/lang/Object;)Z");
+                return descriptor.equals("Ljava/lang/Object;");
             } else if (name.equals("toString")) {
-                return descriptor.equals("()Ljava/lang/String;");
+                return descriptor.equals("");
             }
 
             return false;
