@@ -397,6 +397,26 @@ public final class RulesBuilder {
         return count;
     }
 
+    private static boolean isEffectivelyFinal(Class<?> clazz) {
+        if (!Utils.isAccessible(clazz) || Modifier.isFinal(clazz.getModifiers()) ||
+            // Note: a sealed class is treated as effectively final because when doing deep
+            // validation, all subclasses can be examined.
+            clazz.isSealed())
+        {
+            return true;
+        }
+        if (clazz.isInterface()) {
+            return false;
+        }
+        for (Constructor<?> ctor : clazz.getConstructors()) {
+            if (Utils.isAccessible(ctor)) {
+                // Subclassing is possible outside the module.
+                return false;
+            }
+        }
+        return true;
+    }
+
     /**
      * Builder of rules at the module level.
      */
@@ -1134,8 +1154,9 @@ public final class RulesBuilder {
             }
 
             if (mMethods != null) {
+                boolean classIsFinal = isEffectivelyFinal(clazz);
                 for (Map.Entry<String, MethodScope> e : mMethods.entrySet()) {
-                    e.getValue().validateMethod(loader, clazz, e.getKey(), reporter);
+                    e.getValue().validateMethod(loader, clazz, classIsFinal, e.getKey(), reporter);
                 }
             }
         }
@@ -1325,8 +1346,11 @@ public final class RulesBuilder {
             action.validateParameters(ctor);
         }
 
-        void validateMethod(ClassLoader loader, Class<?> clazz, String name,
-                            Consumer<String> reporter)
+        /**
+         * @param classIsFinal pass true if the class is final or effectively final
+         */
+        void validateMethod(ClassLoader loader, Class<?> clazz, boolean classIsFinal,
+                            String name, Consumer<String> reporter)
         {
             if (isEmpty(mVariants)) {
                 Rule rule = mDefaultRule;
@@ -1336,7 +1360,7 @@ public final class RulesBuilder {
                 boolean forTarget = rule.isDeniedAtTarget();
 
                 int count = forAllMethods(!forTarget, !forTarget, clazz, name, method -> {
-                    validateMethod(loader, method, rule, reporter);
+                    validateMethod(loader, classIsFinal, method, rule, reporter);
                 });
 
                 if (count == 0) {
@@ -1368,12 +1392,12 @@ public final class RulesBuilder {
                     }
                 }
 
-                validateMethod(loader, method, rule, reporter);
+                validateMethod(loader, classIsFinal, method, rule, reporter);
             }
         }
 
-        private static void validateMethod(ClassLoader loader, Method method, Rule rule,
-                                           Consumer<String> reporter)
+        private static void validateMethod(ClassLoader loader, boolean classIsFinal,
+                                           Method method, Rule rule, Consumer<String> reporter)
         {
             DenyAction action = rule.denyAction();
             if (action == null) {
@@ -1391,6 +1415,22 @@ public final class RulesBuilder {
                         reporter.accept("Target method is CallerSensitive and should instead " +
                                         "be caller-side checked: " + method);
                     }
+                }
+            } else {
+                /*
+                  Caller-side denials against non-static methods require extra checks to ensure
+                  that subclassing doesn't allow access. Deep validation is still required to
+                  be extra sure.
+
+                  - If the method is a default interface method, assume that it only calls
+                    other interface methods.
+
+                  - If the method is abstract, then rely on deep validation checks.
+                 */
+                if (!classIsFinal && !method.isDefault() &&
+                    (method.getModifiers() & (Modifier.ABSTRACT | Modifier.STATIC)) == 0)
+                {
+                    reporter.accept("Caller-side denial can bypassed via a subclass: " + method);
                 }
             }
 
