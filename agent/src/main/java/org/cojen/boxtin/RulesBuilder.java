@@ -397,26 +397,6 @@ public final class RulesBuilder {
         return count;
     }
 
-    private static boolean isEffectivelyFinal(Class<?> clazz) {
-        if (!Utils.isAccessible(clazz) || Modifier.isFinal(clazz.getModifiers()) ||
-            // Note: a sealed class is treated as effectively final because when doing deep
-            // validation, all subclasses can be examined.
-            clazz.isSealed())
-        {
-            return true;
-        }
-        if (clazz.isInterface()) {
-            return false;
-        }
-        for (Constructor<?> ctor : clazz.getConstructors()) {
-            if (Utils.isAccessible(ctor)) {
-                // Subclassing is possible outside the module.
-                return false;
-            }
-        }
-        return true;
-    }
-
     /**
      * Builder of rules at the module level.
      */
@@ -1161,6 +1141,43 @@ public final class RulesBuilder {
             }
         }
 
+        private boolean isEffectivelyFinal(Class<?> clazz) {
+            if (!isAccessible(clazz) || Modifier.isFinal(clazz.getModifiers()) ||
+                // Note: a sealed class is treated as effectively final because when doing deep
+                // validation, all subclasses can be examined.
+                clazz.isSealed())
+            {
+                return true;
+            }
+
+            if (clazz.isInterface()) {
+                return false;
+            }
+
+            if (mConstructors == null) {
+                if (mDefaultConstructorRule.isDenied()) {
+                    return true;
+                }
+            } else if (mConstructors.isAllDenied()) {
+                return true;
+            }
+
+            for (Constructor<?> ctor : clazz.getDeclaredConstructors()) {
+                if (isAccessible(ctor)) {
+                    if (mConstructors != null) {
+                        String desc = partialDescriptorFor(ctor.getParameterTypes());
+                        if (mConstructors.isDenied(desc)) {
+                            continue;
+                        }
+                    }
+                    // Subclassing is possible outside the module.
+                    return false;
+                }
+
+            }
+            return true;
+        }
+
         void modified() {
             mParent.modified();
         }
@@ -1231,6 +1248,19 @@ public final class RulesBuilder {
 
         boolean isAllAllowed() {
             return isEmpty(mVariants) && mDefaultRule.isAllowed();
+        }
+
+        boolean isDenied(CharSequence desc) {
+            Rule rule;
+            if (mVariants == null) {
+                rule = mDefaultRule;
+            } else {
+                rule = mVariants.get(desc);
+                if (rule == null) {
+                    rule = mDefaultRule;
+                }
+            }
+            return rule.isDenied();
         }
 
         /**
@@ -1427,7 +1457,7 @@ public final class RulesBuilder {
 
                   - If the method is abstract, then rely on deep validation checks.
                  */
-                if (!classIsFinal && !method.isDefault() &&
+                if (!classIsFinal && !method.isDefault() && !method.isBridge() &&
                     (method.getModifiers() & (Modifier.ABSTRACT | Modifier.STATIC)) == 0)
                 {
                     reporter.accept("Caller-side denial can bypassed via a subclass: " + method);
