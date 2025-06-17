@@ -161,5 +161,5 @@ Currently, the only way to prevent this problem with named modules is to create 
 
 ## Object methods
 
-The common `hashCode`, `equals`, and `toString` methods cannot be denied, even when done so explicitly.
+The common `hashCode`, `equals`, and `toString` methods cannot be denied, even when done so explicitly. This makes it easier to deny all methods in a class without breaking these fundamental operations.
 
