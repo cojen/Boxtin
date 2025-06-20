@@ -34,6 +34,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import static org.cojen.boxtin.Rule.*;
@@ -337,60 +338,36 @@ public final class RulesBuilder {
         return null;
     }
 
-    private static Method tryFindMethod(boolean checkInherited,
-                                        Class<?> clazz, String name, Class<?>... paramTypes)
+    /**
+     * @param consumer the boolean part is true if the method is inherited
+     */
+    private static int forAllMethods(boolean checkInherited,
+                                     Class<?> clazz, String name,
+                                     BiConsumer<Boolean, Method> consumer)
     {
-        for (Method m : clazz.getDeclaredMethods()) {
-            if (isAccessible(m) && m.getName().equals(name) &&
-                Arrays.equals(m.getParameterTypes(), paramTypes))
-            {
-                return m;
-            }
-        }
-
-        if (!checkInherited) {
-            return null;
-        }
-
-        Class<?> superclass = clazz.getSuperclass();
-        if (superclass != null) {
-            Method m = tryFindMethod(true, superclass, name, paramTypes);
-            if (m != null) {
-                return m;
-            }
-        }
-
-        for (Class<?> iface : clazz.getInterfaces()) {
-            Method m = tryFindMethod(true, iface, name, paramTypes);
-            if (m != null) {
-                return m;
-            }
-        }
-
-        return null;
+        return doForAllMethods(false, checkInherited, clazz, name, consumer);
     }
 
-    private static int forAllMethods(boolean checkInherited, boolean allowAbstract,
-                                     Class<?> clazz, String name, Consumer<Method> consumer)
+    private static int doForAllMethods(boolean isInherited, boolean checkInherited,
+                                       Class<?> clazz, String name,
+                                       BiConsumer<Boolean, Method> consumer)
     {
         int count = 0;
 
         for (Method m : clazz.getDeclaredMethods()) {
-            if ((allowAbstract || !Modifier.isAbstract(m.getModifiers())) &&
-                (isAccessible(m) && m.getName().equals(name)))
-            {
+            if (isAccessible(m) && m.getName().equals(name)) {
                 count++;
-                consumer.accept(m);
+                consumer.accept(isInherited, m);
             }
         }
 
         if (checkInherited) {
             Class<?> superclass = clazz.getSuperclass();
             if (superclass != null) {
-                count += forAllMethods(true, allowAbstract, superclass, name, consumer);
+                count += doForAllMethods(true, true, superclass, name, consumer);
             }
             for (Class<?> iface : clazz.getInterfaces()) {
-                count += forAllMethods(true, allowAbstract, iface, name, consumer);
+                count += doForAllMethods(true, true, iface, name, consumer);
             }
         }
 
@@ -1382,47 +1359,33 @@ public final class RulesBuilder {
         void validateMethod(ClassLoader loader, Class<?> clazz, boolean classIsFinal,
                             String name, Consumer<String> reporter)
         {
+            int count;
+
             if (isEmpty(mVariants)) {
                 Rule rule = mDefaultRule;
 
-                // If target-side, don't examine inherited and abstract methods, because no
-                // code modifications can be made against them.
+                // If target-side, don't examine inherited methods, because no code
+                // modifications can be made against them.
                 boolean forTarget = rule.isDeniedAtTarget();
 
-                int count = forAllMethods(!forTarget, !forTarget, clazz, name, method -> {
+                count = forAllMethods(!forTarget, clazz, name, (inherited, method) -> {
                     validateMethod(loader, classIsFinal, method, rule, reporter);
                 });
-
-                if (count == 0) {
-                    reporter.accept("Method not found: " + clazz + "." + name);
-                }
-
-                return;
+            } else {
+                count = forAllMethods(true, clazz, name, (inherited, method) -> {
+                    String desc = partialDescriptorFor(method.getParameterTypes());
+                    Rule rule = mVariants.get(desc);
+                    if (rule == null) {
+                        rule = mDefaultRule;
+                    }
+                    if (!rule.isAllowed() && (!inherited || !rule.isDeniedAtTarget())) {
+                        validateMethod(loader, classIsFinal, method, rule, reporter);
+                    }
+                });
             }
 
-            for (Map.Entry<CharSequence, Rule> e : mVariants.entrySet()) {
-                Class<?>[] paramTypes;
-                try {
-                    paramTypes = paramTypesFor(loader, e.getKey().toString());
-                } catch (ClassNotFoundException | NoSuchMethodException ex) {
-                    reporter.accept(ex.toString());
-                    continue;
-                }
-
-                Rule rule = e.getValue();
-
-                Method method;
-                try {
-                    method = clazz.getMethod(name, paramTypes);
-                } catch (NoSuchMethodException ex) {
-                    method = tryFindMethod(!rule.isDeniedAtTarget(), clazz, name, paramTypes);
-                    if (method == null) {
-                        reporter.accept(ex.toString());
-                        continue;
-                    }
-                }
-
-                validateMethod(loader, classIsFinal, method, rule, reporter);
+            if (count == 0) {
+                reporter.accept("Method not found: " + clazz + "." + name);
             }
         }
 
@@ -1436,31 +1399,39 @@ public final class RulesBuilder {
 
             if (rule.isDeniedAtTarget()) {
                 if (Modifier.isAbstract(method.getModifiers())) {
-                    reporter.accept("Target method is abstract: " + method);
+                    reporter.accept(fullMessage("Target method is abstract", method));
                 }
                 for (Annotation ann : method.getDeclaredAnnotations()) {
                     if (ann.annotationType().getName()
                         .equals("jdk.internal.reflect.CallerSensitive"))
                     {
-                        reporter.accept("Target method is CallerSensitive and should instead " +
-                                        "be caller-side checked: " + method);
+                        reporter.accept
+                            (fullMessage("Target method is CallerSensitive and should instead " +
+                                         "be caller-side checked", method));
                     }
                 }
             } else {
                 /*
-                  Caller-side denials against non-static methods require extra checks to ensure
-                  that subclassing doesn't allow access. Deep validation is still required to
-                  be extra sure.
+                  Caller-side denials against inheritable methods require extra checks to
+                  ensure that subclassing doesn't allow access. Deep validation is still
+                  required to be extra sure.
 
                   - If the method is a default interface method, assume that it only calls
                     other interface methods.
 
                   - If the method is abstract, then rely on deep validation checks.
+
+                  - If the method is static and defined in an interface, it cannot be called
+                    via a subclass except from within the subclass itself. Calls from within
+                    are handled specially by the ClassFileProcessor.
                  */
                 if (!classIsFinal && !method.isDefault() && !method.isBridge() &&
-                    (method.getModifiers() & (Modifier.ABSTRACT | Modifier.STATIC)) == 0)
+                    !Modifier.isAbstract(method.getModifiers()) &&
+                    (!Modifier.isStatic(method.getModifiers()) ||
+                     !method.getDeclaringClass().isInterface()))
                 {
-                    reporter.accept("Caller-side denial can bypassed via a subclass: " + method);
+                    reporter.accept
+                        (fullMessage("Caller-side denial can bypassed via a subclass", method));
                 }
             }
 
@@ -1472,6 +1443,23 @@ public final class RulesBuilder {
 
             action.validateReturnType(method);
             action.validateParameters(method);
+        }
+
+        private static String fullMessage(String message, Method method) {
+            var b = new StringBuilder(message).append(": ");
+
+            b.append(method.getDeclaringClass().getName())
+                .append('.').append(method.getName()).append('(');
+
+            Class<?>[] paramTypes = method.getParameterTypes();
+            for (int i=0; i<paramTypes.length; i++) {
+                if (i > 0) {
+                    b.append(", ");
+                }
+                b.append(paramTypes[i].getSimpleName());
+            }
+
+            return b.append(')').toString();
         }
 
         /**

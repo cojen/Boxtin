@@ -229,6 +229,13 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forClass("ClassLoader")
             .denyMethod("clearAssertionStatus")
+            .allowMethod("defineClass")
+            .denyVariant("[BII") // deprecated
+            // Cannot specify a ProtectionDomain when defining a class.
+            .denyVariant(DenyAction.checked(cdc1, DenyAction.standard()),
+                         "Ljava/lang/String;[BIILjava/security/ProtectionDomain;")
+            .denyVariant(DenyAction.checked(cdc2, DenyAction.standard()),
+                         "Ljava/lang/String;Ljava/nio/ByteBuffer;Ljava/security/ProtectionDomain;")
             .denyMethod("getSystemResource")
             .denyMethod("getSystemResourceAsStream")
             .denyMethod("getSystemResources")
@@ -240,13 +247,6 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod(DenyAction.checked(cgr2, DenyAction.value(null)), "getResourceAsStream")
             .denyMethod(DenyAction.checked(cgr2, DenyAction.empty()), "getResources")
             .denyMethod(DenyAction.checked(cgr2, DenyAction.empty()), "resources")
-            .allowMethod("defineClass")
-            .denyVariant("[BII") // deprecated
-            // Cannot specify a ProtectionDomain when defining a class.
-            .denyVariant(DenyAction.checked(cdc1, DenyAction.standard()),
-                         "Ljava/lang/String;[BIILjava/security/ProtectionDomain;")
-            .denyVariant(DenyAction.checked(cdc2, DenyAction.standard()),
-                         "Ljava/lang/String;Ljava/nio/ByteBuffer;Ljava/security/ProtectionDomain;")
 
             .forClass("Integer")
             .callerCheck()
@@ -612,10 +612,14 @@ final class JavaBaseApplier implements RulesApplier {
             .allowAll()
 
             .forClass("AsynchronousFileChannel")
+            .denyAllConstructors()
             .denyMethod("open")
 
             .forClass("AsynchronousServerSocketChannel")
+            .denyAllConstructors()
+            .callerCheck()
             .denyMethod("bind")
+            .denyMethod("open")
 
             .forClass("AsynchronousSocketChannel")
             .denyAllConstructors()
@@ -673,8 +677,8 @@ final class JavaBaseApplier implements RulesApplier {
             .denyAll()
 
             .forClass("Path")
-            .callerCheck()
             .denyMethod("of")
+            .callerCheck()
             .denyMethod("register")
             .denyMethod("toAbsolutePath")
             .denyMethod("toRealPath")
