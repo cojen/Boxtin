@@ -374,9 +374,9 @@ final class RuleSet implements Rules {
         }
 
         private static boolean isAlwaysAllowed(CharSequence name, CharSequence descriptor) {
-            // Public methods defined in the Object class are always allowed. Access cannot be
-            // denied with a caller-side check, because a cast to Object will circumvent it. A
-            // target-side check will work, but it's very odd to deny access to common methods.
+            // The common hashCode, equals, and toString methods cannot be denied, even when
+            // done so explicitly. This makes it easier to deny all methods in a class without
+            // breaking these fundamental operations.
 
             // Note that the equals method is called on the descriptor, and not the String
             // constants. This is because the equals method as implemented by
