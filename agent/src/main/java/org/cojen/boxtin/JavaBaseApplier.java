@@ -162,8 +162,6 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forClass("ObjectInputStream")
             .denyAllConstructors()
-            .allowVariant("Ljava/io/InputStream;")
-            .denyMethod("enableResolveObject")
             .denyMethod("readUnshared")
             .denyMethod("setObjectInputFilter")
 
