@@ -67,27 +67,20 @@ loadScripts(document, 'script');</script>
 <li><a href="#method-detail" tabindex="0">Method Details</a>
 <ol class="toc-list">
 <li><a href="#allow()" tabindex="0">allow()</a></li>
-<li><a href="#denyAtCaller()" tabindex="0">denyAtCaller()</a></li>
-<li><a href="#denyAtCaller(org.cojen.boxtin.DenyAction)" tabindex="0">denyAtCaller(DenyAction)</a></li>
-<li><a href="#denyAtTarget()" tabindex="0">denyAtTarget()</a></li>
-<li><a href="#denyAtTarget(org.cojen.boxtin.DenyAction)" tabindex="0">denyAtTarget(DenyAction)</a></li>
+<li><a href="#deny()" tabindex="0">deny()</a></li>
+<li><a href="#deny(org.cojen.boxtin.DenyAction)" tabindex="0">deny(DenyAction)</a></li>
 <li><a href="#isAllowed()" tabindex="0">isAllowed()</a></li>
 <li><a href="#isDenied()" tabindex="0">isDenied()</a></li>
-<li><a href="#isDeniedAtCaller()" tabindex="0">isDeniedAtCaller()</a></li>
-<li><a href="#isDeniedAtTarget()" tabindex="0">isDeniedAtTarget()</a></li>
 <li><a href="#denyAction()" tabindex="0">denyAction()</a></li>
-<li><a href="#withDenyAction(org.cojen.boxtin.DenyAction)" tabindex="0">withDenyAction(DenyAction)</a></li>
 <li><a href="#isAllAllowed()" tabindex="0">isAllAllowed()</a></li>
 <li><a href="#forClass(java.lang.CharSequence,java.lang.CharSequence)" tabindex="0">forClass(CharSequence, CharSequence)</a></li>
 <li><a href="#forClass(java.lang.Class)" tabindex="0">forClass(Class)</a></li>
+<li><a href="#denialsForMethod(java.lang.CharSequence,java.lang.CharSequence)" tabindex="0">denialsForMethod(CharSequence, CharSequence)</a></li>
 <li><a href="#printTo(java.lang.Appendable,java.lang.String,java.lang.String)" tabindex="0">printTo(Appendable, String, String)</a></li>
 <li><a href="#ruleForConstructor(java.lang.CharSequence)" tabindex="0">ruleForConstructor(CharSequence)</a></li>
 <li><a href="#ruleForConstructor(java.lang.Class...)" tabindex="0">ruleForConstructor(Class...)</a></li>
 <li><a href="#ruleForMethod(java.lang.CharSequence,java.lang.CharSequence)" tabindex="0">ruleForMethod(CharSequence, CharSequence)</a></li>
 <li><a href="#ruleForMethod(java.lang.Class,java.lang.CharSequence,java.lang.Class...)" tabindex="0">ruleForMethod(Class, CharSequence, Class...)</a></li>
-<li><a href="#isAnyConstructorDenied()" tabindex="0">isAnyConstructorDenied()</a></li>
-<li><a href="#isAnyDeniedAtCaller()" tabindex="0">isAnyDeniedAtCaller()</a></li>
-<li><a href="#isAnyDeniedAtTarget()" tabindex="0">isAnyDeniedAtTarget()</a></li>
 <li><a href="#hashCode()" tabindex="0">hashCode()</a></li>
 <li><a href="#toString()" tabindex="0">toString()</a></li>
 </ol>
@@ -139,91 +132,71 @@ implements <a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a>,
 <div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#allow()" class="member-name-link">allow</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#denyAction()" class="member-name-link">denyAction</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a><wbr>&lt;<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="Rule.html" title="class in org.cojen.boxtin">Rule</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#denialsForMethod(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">denialsForMethod</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
+ <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;descriptor)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">For the given method name and descriptor, return a map of classes which have an explicit
+ deny rule against a matching method.</div>
+</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#denyAtCaller()" class="member-name-link">denyAtCaller</a>()</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#deny()" class="member-name-link">deny</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#denyAtCaller(org.cojen.boxtin.DenyAction)" class="member-name-link">denyAtCaller</a><wbr>(<a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#deny(org.cojen.boxtin.DenyAction)" class="member-name-link">deny</a><wbr>(<a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#denyAtTarget()" class="member-name-link">denyAtTarget</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#denyAtTarget(org.cojen.boxtin.DenyAction)" class="member-name-link">denyAtTarget</a><wbr>(<a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#forClass(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">forClass</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;packageName,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#denyAction()" class="member-name-link">denyAction</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#forClass(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">forClass</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;packageName,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;className)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Returns <code>this</code>.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#forClass(java.lang.Class)" class="member-name-link">forClass</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;?&gt;&nbsp;clazz)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns <code>this</code>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#forClass(java.lang.Class)" class="member-name-link">forClass</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;?&gt;&nbsp;clazz)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Returns <code>this</code>.</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hashCode()" class="member-name-link">hashCode</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isAllAllowed()" class="member-name-link">isAllAllowed</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hashCode()" class="member-name-link">hashCode</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final boolean</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isAllAllowed()" class="member-name-link">isAllAllowed</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Same as <a href="#isAllowed()"><code>isAllowed()</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final boolean</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isAllowed()" class="member-name-link">isAllowed</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isAnyConstructorDenied()" class="member-name-link">isAnyConstructorDenied</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Same as <a href="#isDenied()"><code>isDenied()</code></a>.</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isAnyDeniedAtCaller()" class="member-name-link">isAnyDeniedAtCaller</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Same as <a href="#isDeniedAtCaller()"><code>isDeniedAtCaller()</code></a>.</div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isAnyDeniedAtTarget()" class="member-name-link">isAnyDeniedAtTarget</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Same as <a href="#isDeniedAtTarget()"><code>isDeniedAtTarget()</code></a>.</div>
-</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final boolean</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isAllowed()" class="member-name-link">isAllowed</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isDenied()" class="member-name-link">isDenied</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isDeniedAtCaller()" class="member-name-link">isDeniedAtCaller</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isDeniedAtTarget()" class="member-name-link">isDeniedAtTarget</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final boolean</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#printTo(java.lang.Appendable,java.lang.String,java.lang.String)" class="member-name-link">printTo</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Appendable.html" title="class or interface in java.lang" class="external-link">Appendable</a>&nbsp;a,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;indent,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;plusIndent)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Print a description of the rules to the given Appendable object.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#ruleForConstructor(java.lang.CharSequence)" class="member-name-link">ruleForConstructor</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;descriptor)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns <code>this</code>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#ruleForConstructor(java.lang.Class...)" class="member-name-link">ruleForConstructor</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;?&gt;...&nbsp;paramTypes)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns <code>this</code>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#ruleForMethod(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">ruleForMethod</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;descriptor)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns <code>this</code>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#ruleForMethod(java.lang.Class,java.lang.CharSequence,java.lang.Class...)" class="member-name-link">ruleForMethod</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;?&gt;&nbsp;returnType,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;?&gt;...&nbsp;paramTypes)</code></div>
@@ -233,9 +206,6 @@ implements <a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a>,
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#withDenyAction(org.cojen.boxtin.DenyAction)" class="member-name-link">withDenyAction</a><wbr>(<a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 </div>
 </div>
 </div>
@@ -265,34 +235,18 @@ implements <a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a>,
 </section>
 </li>
 <li>
-<section class="detail" id="denyAtCaller()">
-<h3>denyAtCaller</h3>
+<section class="detail" id="deny()">
+<h3>deny</h3>
 <div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></span>&nbsp;<span class="element-name">denyAtCaller</span>()</div>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></span>&nbsp;<span class="element-name">deny</span>()</div>
 </div>
 </section>
 </li>
 <li>
-<section class="detail" id="denyAtCaller(org.cojen.boxtin.DenyAction)">
-<h3>denyAtCaller</h3>
+<section class="detail" id="deny(org.cojen.boxtin.DenyAction)">
+<h3>deny</h3>
 <div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></span>&nbsp;<span class="element-name">denyAtCaller</span><wbr><span class="parameters">(<a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</span></div>
-</div>
-</section>
-</li>
-<li>
-<section class="detail" id="denyAtTarget()">
-<h3>denyAtTarget</h3>
-<div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></span>&nbsp;<span class="element-name">denyAtTarget</span>()</div>
-</div>
-</section>
-</li>
-<li>
-<section class="detail" id="denyAtTarget(org.cojen.boxtin.DenyAction)">
-<h3>denyAtTarget</h3>
-<div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></span>&nbsp;<span class="element-name">denyAtTarget</span><wbr><span class="parameters">(<a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</span></div>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></span>&nbsp;<span class="element-name">deny</span><wbr><span class="parameters">(<a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</span></div>
 </div>
 </section>
 </li>
@@ -313,22 +267,6 @@ implements <a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a>,
 </section>
 </li>
 <li>
-<section class="detail" id="isDeniedAtCaller()">
-<h3>isDeniedAtCaller</h3>
-<div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">isDeniedAtCaller</span>()</div>
-</div>
-</section>
-</li>
-<li>
-<section class="detail" id="isDeniedAtTarget()">
-<h3>isDeniedAtTarget</h3>
-<div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">isDeniedAtTarget</span>()</div>
-</div>
-</section>
-</li>
-<li>
 <section class="detail" id="denyAction()">
 <h3>denyAction</h3>
 <div class="horizontal-scroll">
@@ -341,26 +279,12 @@ implements <a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a>,
 </section>
 </li>
 <li>
-<section class="detail" id="withDenyAction(org.cojen.boxtin.DenyAction)">
-<h3>withDenyAction</h3>
-<div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></span>&nbsp;<span class="element-name">withDenyAction</span><wbr><span class="parameters">(<a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</span></div>
-<dl class="notes">
-<dt>Throws:</dt>
-<dd><code><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/IllegalStateException.html" title="class or interface in java.lang" class="external-link">IllegalStateException</a></code> - if this rule isn't denied</dd>
-</dl>
-</div>
-</section>
-</li>
-<li>
 <section class="detail" id="isAllAllowed()">
 <h3>isAllAllowed</h3>
 <div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">isAllAllowed</span>()</div>
+<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">isAllAllowed</span>()</div>
 <div class="block">Same as <a href="#isAllowed()"><code>isAllowed()</code></a>.</div>
 <dl class="notes">
-<dt>Specified by:</dt>
-<dd><code><a href="Rules.html#isAllAllowed()">isAllAllowed</a></code>&nbsp;in interface&nbsp;<code><a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a></code></dd>
 <dt>Specified by:</dt>
 <dd><code><a href="Rules.ForClass.html#isAllAllowed()">isAllAllowed</a></code>&nbsp;in interface&nbsp;<code><a href="Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></code></dd>
 </dl>
@@ -371,7 +295,7 @@ implements <a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a>,
 <section class="detail" id="forClass(java.lang.CharSequence,java.lang.CharSequence)">
 <h3>forClass</h3>
 <div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></span>&nbsp;<span class="element-name">forClass</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;packageName,
+<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></span>&nbsp;<span class="element-name">forClass</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;packageName,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;className)</span></div>
 <div class="block">Returns <code>this</code>.</div>
 <dl class="notes">
@@ -380,7 +304,7 @@ implements <a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a>,
 <dt>Parameters:</dt>
 <dd><code>packageName</code> - package name must have '/' characters as separators</dd>
 <dt>Returns:</dt>
-<dd>non-null ForClass instance</dd>
+<dd>a non-null ForClass instance</dd>
 </dl>
 </div>
 </section>
@@ -389,13 +313,36 @@ implements <a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a>,
 <section class="detail" id="forClass(java.lang.Class)">
 <h3>forClass</h3>
 <div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></span>&nbsp;<span class="element-name">forClass</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;?&gt;&nbsp;clazz)</span></div>
+<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></span>&nbsp;<span class="element-name">forClass</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;?&gt;&nbsp;clazz)</span></div>
 <div class="block">Returns <code>this</code>.</div>
 <dl class="notes">
 <dt>Specified by:</dt>
 <dd><code><a href="Rules.html#forClass(java.lang.Class)">forClass</a></code>&nbsp;in interface&nbsp;<code><a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a></code></dd>
 <dt>Returns:</dt>
-<dd>non-null ForClass instance</dd>
+<dd>a non-null ForClass instance</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="denialsForMethod(java.lang.CharSequence,java.lang.CharSequence)">
+<h3>denialsForMethod</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="Rule.html" title="class in org.cojen.boxtin">Rule</a>&gt;</span>&nbsp;<span class="element-name">denialsForMethod</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
+ <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;descriptor)</span></div>
+<div class="block"><span class="description-from-type-label">Description copied from interface:&nbsp;<code><a href="Rules.html#denialsForMethod(java.lang.CharSequence,java.lang.CharSequence)">Rules</a></code></span></div>
+<div class="block">For the given method name and descriptor, return a map of classes which have an explicit
+ deny rule against a matching method. If none match, the returned map is empty.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="Rules.html#denialsForMethod(java.lang.CharSequence,java.lang.CharSequence)">denialsForMethod</a></code>&nbsp;in interface&nbsp;<code><a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a></code></dd>
+<dt>Parameters:</dt>
+<dd><code>name</code> - method name</dd>
+<dd><code>descriptor</code> - descriptor for the parameters, not including parenthesis or the return
+ type</dd>
+<dt>Returns:</dt>
+<dd>a non-null map of fully qualified class names to deny rules; '/' characters are
+ used as separators</dd>
 </dl>
 </div>
 </section>
@@ -404,10 +351,10 @@ implements <a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a>,
 <section class="detail" id="printTo(java.lang.Appendable,java.lang.String,java.lang.String)">
 <h3>printTo</h3>
 <div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">printTo</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Appendable.html" title="class or interface in java.lang" class="external-link">Appendable</a>&nbsp;a,
+<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">printTo</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Appendable.html" title="class or interface in java.lang" class="external-link">Appendable</a>&nbsp;a,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;indent,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;plusIndent)</span>
-                throws <span class="exceptions"><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/io/IOException.html" title="class or interface in java.io" class="external-link">IOException</a></span></div>
+                      throws <span class="exceptions"><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/io/IOException.html" title="class or interface in java.io" class="external-link">IOException</a></span></div>
 <div class="block"><span class="description-from-type-label">Description copied from interface:&nbsp;<code><a href="Rules.html#printTo(java.lang.Appendable,java.lang.String,java.lang.String)">Rules</a></code></span></div>
 <div class="block">Print a description of the rules to the given Appendable object.</div>
 <dl class="notes">
@@ -428,11 +375,14 @@ implements <a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a>,
 <section class="detail" id="ruleForConstructor(java.lang.CharSequence)">
 <h3>ruleForConstructor</h3>
 <div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></span>&nbsp;<span class="element-name">ruleForConstructor</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;descriptor)</span></div>
+<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></span>&nbsp;<span class="element-name">ruleForConstructor</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;descriptor)</span></div>
 <div class="block">Returns <code>this</code>.</div>
 <dl class="notes">
 <dt>Specified by:</dt>
 <dd><code><a href="Rules.ForClass.html#ruleForConstructor(java.lang.CharSequence)">ruleForConstructor</a></code>&nbsp;in interface&nbsp;<code><a href="Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></code></dd>
+<dt>Parameters:</dt>
+<dd><code>descriptor</code> - descriptor for the parameters, not including parenthesis or the
+ return type</dd>
 </dl>
 </div>
 </section>
@@ -441,7 +391,7 @@ implements <a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a>,
 <section class="detail" id="ruleForConstructor(java.lang.Class...)">
 <h3>ruleForConstructor</h3>
 <div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></span>&nbsp;<span class="element-name">ruleForConstructor</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;?&gt;...&nbsp;paramTypes)</span></div>
+<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></span>&nbsp;<span class="element-name">ruleForConstructor</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;?&gt;...&nbsp;paramTypes)</span></div>
 <div class="block">Returns <code>this</code>.</div>
 <dl class="notes">
 <dt>Specified by:</dt>
@@ -454,12 +404,15 @@ implements <a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a>,
 <section class="detail" id="ruleForMethod(java.lang.CharSequence,java.lang.CharSequence)">
 <h3>ruleForMethod</h3>
 <div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></span>&nbsp;<span class="element-name">ruleForMethod</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
+<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></span>&nbsp;<span class="element-name">ruleForMethod</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;descriptor)</span></div>
 <div class="block">Returns <code>this</code>.</div>
 <dl class="notes">
 <dt>Specified by:</dt>
 <dd><code><a href="Rules.ForClass.html#ruleForMethod(java.lang.CharSequence,java.lang.CharSequence)">ruleForMethod</a></code>&nbsp;in interface&nbsp;<code><a href="Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></code></dd>
+<dt>Parameters:</dt>
+<dd><code>descriptor</code> - descriptor for the parameters, not including parenthesis or the
+ return type</dd>
 </dl>
 </div>
 </section>
@@ -468,52 +421,13 @@ implements <a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a>,
 <section class="detail" id="ruleForMethod(java.lang.Class,java.lang.CharSequence,java.lang.Class...)">
 <h3>ruleForMethod</h3>
 <div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></span>&nbsp;<span class="element-name">ruleForMethod</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;?&gt;&nbsp;returnType,
+<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></span>&nbsp;<span class="element-name">ruleForMethod</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;?&gt;&nbsp;returnType,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;?&gt;...&nbsp;paramTypes)</span></div>
 <div class="block">Returns <code>this</code>.</div>
 <dl class="notes">
 <dt>Specified by:</dt>
 <dd><code><a href="Rules.ForClass.html#ruleForMethod(java.lang.Class,java.lang.CharSequence,java.lang.Class...)">ruleForMethod</a></code>&nbsp;in interface&nbsp;<code><a href="Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></code></dd>
-</dl>
-</div>
-</section>
-</li>
-<li>
-<section class="detail" id="isAnyConstructorDenied()">
-<h3>isAnyConstructorDenied</h3>
-<div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">isAnyConstructorDenied</span>()</div>
-<div class="block">Same as <a href="#isDenied()"><code>isDenied()</code></a>.</div>
-<dl class="notes">
-<dt>Specified by:</dt>
-<dd><code><a href="Rules.ForClass.html#isAnyConstructorDenied()">isAnyConstructorDenied</a></code>&nbsp;in interface&nbsp;<code><a href="Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></code></dd>
-</dl>
-</div>
-</section>
-</li>
-<li>
-<section class="detail" id="isAnyDeniedAtCaller()">
-<h3>isAnyDeniedAtCaller</h3>
-<div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">isAnyDeniedAtCaller</span>()</div>
-<div class="block">Same as <a href="#isDeniedAtCaller()"><code>isDeniedAtCaller()</code></a>.</div>
-<dl class="notes">
-<dt>Specified by:</dt>
-<dd><code><a href="Rules.ForClass.html#isAnyDeniedAtCaller()">isAnyDeniedAtCaller</a></code>&nbsp;in interface&nbsp;<code><a href="Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></code></dd>
-</dl>
-</div>
-</section>
-</li>
-<li>
-<section class="detail" id="isAnyDeniedAtTarget()">
-<h3>isAnyDeniedAtTarget</h3>
-<div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">isAnyDeniedAtTarget</span>()</div>
-<div class="block">Same as <a href="#isDeniedAtTarget()"><code>isDeniedAtTarget()</code></a>.</div>
-<dl class="notes">
-<dt>Specified by:</dt>
-<dd><code><a href="Rules.ForClass.html#isAnyDeniedAtTarget()">isAnyDeniedAtTarget</a></code>&nbsp;in interface&nbsp;<code><a href="Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></code></dd>
 </dl>
 </div>
 </section>
