@@ -13,12 +13,14 @@ If the controller is specified as "default", then a default is selected which on
 
 Boxtin is designed to restrict operations for "plugins", much like the original security manager was designed for restricting applet permissions. There are a few key differences, however:
 
-- Boxtin is a shallow sandbox, which means it only checks the immediate caller in a stack trace. The original Java security manager checked all frames within the trace, which seemed like a good idea at the time, but in practice it was too complicated. The [`AccessController.doPrivileged`](https://docs.oracle.com/en/java/javase/23/docs/api/java.base/java/security/AccessController.html) methods were intended for handling special cases, but it they were actually used over 1200 times in the JDK. What was expected to be an exceptional case ended up being the normal case.
+- Boxtin is a shallow sandbox, which means it only checks the immediate caller to see if an operation is denied. The original Java security manager checked all frames within the trace, which seemed like a good idea at the time, but in practice it was too complicated. The [`AccessController.doPrivileged`](https://docs.oracle.com/en/java/javase/23/docs/api/java.base/java/security/AccessController.html) methods were intended for handling special cases, but it they were actually used over 1200 times in the JDK. What was expected to be an exceptional case ended up being the normal case.
 - With Boxtin, rules are defined entirely by the host environment, and so the libraries it depends on aren't expected to require any modifications.
 - Rules are selected by module, not by code source or protection domain.
-- The default deny action is to throw a `SecurityException`, but alternative actions can be defined. A different exception can be thrown, a constant value can be returned, an empty value can be returned, an additional check can be made, or a custom method can choose what to return.
+- The standard deny action is to throw a `SecurityException`, but alternative [deny actions](https://cojen.github.io/Boxtin/javadoc/org.cojen.boxtin/org/cojen/boxtin/DenyAction.html) can be configured instead.
 
 A _caller_ is the plugin code, represented by a [module](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Module.html), possibly unnamed. A _target_ is the code which is being called by the caller, represented by a rule. A rule logically maps target methods or constructors to an "allow" or "deny" outcome.
+
+Boxtin works by examining classes to see if any invocation of a constructor or method matches against a deny rule. If so, the class is transformed such that all suitable deny actions are applied. This type of transformation is strictly a "caller-side" check, and "target-side" checks are never performed — no stack trace is ever captured at runtime, and target classes are never modified unless they themselves call any denied operations.
 
 The controller decides which set of rules apply for a given module. For convenience, a [`RulesApplier`](https://cojen.github.io/Boxtin/javadoc/org.cojen.boxtin/org/cojen/boxtin/RulesApplier.html) can define a standard set of rules, by name or category. For example: [`java.base`](https://github.com/cojen/Boxtin/blob/main/agent/src/main/java/org/cojen/boxtin/JavaBaseApplier.java)
 
@@ -27,46 +29,6 @@ Rules cannot allow access to operations beyond the boundaries already establishe
 Rules cannot deny access to operations within a module. A caller is always allowed to call any target operation in its own module, restricted only by the usual private/protected checks. Any rule which would deny access within a module is ignored.
 
 Regarding qualified module exports and opens: TBD
-
-## Transforms
-
-For a given rule, Boxtin transforms a caller class or a target class. In general, target class transformation is preferred. Here's an example transform applied to a target constructor:
-
-```java
-    public FileInputStream(String Path) {
-        SecurityAgent.check(SecurityAgent.WALKER.getCallerClass(),
-                            FileInputStream.class, null, "(Ljava/lang/String;)V");
-        ...
-    }
-```
-
-The `check` method will call into the controller for determining if access is allowed or denied, caching the result. If denied, a `SecurityException` is thrown.
-
-Here's an example transform applied to a caller method, which calls a synthetic proxy method:
-
-```java
-    // original
-    public void fail() {
-        System.exit(1);
-    }
-
-    // transformed
-    public void fail() {
-        $boxtin$3(1);
-    }
-
-    // synthetic proxy method
-    private static void $boxtin$3(int param) {
-        if (Caller.class.getModule() != System.class.getModule()) {
-            throw new SecurityException();
-        }
-        System.exit(param);
-    }
-```
-
-Although it might seem silly to include a module check which will obviously yield false, it greatly simplifies the code transformation because the target module isn't known until after the class has been loaded. In practice, the module checking code will be optimized into oblivion by the JVM.
-
-Although the caller transform is much more efficient, it doesn't support checks against inherited methods. Target transforms are preferred except in cases where they won't work (cyclic dependencies in the JDK) or where it's known that the rule doesn't apply to a method which is inherited or can be inherited.
 
 ### MethodHandle constants
 
@@ -85,67 +47,32 @@ The Java classfile format supports defining [`MethodHandle`](https://docs.oracle
 
     // synthetic proxy method
     private static void $boxtin$5(int param) {
-        if (Caller.class.getModule() != System.class.getModule()) {
-            throw new SecurityException();
-        }
+        // deny actions go here
+        ...
+        // call the original method if the deny action actually allows it
         System.exit(param);
     }
 ```
 
-If the check is intended to be performed in the target class, then the module check is omitted. The target method will observe the correct caller class, because the proxy method invocation will be in the call trace. The target method will throw an exception if access is denied.
-
-### Native methods
-
-Native methods which are checked in the target class require a special transformation. The native method is renamed with a `$boxtin$_` prefix, a new non-native method is defined which performs the check, and then it calls the renamed native method.
-
-```java
-    // original
-    public int native someOperation(int param);
-
-    // transformed
-    public int someOperation(int param) {
-        SecurityAgent.check(SecurityAgent.WALKER.getCallerClass(),
-                            thisClass, "someOperation", "(I)I");
-        return $boxtin$_someOperation(param);
-    }
-
-    // synthetic native method
-    private int native $boxtin$_someOperation(int param);
-```
-
-Because this technique adds a method to the class, it doesn't work if the class was already loaded before the instrumentation agent started. This means that some native methods which are loaded by the bootstrap class loader must be designated as caller checked instead.
-
 ### Reflection
 
-Access is guarded when `Constructor` and `Method` instances are acquired, and not when they're invoked. A special transformation is applied which proxies the acquisition such that an access check is performed at that time, possibly resulting in an exception being thrown. For methods which return an array, (example: `Class.getMethods()`), a filtering step is applied which removes elements which cannot be accessed.
+The standard rules for the `java.base` module permit reflection operations, but with some restrictions. Access is guarded when `Constructor` and `Method` instances are acquired, and not when they're invoked. Custom deny rules perform an access check is performed at that time, possibly resulting in an exception being thrown. For methods which return an array, (example: `Class.getMethods()`), a filtering step is applied which removes elements which cannot be accessed.
 
+The following methods in `java.lang.Class` have custom deny actions:
 
-```java
-    // original
-    public void run() {
-        Method m = Widget.class.getMethod("open");
-        ...
-    }
+- `getConstructor` - can throw a `NoSuchMethodException`
+- `getConstructors` - can filter the results
+- `getDeclaredConstructor` - can throw a `NoSuchMethodException`
+- `getDeclaredConstructors` - can filter the results
+- `getDeclaredMethod` - can throw a `NoSuchMethodException`
+- `getDeclaredMethods`- can filter the results
+- `getEnclosingConstructor` - can throw a `SecurityException`
+- `getEnclosingMethod` - can throw a `SecurityException`
+- `getMethod` - can throw a `NoSuchMethodException`
+- `getMethods`- can filter the results
+- `getRecordComponents`- can filter the results
 
-    // transformed
-    public void run() {
-        // An exception is thrown if access is denied.
-        Method m = $boxtin$9(Widget.class, "open");
-        ...
-    }
-
-    // synthetic proxy method
-    private static Method $boxtin$9(Class clazz, String name, Class... paramTypes) {
-        // This captures the caller class.
-        Reflection r = SecurityAgent.reflection();
-        // This might throw an exception.
-        return r.Class_getMethod(clazz, name, paramTypes);
-    }
-```
-
-### MethodHandles
-
-Methods which return `MethodHandle` instances are checked using the same strategy as for reflection. A caller-side transformation checks the result from these `Lookup` methods to see if access is allowed:
+Methods which return `MethodHandle` instances are checked using the same strategy as for reflection. Custom deny actions are defined for the following `Lookup` methods, which can throw a `SecurityException`:
 
 - `bind`
 - `findConstructor`
@@ -153,13 +80,9 @@ Methods which return `MethodHandle` instances are checked using the same strateg
 - `findStatic`
 - `findVirtual`
 
-### IllegalCallerException
-
-When a thread is started by directly overriding the `run` method, no caller frame exists, and so an `IllegalCallerException` is thrown. This doesn't happen if the `run` method is in an unnamed module, because unnamed modules cannot have target-side checks applied to them.
-
-Currently, the only way to prevent this problem with named modules is to create a special rule for allowing the primordial method. One option is to capture the caller frame that invoked the start method, and save it in a special field. When the run method is called and it has no caller, check the caller of the start method. This technique requires special logic to determine if the class extends Thread, but the transform won't work if the class is already loaded -- the special field cannot be added.
+Methods defined by `AccessibleObject` which enable access to class members are denied by the standard rules. Attempting to call `setAccessible` causes an `InaccessibleObjectException` to be thrown. Calling `trySetAccessible` does nothing, and instead the caller gets a result of `false`.
 
 ## Object methods
 
-The common `hashCode`, `equals`, and `toString` methods cannot be denied, even when done so explicitly. This makes it easier to deny all methods in a class without breaking these fundamental operations.
+The common `hashCode`, `equals`, and `toString` methods cannot be denied, even when done so explicitly. This makes it easier to deny all methods in a class without breaking these fundamental operations. Even if these operations could be denied, the caller check would be bypassed when they're invoked by any of the classes in the `java.base` module.
 
