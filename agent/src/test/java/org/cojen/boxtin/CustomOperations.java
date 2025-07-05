@@ -14,23 +14,23 @@
  *  limitations under the License.
  */
 
-package org.cojen.boxtin.tt;
+package org.cojen.boxtin;
 
 import org.junit.Ignore;
 
 /**
- * Defines various target operations which should be denied.
+ * Defines various operations which should be denied.
  *
  * @author Brian S. O'Neill
- * @see TransformTest.Injector
+ * @see CustomTransformTest
  */
 @Ignore
-public class T_CustomOperations {
+public class CustomOperations {
 
-    public T_CustomOperations() {
+    public CustomOperations() {
     }
 
-    public T_CustomOperations(int x) {
+    public CustomOperations(int x) {
     }
 
     public static void op1(int i, boolean b, char c, double d) {
@@ -73,28 +73,10 @@ public class T_CustomOperations {
                                   long a19, long a20, long a21, long a22, long a23, long a24);
 
     public static String op11(int a, String b) {
-        if (a == 0) {
-            var x = new int[] {
-                0,1,2,3,4,5,6,7,8,9,
-                0,1,2,3,4,5,6,7,8,9,
-                0,1,2,3,4,5,6,7,8,9,
-                0,1,2,3,4,5,6,7,8,9,
-                0,1,2,3,4,5,6,7,8,9,
-                0,1,2,3,4,5,6,7,8,9,
-            };
-            return x.toString();
-        }
-
         throw null;
     }
 
     public static String op12(int a, String b) {
-        if (a == 0) {
-            System.out.println(new int[] {
-                0,1,2,3,4,5,6,7,8,9,
-            });
-        }
-
         throw null;
     }
 
@@ -102,10 +84,6 @@ public class T_CustomOperations {
                               double a7, double a8, double a9, double a10, double a11, double a12,
                               long a13, long a14, long a15, long a16, long a17, long a18)
     {
-        if (a1 == 0) {
-            System.out.println(a2);
-        }
-
         throw null;
     }
 
@@ -115,40 +93,22 @@ public class T_CustomOperations {
                               long a13, long a14, long a15, long a16, long a17, long a18,
                               long a19, long a20, long a21, long a22, long a23, long a24)
     {
-        try {
-            var x = new int[] {
-                0,1,2,3,4,5,6,7,0,0,0
-            };
-            return x.toString();
-        } catch (Exception e) {
-            throw null;
-        }
+        throw null;
     }
 
     public static String op15(int a, String b) {
-        try {
-            System.out.println(new int[] {
-                0,1,2,3,4,5,6,7,8,9,
-                0,1,2,3,4,5,6,7,8,9,
-                0,1,2,3,4,5,6,7,8,9,
-            });
-        } catch (Exception e) {
-            throw new Error();
-        }
         throw null;
     }
 
     public static String op16(int a) {
-        int x = a + 2;
-        int y = a == 0 ? 1 : 2;
-        return "" + x + y;
+        throw null;
     }
 
     public Object op17(int a) {
-        return a + 1;
+        throw null;
     }
 
     public Object[] op18(int a) {
-        return null;
+        throw null;
     }
 }

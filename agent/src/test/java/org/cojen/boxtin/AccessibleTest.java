@@ -35,12 +35,14 @@ public class AccessibleTest extends TransformTest {
         org.junit.runner.JUnitCore.main(AccessibleTest.class.getName());
     }
 
-    private static final Rules RULES = 
-        new RulesBuilder().applyRules(RulesApplier.java_base()).build();
+    @Override
+    protected RulesBuilder builder() {
+        return new RulesBuilder().applyRules(RulesApplier.java_base());
+    }
 
     @Test
     public void unsafe() throws Exception {
-        if (runWith(RULES)) {
+        if (runTransformed()) {
             return;
         }
 
@@ -68,7 +70,7 @@ public class AccessibleTest extends TransformTest {
 
     @Test
     public void field() throws Exception {
-        if (runWith(RULES)) {
+        if (runTransformed()) {
             return;
         }
 
@@ -97,7 +99,7 @@ public class AccessibleTest extends TransformTest {
 
     @Test
     public void method() throws Exception {
-        if (runWith(RULES)) {
+        if (runTransformed()) {
             return;
         }
 
@@ -126,7 +128,7 @@ public class AccessibleTest extends TransformTest {
 
     @Test
     public void constructor() throws Exception {
-        if (runWith(RULES)) {
+        if (runTransformed()) {
             return;
         }
 
@@ -155,7 +157,7 @@ public class AccessibleTest extends TransformTest {
 
     @Test
     public void local() throws Exception {
-        if (runWith(RULES)) {
+        if (runTransformed()) {
             return;
         }
 

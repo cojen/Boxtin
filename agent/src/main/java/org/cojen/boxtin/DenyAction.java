@@ -17,19 +17,14 @@
 package org.cojen.boxtin;
 
 import java.lang.invoke.MethodHandleInfo;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 
-import java.lang.reflect.Array;
 import java.lang.reflect.Executable;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
+import java.util.Map;
 import java.util.Objects;
-
-import static java.lang.invoke.MethodHandleInfo.*;
 
 /**
  * 
@@ -164,45 +159,21 @@ public abstract sealed class DenyAction {
         return new Checked(predicate, action);
     }
 
-    static DenyAction dynamic() {
-        return Dynamic.THE;
-    }
-
-    static DenyAction checkedDynamic() {
-        return CheckedDynamic.THE;
-    }
-
     private DenyAction() {
     }
 
-    /**
-     * @param returnType never a primitive type
-     */
-    abstract Object apply(Class<?> caller, Class<?> returnType, Object[] args) throws Throwable;
+    abstract void validate(ClassLoader loader, Executable executable)
+        throws ClassNotFoundException, IllegalArgumentException;
 
-    boolean requiresCaller() {
-        return false;
-    }
-
-    boolean isChecked() {
-        return false;
-    }
-
-    abstract void validateDependencies(ClassLoader loader) throws ClassNotFoundException;
-
-    abstract void validateReturnType(Method method) throws IllegalArgumentException;
-
-    abstract void validateParameters(Executable exec) throws IllegalArgumentException;
-
-    private static void validateHookParameters(Executable exec, MethodHandleInfo hook)
+    private static void validateHookParameters(Executable executable, MethodHandleInfo hook)
         throws IllegalArgumentException
     {
-        Class<?>[] fromTypes = exec.getParameterTypes();
+        Class<?>[] fromTypes = executable.getParameterTypes();
 
         MethodType toMT = hook.getMethodType();
         int toCount = toMT.parameterCount();
 
-        boolean requireInstance = !Modifier.isStatic(exec.getModifiers());
+        boolean requireInstance = !Modifier.isStatic(executable.getModifiers());
 
         int fromIx = 0, toIx = 0;
 
@@ -215,7 +186,7 @@ public abstract sealed class DenyAction {
             }
 
             if (requireInstance) {
-                if (!canConvert(exec.getDeclaringClass(), to)) {
+                if (!canConvert(executable.getDeclaringClass(), to)) {
                     throw new IllegalArgumentException
                         ("Cannot convert instance to parameter " + toIx + " of `" + hook + '`');
                 }
@@ -231,7 +202,7 @@ public abstract sealed class DenyAction {
             if (!canConvert(fromTypes[fromIx], to)) {
                 throw new IllegalArgumentException
                     ("Cannot convert from parameter " + fromIx + " of `" +
-                     exec + "` to parameter " + toIx + " of `" +  hook + '`');
+                     executable + "` to parameter " + toIx + " of `" +  hook + '`');
             }
 
             fromIx++;
@@ -239,7 +210,7 @@ public abstract sealed class DenyAction {
 
         if (toIx < toCount) {
             throw new IllegalArgumentException("Too few parameters from `" +
-                                               exec + "` to `" + hook + '`');
+                                               executable + "` to `" + hook + '`');
         }
     }
 
@@ -251,32 +222,6 @@ public abstract sealed class DenyAction {
         return false;
     }
 
-    static MethodHandle resolveMethodHandle(MethodHandleInfo mhi, Class<?> caller) {
-        MethodHandles.Lookup lookup = MethodHandles.lookup();
-
-        Class<?> clazz = mhi.getDeclaringClass();
-        String name = mhi.getName();
-        MethodType mt = mhi.getMethodType();
-
-        try {
-            return switch (mhi.getReferenceKind()) {
-                default -> throw new SecurityException();
-                case REF_getField -> lookup.findGetter(clazz, name, mt.returnType());
-                case REF_getStatic -> lookup.findStaticGetter(clazz, name, mt.returnType());
-                case REF_putField -> lookup.findSetter(clazz, name, mt.returnType());
-                case REF_putStatic -> lookup.findStaticSetter(clazz, name, mt.returnType());
-                case REF_invokeVirtual, REF_invokeInterface -> lookup.findVirtual(clazz, name, mt);
-                case REF_invokeStatic -> lookup.findStatic(clazz, name, mt);
-                case REF_invokeSpecial -> lookup.findSpecial(clazz, name, mt, caller);
-                case REF_newInvokeSpecial -> lookup.findConstructor(clazz, mt);
-            };
-        } catch (SecurityException e) {
-            throw e;
-        } catch (java.lang.Exception e) {
-            throw new SecurityException(e);
-        }
-    }
-
     static sealed class Exception extends DenyAction {
         final String className;
 
@@ -284,37 +229,10 @@ public abstract sealed class DenyAction {
             this.className = className.replace('.', '/').intern();
         }
 
-        @Override
-        Object apply(Class<?> caller, Class<?> returnType, Object[] args) throws Throwable {
-            Throwable ex;
-            try {
-                ex = (Throwable) loadClass(caller.getClassLoader()).getConstructor().newInstance();
-            } catch (SecurityException e) {
-                throw e;
-            } catch (java.lang.Exception e) {
-                throw new SecurityException(e);
-            }
-
-            throw ex;
-        }
-
-        final Class<?> loadClass(ClassLoader loader) throws ClassNotFoundException {
-            return Class.forName(className.replace('/', '.'), false, loader);
-        }
 
         @Override
-        void validateDependencies(ClassLoader loader) throws ClassNotFoundException {
-            loadClass(loader);
-        }
-
-        @Override
-        final void validateReturnType(Method method) {
-            // Can always throw an exception.
-        }
-
-        @Override
-        final void validateParameters(Executable exec) {
-            // Can always throw an exception.
+        void validate(ClassLoader loader, Executable executable) throws ClassNotFoundException {
+            Class.forName(className.replace('/', '.'), false, loader);
         }
 
         @Override
@@ -324,7 +242,8 @@ public abstract sealed class DenyAction {
 
         @Override
         public boolean equals(Object obj) {
-            return obj instanceof Exception other && className.equals(other.className);
+            return this == obj || obj instanceof Exception other
+                && className.equals(other.className);
         }
 
         @Override
@@ -341,12 +260,7 @@ public abstract sealed class DenyAction {
         }
 
         @Override
-        Object apply(Class<?> caller, Class<?> returnType, Object[] args) {
-            throw new SecurityException();
-        }
-
-        @Override
-        void validateDependencies(ClassLoader loader) {
+        void validate(ClassLoader loader, Executable executable) {
             // Nothing to check.
         }
 
@@ -370,29 +284,14 @@ public abstract sealed class DenyAction {
         }
 
         @Override
-        Object apply(Class<?> caller, Class<?> returnType, Object[] args) throws Throwable {
-            Throwable ex;
-            try {
-                ex = (Throwable) loadClass(caller.getClassLoader())
-                    .getConstructor(String.class).newInstance(message);
-            } catch (SecurityException e) {
-                throw e;
-            } catch (java.lang.Exception e) {
-                throw new SecurityException(e);
-            }
-
-            throw ex;
-        }
-
-        @Override
         public int hashCode() {
             return super.hashCode() * 31 + message.hashCode();
         }
 
         @Override
         public boolean equals(Object obj) {
-            return obj instanceof WithMessage other && message.equals(other.message)
-                && super.equals(other);
+            return this == obj || obj instanceof WithMessage other
+                && message.equals(other.message) && super.equals(other);
         }
 
         @Override
@@ -411,24 +310,9 @@ public abstract sealed class DenyAction {
         }
 
         @Override
-        Object apply(Class<?> caller, Class<?> returnType, Object[] args) {
-            return value;
-        }
-
-        @Override
-        void validateDependencies(ClassLoader loader) {
-            // Nothing to check.
-        }
-
-        @Override
-        void validateReturnType(Method method) {
-            // Can always return a value, even when the type is incompatible. See the
-            // description in the DenyAction.value(Object) method.
-        }
-
-        @Override
-        void validateParameters(Executable exec) {
-            // Parameters aren't considered.
+        void validate(ClassLoader loader, Executable executable) {
+            // Parameters aren't considered, and can always return a value, even when the type
+            // is incompatible. See the description in the DenyAction.value(Object) method.
         }
 
         @Override
@@ -438,7 +322,7 @@ public abstract sealed class DenyAction {
 
         @Override
         public boolean equals(Object obj) {
-            return obj instanceof Value other && Objects.equals(value, other.value);
+            return this == obj || obj instanceof Value other && Objects.equals(value, other.value);
         }
 
         @Override
@@ -454,68 +338,12 @@ public abstract sealed class DenyAction {
         }
 
         @Override
-        Object apply(Class<?> caller, Class<?> returnType, Object[] args) throws Throwable {
-            if (returnType.isPrimitive()) {
-                if (returnType == int.class) {
-                    return 0;
-                } else if (returnType == long.class) {
-                    return 0L;
-                } else if (returnType == boolean.class) {
-                    return false;
-                } else if (returnType == void.class) {
-                    return null;
-                } else if (returnType == double.class) {
-                    return 0.0d;
-                } else if (returnType == byte.class) {
-                    return (byte) 0;
-                } else if (returnType == float.class) {
-                    return 0.0f;
-                } else if (returnType == char.class) {
-                    return '\0';
-                } else if (returnType == short.class) {
-                    return (short) 0;
-                } else {
-                    throw new SecurityException();
-                }
-            }
-
-            if (returnType.isArray()) {
-                return Array.newInstance(returnType.getComponentType(), 0);
-            }
-
-            Method method;
-
-            try {
-                method = EmptyActions.class.getMethod(returnType.getName().replace('.', '_'));
-            } catch (NoSuchMethodException e) {
-                method = null;
-            }
-
-            if (method != null) {
-                return method.invoke(null);
-            }
-
-            try {
-                try {
-                    return returnType.getConstructor().newInstance();
-                } catch (InvocationTargetException e) {
-                    throw e.getCause();
-                }
-            } catch (SecurityException e) {
-                throw e;
-            } catch (java.lang.Exception e) {
-                throw new SecurityException(e);
-            }
-        }
-
-        @Override
-        void validateDependencies(ClassLoader loader) {
-            // Nothing to check.
-        }
-
-        @Override
-        void validateReturnType(Method method) throws IllegalArgumentException {
+        void validate(ClassLoader loader, Executable executable) {
             // See the description in DenyAction.empty() regarding valid return types.
+
+            if (!(executable instanceof Method method)) {
+                return;
+            }
 
             Class<?> returnType = method.getReturnType();
 
@@ -539,11 +367,6 @@ public abstract sealed class DenyAction {
         }
 
         @Override
-        void validateParameters(Executable exec) {
-            // Parameters aren't considered.
-        }
-
-        @Override
         public int hashCode() {
             return 1539211235;
         }
@@ -562,33 +385,17 @@ public abstract sealed class DenyAction {
         }
 
         @Override
-        Object apply(Class<?> caller, Class<?> returnType, Object[] args) throws Throwable {
-            return resolveMethodHandle(mhi, caller).invokeWithArguments(args);
-        }
-
-        @Override
-        boolean requiresCaller() {
-            return true;
-        }
-
-        @Override
-        void validateDependencies(ClassLoader loader) {
-            // Nothing to check.
-        }
-
-        @Override
-        void validateReturnType(Method method) throws IllegalArgumentException {
-            Class<?> from = method.getReturnType();
-            Class<?> to = mhi.getMethodType().returnType();
-            if (!canConvert(from, to)) {
-                throw new IllegalArgumentException("Cannot convert method return type from " +
-                                                   from + " to " + to);
+        void validate(ClassLoader loader, Executable executable) {
+            validateHookParameters(executable, mhi);
+            
+            if (executable instanceof Method method) {
+                Class<?> from = method.getReturnType();
+                Class<?> to = mhi.getMethodType().returnType();
+                if (!canConvert(from, to)) {
+                    throw new IllegalArgumentException("Cannot convert method return type from " +
+                                                       from + " to " + to);
+                }
             }
-        }
-
-        @Override
-        void validateParameters(Executable exec) throws IllegalArgumentException {
-            validateHookParameters(exec, mhi);
         }
 
         @Override
@@ -598,7 +405,7 @@ public abstract sealed class DenyAction {
 
         @Override
         public boolean equals(Object obj) {
-            return obj instanceof Custom other && mhi.equals(other.mhi);
+            return this == obj || obj instanceof Custom other && mhi.equals(other.mhi);
         }
 
         @Override
@@ -617,36 +424,9 @@ public abstract sealed class DenyAction {
         }
 
         @Override
-        Object apply(Class<?> caller, Class<?> returnType, Object[] args) throws Throwable {
-            var allow = (boolean) resolveMethodHandle(predicate, caller).invokeWithArguments(args);
-            // Returning the args object signals that the operation is actually allowed.
-            return allow ? args : action.apply(caller, returnType, args);
-        }
-
-        @Override
-        void validateDependencies(ClassLoader loader) {
-            // Nothing to check.
-        }
-
-        @Override
-        boolean requiresCaller() {
-            return true;
-        }
-
-        @Override
-        boolean isChecked() {
-            return true;
-        }
-
-        @Override
-        void validateReturnType(Method method) throws IllegalArgumentException {
-            action.validateReturnType(method);
-        }
-
-        @Override
-        void validateParameters(Executable exec) throws IllegalArgumentException {
-            validateHookParameters(exec, predicate);
-            action.validateParameters(exec);
+        void validate(ClassLoader loader, Executable executable) throws ClassNotFoundException {
+            validateHookParameters(executable, predicate);
+            action.validate(loader, executable);
         }
 
         @Override
@@ -656,7 +436,7 @@ public abstract sealed class DenyAction {
 
         @Override
         public boolean equals(Object obj) {
-            return obj instanceof Checked other
+            return this == obj || obj instanceof Checked other
                 && predicate.equals(other.predicate) && action.equals(other.action);
         }
 
@@ -666,63 +446,43 @@ public abstract sealed class DenyAction {
         }
     }
 
-    static sealed class Dynamic extends DenyAction {
-        static final Dynamic THE = new Dynamic();
+    /**
+     * @see Rules#denialsForMethod
+     */
+    static final class Multi extends DenyAction {
+        final Map<String, Rule> matches;
 
-        private Dynamic() {
+        /**
+         * @param matches map of fully qualified class names to deny rules; '/' characters are
+         * used as separators
+         */
+        Multi(Map<String, Rule> matches) {
+            this.matches = matches;
         }
 
         @Override
-        final Object apply(Class<?> caller, Class<?> returnType, Object[] args) {
-            // Should never be called.
-            throw new SecurityException();
-        }
-
-        @Override
-        final void validateDependencies(ClassLoader loader) {
-            // Nothing to check.
-        }
-
-        @Override
-        final boolean requiresCaller() {
-            return true;
-        }
-
-        @Override
-        final void validateReturnType(Method method) {
-            // Should never be called.
-        }
-
-        @Override
-        final void validateParameters(Executable exec) {
-            // Should never be called.
+        void validate(ClassLoader loader, Executable executable) throws ClassNotFoundException {
+            for (Rule rule : matches.values()) {
+                DenyAction action = rule.denyAction();
+                if (action != null) {
+                    action.validate(loader, executable);
+                }
+            }
         }
 
         @Override
         public int hashCode() {
-            return 114945825;
+            return matches.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return this == obj || obj instanceof Multi other && matches.equals(other.matches);
         }
 
         @Override
         public String toString() {
-            return "dynamic";
-        }
-    }
-
-    static final class CheckedDynamic extends Dynamic {
-        static final CheckedDynamic THE = new CheckedDynamic();
-
-        private CheckedDynamic() {
-        }
-
-        @Override
-        boolean isChecked() {
-            return true;
-        }
-
-        @Override
-        public int hashCode() {
-            return 1869195983;
+            return "multi(" + matches + ')';
         }
     }
 }

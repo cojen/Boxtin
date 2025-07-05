@@ -36,7 +36,7 @@ public class FileTest {
         try {
             new FileInputStream("x");
             fail();
-        } catch (SecurityException e) {
+        } catch (FileNotFoundException e) {
             // Expected.
         }
 
@@ -45,7 +45,7 @@ public class FileTest {
         try {
             new FileInputStream(f);
             fail();
-        } catch (SecurityException e) {
+        } catch (FileNotFoundException e) {
             // Expected.
         }
 
@@ -59,22 +59,12 @@ public class FileTest {
         try {
             new FileOutputStream("x");
             fail();
-        } catch (SecurityException e) {
+        } catch (FileNotFoundException e) {
             // Expected.
         }
 
-        try {
-            f.delete();
-            fail();
-        } catch (SecurityException e) {
-            // Expected.
-        }
+        assertFalse(f.delete());
 
-        try {
-            File.listRoots();
-            fail();
-        } catch (SecurityException e) {
-            // Expected.
-        }
+        assertEquals(0, File.listRoots().length);
     }
 }

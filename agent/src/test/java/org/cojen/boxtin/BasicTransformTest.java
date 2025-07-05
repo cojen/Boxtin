@@ -40,12 +40,14 @@ public class BasicTransformTest extends TransformTest {
         org.junit.runner.JUnitCore.main(BasicTransformTest.class.getName());
     }
 
-    private static final Rules RULES = 
-        new RulesBuilder().applyRules(RulesApplier.java_base()).build();
+    @Override
+    protected RulesBuilder builder() {
+        return new RulesBuilder().applyRules(RulesApplier.java_base());
+    }
 
     @Test
     public void basic() throws Exception {
-        if (runWith(RULES)) {
+        if (runTransformed()) {
             return;
         }
 
@@ -59,7 +61,7 @@ public class BasicTransformTest extends TransformTest {
 
     @Test
     public void lambda() throws Exception {
-        if (runWith(RULES)) {
+        if (runTransformed()) {
             return;
         }
 
@@ -73,7 +75,7 @@ public class BasicTransformTest extends TransformTest {
 
     @Test
     public void reflect() throws Exception {
-        if (runWith(RULES)) {
+        if (runTransformed()) {
             return;
         }
 
@@ -87,7 +89,7 @@ public class BasicTransformTest extends TransformTest {
 
     @Test
     public void reflect2() throws Exception {
-        if (runWith(RULES)) {
+        if (runTransformed()) {
             return;
         }
 
@@ -103,7 +105,7 @@ public class BasicTransformTest extends TransformTest {
 
     @Test
     public void reflectMH() throws Exception {
-        if (runWith(RULES)) {
+        if (runTransformed()) {
             return;
         }
 
@@ -118,7 +120,7 @@ public class BasicTransformTest extends TransformTest {
 
     @Test
     public void reflectPass() throws Exception {
-        if (runWith(RULES)) {
+        if (runTransformed()) {
             return;
         }
 
@@ -128,7 +130,7 @@ public class BasicTransformTest extends TransformTest {
 
     @Test
     public void reflectPassMH() throws Throwable {
-        if (runWith(RULES)) {
+        if (runTransformed()) {
             return;
         }
 
@@ -139,7 +141,7 @@ public class BasicTransformTest extends TransformTest {
 
     @Test
     public void doubleReflect() throws Exception {
-        if (runWith(RULES)) {
+        if (runTransformed()) {
             return;
         }
 

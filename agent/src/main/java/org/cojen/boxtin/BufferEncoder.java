@@ -18,8 +18,6 @@ package org.cojen.boxtin;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
 
 /**
  * Encodes the primitive data elements of a class file.
@@ -33,10 +31,6 @@ class BufferEncoder extends DataOutputStream {
 
     byte[] toByteArray() {
         return ((Buffer) out).toByteArray();
-    }
-
-    void writeTo(OutputStream dest) throws IOException {
-        ((Buffer) out).writeTo(dest);
     }
 
     byte[] buffer() {

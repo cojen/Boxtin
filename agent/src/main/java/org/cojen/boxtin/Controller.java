@@ -16,8 +16,6 @@
 
 package org.cojen.boxtin;
 
-import java.util.Set;
-
 /**
  * Decides what set of operations should be allowed or denied based on the caller's {@code
  * Module}.
@@ -32,10 +30,4 @@ public interface Controller {
      * @return a Rules instance, which can be null if all operations are allowed
      */
     public Rules rulesForCaller(Module module);
-
-    /**
-     * Returns all the rules which can be returned by the {@link #rulesForCaller
-     * rulesForCaller} method.
-     */
-    public Set<Rules> allRules();
 }

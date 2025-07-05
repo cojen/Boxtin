@@ -35,11 +35,6 @@ public class ResourceBundleTransformTest extends TransformTest {
         org.junit.runner.JUnitCore.main(ResourceBundleTransformTest.class.getName());
     }
 
-    private static final Rules RULES = 
-        new RulesBuilder().applyRules(RulesApplier.java_base())
-        .forModule("java.base").forPackage("java.lang").forClass("System").allowAll()
-        .end().end().end().build();
-
     private static final String PROP_KEY = ResourceBundleTransformTest.class.getName() + ".class";
 
     @BeforeClass
@@ -54,6 +49,13 @@ public class ResourceBundleTransformTest extends TransformTest {
         System.getProperties().remove(PROP_KEY + ".SubSub");
     }
 
+    @Override
+    protected RulesBuilder builder() {
+        return new RulesBuilder().applyRules(RulesApplier.java_base())
+            .forModule("java.base").forPackage("java.lang").forClass("System").allowAll()
+            .end().end().end();
+    }
+
     @Test
     public void basic() throws Throwable {
         final String name = "org.cojen.boxtin.messages";
@@ -61,7 +63,7 @@ public class ResourceBundleTransformTest extends TransformTest {
         ResourceBundle bundle = ResourceBundle.getBundle(name);
         assertEquals("hello", bundle.getString("key1"));
 
-        if (runWith(RULES)) {
+        if (runTransformed()) {
             return;
         }
 

@@ -16,8 +16,6 @@
 
 package org.cojen.boxtin;
 
-import java.util.Set;
-
 /**
  * 
  *
@@ -26,54 +24,12 @@ import java.util.Set;
 final class DefaultController implements Controller {
     private final Rules mRules;
 
-    DefaultController(boolean allowMain) {
-        var builder = new RulesBuilder().applyRules(RulesApplier.java_base());
-
-        if (allowMain) {
-            String command = System.getProperty("sun.java.command");
-
-            if (command != null) {
-                // Allow access to the main method. Otherwise, an IllegalCallerException can be
-                // thrown because the main method doesn't have a caller. This doesn't happen if
-                // the main method is in an unnamed module, because unnamed modules cannot have
-                // target checks applied to them.
-
-                int endIndex = command.indexOf(' ');
-                if (endIndex < 0) {
-                    endIndex = command.length();
-                }
-                int dotIndex = command.lastIndexOf('.', endIndex);
-
-                String packageName = dotIndex < 0 ? "" : command.substring(0, dotIndex);
-
-                Module module = null;
-
-                for (Module m : ModuleLayer.boot().modules()) {
-                    if (m.getPackages().contains(packageName)) {
-                        module = m;
-                        break;
-                    }
-                }
-
-                if (module != null) {
-                    String className = command.substring(dotIndex + 1, endIndex);
-
-                    builder.forModule(module).forPackage(packageName).forClass(className)
-                        .denyMethod("main").allowVariant("([Ljava/lang/String;)V");
-                }
-            }
-        }
-
-        mRules = builder.build();
+    DefaultController() {
+        mRules = new RulesBuilder().applyRules(RulesApplier.java_base()).build();
     }
 
     @Override
     public Rules rulesForCaller(Module module) {
         return mRules;
-    }
-
-    @Override
-    public Set<Rules> allRules() {
-        return Set.of(mRules);
     }
 }

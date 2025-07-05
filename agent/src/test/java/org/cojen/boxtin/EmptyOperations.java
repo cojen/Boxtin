@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-package org.cojen.boxtin.tt;
+package org.cojen.boxtin;
 
 import java.util.*;
 
@@ -23,18 +23,18 @@ import java.util.stream.Stream;
 import org.junit.Ignore;
 
 /**
- * Defines various target operations which should be denied.
+ * Defines various operations which should be denied.
  *
  * @author Brian S. O'Neill
- * @see TransformTest.Injector
+ * @see EmptyTransformTest
  */
 @Ignore
-public class T_EmptyOperations {
+public class EmptyOperations {
 
-    public T_EmptyOperations() {
+    public EmptyOperations() {
     }
 
-    public static T_EmptyOperations op1() {
+    public static EmptyOperations op1() {
         throw null;
     }
 

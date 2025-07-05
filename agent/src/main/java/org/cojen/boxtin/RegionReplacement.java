@@ -14,31 +14,26 @@
  *  limitations under the License.
  */
 
-package org.cojen.boxtin.tt;
+package org.cojen.boxtin;
 
-import org.junit.Ignore;
+import java.io.IOException;
 
 /**
- * Defines various target operations which should be denied.
+ * Defines a region of bytes in a class file which the ClassFileProcessor has replaced.
  *
  * @author Brian S. O'Neill
- * @see TransformTest.Injector
  */
-@Ignore
-public class T_CheckedOperations {
+interface RegionReplacement {
+    /**
+     * @throws IllegalStateException if nothing was actually replaced
+     * @return the new length
+     */
+    long finish(ConstantPool cp, byte[] originalBuffer) throws IOException;
 
-    public T_CheckedOperations() {
-    }
+    long originalLength();
 
-    public static String op1(int a) {
-        return "" + a;
-    }
-
-    public static long op2(int a, long b) {
-        return a + b;
-    }
-
-    public static String[] op3(String a) {
-        return new String[] {a};
-    }
+    /**
+     * @throws IllegalStateException if not finished
+     */
+    void writeTo(BufferEncoder encoder) throws IOException;
 }

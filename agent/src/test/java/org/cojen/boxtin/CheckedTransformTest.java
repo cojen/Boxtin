@@ -24,8 +24,6 @@ import java.lang.invoke.MethodType;
 import org.junit.*;
 import static org.junit.Assert.*;
 
-import org.cojen.boxtin.tt.T_CheckedOperations;
-
 /**
  * 
  *
@@ -36,28 +34,24 @@ public class CheckedTransformTest extends TransformTest {
         org.junit.runner.JUnitCore.main(CheckedTransformTest.class.getName());
     }
 
-    private static final Rules RULES;
+    @Override
+    protected RulesBuilder builder() throws Exception {
+        var b = new RulesBuilder();
 
-    static {
-        try {
-            var b = new RulesBuilder();
+        b.forModule("org.cojen.boxtin").forPackage("org.cojen.boxtin")
+            .forClass("CheckedOperations")
+            .allowAllConstructors()
+            .denyMethod(DenyAction.checked(find("c_op1", int.class),
+                                           DenyAction.standard()), "op1")
+            .denyMethod(DenyAction.checked(find("c_op2", int.class, long.class),
+                                           DenyAction.value(-1L)), "op2")
+            .denyMethod(DenyAction.checked(find("c_op3", Class.class, String.class),
+                                           DenyAction.empty()), "op3");
+        ;
 
-            b.forModule("xxx").forPackage("org.cojen.boxtin.tt")
-                .forClass("T_CheckedOperations")
-                .allowAllConstructors()
-                .denyMethod(DenyAction.checked(find("c_op1", int.class),
-                                               DenyAction.standard()), "op1")
-                .denyMethod(DenyAction.checked(find("c_op2", int.class, long.class),
-                                               DenyAction.value(-1L)), "op2")
-                .callerCheck()
-                .denyMethod(DenyAction.checked(find("c_op3", Class.class, String.class),
-                                               DenyAction.empty()), "op3");
-                ;
+        b.forModule("java.base").allowAll();
 
-            RULES = b.build();
-        } catch (Exception e) {
-            throw new ExceptionInInitializerError(e);
-        }
+        return b;
     }
 
     private static MethodHandleInfo find(String name, Class... paramTypes)
@@ -110,22 +104,22 @@ public class CheckedTransformTest extends TransformTest {
 
     @Test
     public void checked() throws Exception {
-        if (runWith(RULES)) {
+        if (runTransformed()) {
             return;
         }
 
-        assertEquals("10", T_CheckedOperations.op1(10));
+        assertEquals("10", CheckedOperations.op1(10));
 
         try {
-            T_CheckedOperations.op1(-10);
+            CheckedOperations.op1(-10);
             fail();
         } catch (SecurityException e) {
         }
 
-        assertEquals(100L, T_CheckedOperations.op2(10, 90));
-        assertEquals(-1L, T_CheckedOperations.op2(10, -1000));
+        assertEquals(100L, CheckedOperations.op2(10, 90));
+        assertEquals(-1L, CheckedOperations.op2(10, -1000));
 
-        assertEquals(0, T_CheckedOperations.op3("magic").length);
-        assertEquals("hello", T_CheckedOperations.op3("hello")[0]);
+        assertEquals(0, CheckedOperations.op3("magic").length);
+        assertEquals("hello", CheckedOperations.op3("hello")[0]);
     }
 }

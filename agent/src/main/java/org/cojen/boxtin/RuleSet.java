@@ -18,6 +18,8 @@ package org.cojen.boxtin;
 
 import java.io.IOException;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -40,6 +42,9 @@ final class RuleSet implements Rules {
     // Default is selected when no map entry is found.
     private final Rule mDefaultRule;
 
+    // Maps method names to one or more ClassScope instances which have denials.
+    private final Map<String, Object> mDeniedMethodsIndex;
+
     private int mHashCode;
 
     /**
@@ -51,6 +56,14 @@ final class RuleSet implements Rules {
         }
         mPackages = packages;
         mDefaultRule = defaultRule;
+
+        var index = new HashMap<String, Object>();
+
+        for (Map.Entry<String, PackageScope> e : packages.entrySet()) {
+            e.getValue().fillDeniedIndex(index, e.getKey());
+        }
+
+        mDeniedMethodsIndex = index;
     }
 
     @Override
@@ -70,11 +83,6 @@ final class RuleSet implements Rules {
     }
 
     @Override
-    public boolean isAllAllowed() {
-        return mPackages == null && mDefaultRule.isAllowed();
-    }
-
-    @Override
     public ForClass forClass(CharSequence packageName, CharSequence className) {
         PackageScope scope;
         if (mPackages == null || (scope = mPackages.get(packageName)) == null) {
@@ -91,6 +99,53 @@ final class RuleSet implements Rules {
             return mDefaultRule;
         }
         return scope.forClass(className(packageName, clazz));
+    }
+
+    @Override
+    public Map<String, Rule> denialsForMethod(CharSequence name, CharSequence descriptor) {
+        Object value = mDeniedMethodsIndex.get(name);
+
+        if (value == null) {
+            return Map.of();
+        }
+
+        if (value instanceof ClassScope scope) {
+            Rule rule = scope.ruleForMethod(name, descriptor);
+            return rule.isAllowed() ? Map.of() : Map.of(scope.fullName(), rule);
+        }
+
+        @SuppressWarnings("unchecked")
+        var set = (Set<ClassScope>) value;
+
+        String firstName = null;
+        Rule firstRule = null;
+        Map<String, Rule> matches = null;
+
+        for (ClassScope scope : set) {
+            Rule rule = scope.ruleForMethod(name, descriptor);
+            if (rule.isDenied()) {
+                if (firstName == null) {
+                    firstName = scope.fullName();
+                    firstRule = rule;
+                } else {
+                    if (matches == null) {
+                        matches = new HashMap<>();
+                        matches.put(firstName, firstRule);
+                    }
+                    matches.put(scope.fullName(), rule);
+                }
+            }
+        }
+
+        if (matches != null) {
+            return matches;
+        }
+
+        if (firstName != null) {
+            return Map.of(firstName, firstRule);
+        }
+
+        return Map.of();
     }
 
     @Override
@@ -188,6 +243,12 @@ final class RuleSet implements Rules {
                 }
             }
         }
+
+        private void fillDeniedIndex(Map<String, Object> index, String pkgName) {
+            if (mClasses != null) for (Map.Entry<String, ClassScope> e : mClasses.entrySet()) {
+                e.getValue().fillDeniedIndex(index, pkgName, e.getKey());
+            }
+        }
     }
 
     static final class ClassScope implements Rules.ForClass {
@@ -203,10 +264,9 @@ final class RuleSet implements Rules {
         // Default is selected when no method map entry is found.
         private final Rule mDefaultMethodRule;
 
-        // Bits 3..2 for caller, bits 1..0 for target. 0: unknown, 1: denied, 3: allowed
-        private int mWhereDenied;
-
         private int mHashCode;
+
+        private String mPackageName, mClassName;
 
         ClassScope(MethodScope constructors, Rule defaultConstructorRule,
                    Map<String, MethodScope> methods, Rule defaultMethodRule)
@@ -218,6 +278,11 @@ final class RuleSet implements Rules {
             }
             mMethods = methods;
             mDefaultMethodRule = defaultMethodRule;
+        }
+
+        String fullName() {
+            String pkgName = mPackageName;
+            return pkgName.isEmpty() ? mClassName : (pkgName + '/' + mClassName);
         }
 
         @Override
@@ -270,75 +335,6 @@ final class RuleSet implements Rules {
                 rule = Rule.allow();
             }
             return rule;
-        }
-
-        @Override
-        public boolean isAnyConstructorDenied() {
-            return mConstructors != null || mDefaultConstructorRule.isDenied();
-        }
-
-        @Override
-        public boolean isAnyDeniedAtCaller() {
-            int where = mWhereDenied >> 2;
-
-            if (where == 0) {
-                examine: {
-                    if (mDefaultConstructorRule.isDeniedAtCaller() ||
-                        mDefaultMethodRule.isDeniedAtCaller() ||
-                        (mConstructors != null && mConstructors.isDeniedAtCaller()))
-                    {
-                        where = 1;
-                        break examine;
-                    }
-
-                    if (mMethods != null) {
-                        for (MethodScope scope : mMethods.values()) {
-                            if (scope.isDeniedAtCaller()) {
-                                where = 1;
-                                break examine;
-                            }
-                        }
-                    }
-
-                    where = 3;
-                }
-
-                mWhereDenied |= where << 2;
-            }
-
-            return where == 1;
-        }
-
-        @Override
-        public boolean isAnyDeniedAtTarget() {
-            int where = mWhereDenied & 0b11;
-
-            if (where == 0) {
-                examine: {
-                    if (mDefaultConstructorRule.isDeniedAtTarget() ||
-                        mDefaultMethodRule.isDeniedAtTarget() ||
-                        (mConstructors != null && mConstructors.isDeniedAtTarget()))
-                    {
-                        where = 1;
-                        break examine;
-                    }
-
-                    if (mMethods != null) {
-                        for (MethodScope scope : mMethods.values()) {
-                            if (scope.isDeniedAtTarget()) {
-                                where = 1;
-                                break examine;
-                            }
-                        }
-                    }
-
-                    where = 3;
-                }
-
-                mWhereDenied |= where;
-            }
-
-            return where == 1;
         }
 
         void printTo(Appendable a, String indent, String plusIndent) throws IOException {
@@ -394,6 +390,32 @@ final class RuleSet implements Rules {
 
             return false;
         }
+
+        @SuppressWarnings("unchecked")
+        private void fillDeniedIndex(Map<String, Object> index, String pkgName, String className) {
+            mPackageName = pkgName;
+            mClassName = className;
+            
+            if (mMethods != null) for (Map.Entry<String, MethodScope> e : mMethods.entrySet()) {
+                if (e.getValue().isAnyVariantDenied()) {
+                    String name = e.getKey();
+                    Object value = index.get(name);
+                    if (value == null) {
+                        index.put(name, this);
+                    } else {
+                        Set<ClassScope> set;
+                        if (value instanceof ClassScope scope) {
+                            set = new HashSet<>();
+                            set.add(scope);
+                            index.put(name, set);
+                        } else {
+                            set = (Set<ClassScope>) value;
+                        }
+                        set.add(this);
+                    }
+                }
+            }
+        }
     }
 
     static final class MethodScope {
@@ -429,44 +451,28 @@ final class RuleSet implements Rules {
                 && Objects.equals(mVariants, other.mVariants);
         }
 
+        boolean isAnyVariantDenied() {
+            if (mDefaultRule.isDenied()) {
+                return true;
+            }
+
+            if (mVariants != null) {
+                for (Rule rule : mVariants.values()) {
+                    if (rule.isDenied()) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
         Rule ruleForMethod(CharSequence descriptor) {
             Rule rule;
             if (mVariants == null || (rule = findRule(descriptor)) == null) {
                 return mDefaultRule;
             }
             return rule;
-        }
-
-        boolean isDeniedAtCaller() {
-            if (mDefaultRule.isDeniedAtCaller()) {
-                return true;
-            }
-
-            if (mVariants != null) {
-                for (Rule rule : mVariants.values()) {
-                    if (rule.isDeniedAtCaller()) {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
-        }
-
-        boolean isDeniedAtTarget() {
-            if (mDefaultRule.isDeniedAtTarget()) {
-                return true;
-            }
-
-            if (mVariants != null) {
-                for (Rule rule : mVariants.values()) {
-                    if (rule.isDeniedAtTarget()) {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
         }
 
         private Rule findRule(CharSequence descriptor) {

@@ -16,8 +16,6 @@
 
 package org.cojen.boxtin;
 
-import java.lang.invoke.MethodHandles;
-
 import java.lang.reflect.InvocationTargetException;
 
 import java.io.InputStream;
@@ -39,44 +37,45 @@ public abstract class TransformTest {
         WALKER = StackWalker.getInstance(Set.of(StackWalker.Option.RETAIN_CLASS_REFERENCE), 2);
     }
 
-    private static final ThreadLocal<Boolean> cRunning = ThreadLocal.withInitial(() -> false);
-
     private static final SoftCache<Class<?>, Class<?>> cTransformed = new SoftCache<>();
+
+    protected abstract RulesBuilder builder() throws Exception;
 
     /**
      * Transforms the current class using a SecurityAgent, and then runs the caller's test
-     * method. Note that before and after test actions aren't performed.
+     * method. Note that any before and after test actions aren't performed.
      *
-     * @param rules the first is the only one which is ever actually selected
      * @return true if the test should simply return because it already ran
      */
-    protected boolean runWith(Rules... rules) throws Exception {
-        if (cRunning.get()) {
+    protected boolean runTransformed() throws Exception {
+        RulesBuilder b;
+        try {
+            b = builder();
+        } catch (SecurityException e) {
+            // Access to the RulesBuilder class is denied.
             return false;
         }
+
+        b.forModule("org.cojen.boxtin")
+            .forPackage("org.cojen.boxtin")
+            .forClass("TransformTest").allowAll()
+            .forClass("TestUtils").allowAll()
+            ;
+            
+        b.forModule("org.junit").forPackage("org.junit").allowAll();
+
+        Rules rules = b.build();
 
         var frame = WALKER.walk(s -> s.skip(1).findFirst()).get();
         Class<?> original = frame.getDeclaringClass();
         Class<?> transformed = cTransformed.get(original);
 
-        Controller c = new Controller() {
-            @Override
-            public Rules rulesForCaller(Module module) {
-                return rules[0];
-            }
-
-            @Override
-            public Set<Rules> allRules() {
-                return Set.of(rules);
-            }
-        };
-
-        var agent = SecurityAgent.testActivate(c);
+        var agent = SecurityAgent.testActivate(module -> rules);
 
         try {
             if (transformed == null) {
                 try {
-                    var injector = new Injector(original.getClassLoader(), agent, c);
+                    var injector = new Injector(original.getClassLoader(), agent);
                     transformed = injector.inject(original);
                 } catch (RuntimeException e) {
                     throw e;
@@ -86,8 +85,6 @@ public abstract class TransformTest {
 
                 cTransformed.put(original, transformed);
             }
-
-            cRunning.set(true);
 
             Object instance = transformed.getConstructor().newInstance();
 
@@ -106,7 +103,6 @@ public abstract class TransformTest {
 
             return true;
         } finally {
-            cRunning.set(false);
             SecurityAgent.testActivate(null);
         }
     }
@@ -117,42 +113,17 @@ public abstract class TransformTest {
 
     private static class Injector extends ClassLoader {
         private final SecurityAgent mAgent;
-        private final Controller mController;
 
-        private Injector(ClassLoader parent, SecurityAgent agent, Controller c) {
+        private Injector(ClassLoader parent, SecurityAgent agent) {
             super(parent);
             mAgent = agent;
-            mController = c;
-        }
-
-        @Override
-        protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-            // Check if the class name starts with a special prefix which indicates that it
-            // should be transformed, but with target rules only. A separate package is needed
-            // because packages cannot be defined across multiple modules.
-            if (!name.startsWith("org.cojen.boxtin.tt.T_")) {
-                return super.loadClass(name, resolve);
-            }
-
-            Class<?> clazz = findLoadedClass(name);
-            if (clazz != null) {
-                return clazz;
-            }
-
-            try {
-                return loadAndTransformClass(name, true);
-            } catch (ClassNotFoundException e) {
-                throw e;
-            } catch (Throwable e) {
-                throw new ClassNotFoundException(e.getMessage(), e);
-            }
         }
 
         Class<?> inject(Class<?> original) throws Throwable {
-            return loadAndTransformClass(original.getName(), false);
+            return loadAndTransformClass(original.getName());
         }
 
-        private Class<?> loadAndTransformClass(String className, boolean isTarget)
+        private Class<?> loadAndTransformClass(String className)
             throws Throwable
         {
             String pathName = className.replace('.', '/');
@@ -162,40 +133,7 @@ public abstract class TransformTest {
                 bytes = in.readAllBytes();
             }
 
-            byte[] xbytes;
-            if (!isTarget) {
-                xbytes = mAgent.doTransform(getClass().getModule(), className, null, bytes);
-            } else {
-                // If the class is explicitly designated as a target, force it to have target
-                // rules applied, and don't apply caller rules.
-
-                Rules forTarget = MergedTargetRules.from(mController);
-
-                int index = pathName.lastIndexOf('/');
-                String packageName = index < 0 ? "" : pathName.substring(0, index);
-                String justClassName = pathName.substring(index + 1);
-
-                Rules.ForClass forTargetClass = forTarget.forClass(packageName, justClassName);
-
-                var processor = ClassFileProcessor.begin(bytes);
-
-                if (processor.check(Rule.allow(), forTargetClass, true)) {
-                    xbytes = processor.redefine();
-
-                    // Must be in a different module in order for checks to be applied.
-
-                    MethodHandles.Lookup modLookup = TestUtils.newModule
-                        (this, getUnnamedModule(), getClass().getModule());
-
-                    return modLookup.defineClass(xbytes);
-                }
-
-                xbytes = null;
-            }
-
-            if (xbytes == null) {
-                xbytes = bytes;
-            }
+            byte[] xbytes = mAgent.doTransform(getClass().getModule(), bytes);
 
             return defineClass(className, xbytes, 0, xbytes.length);
         }

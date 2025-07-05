@@ -19,8 +19,6 @@ package org.cojen.boxtin;
 import org.junit.*;
 import static org.junit.Assert.*;
 
-import org.cojen.boxtin.tt.T_EmptyOperations;
-
 /**
  * 
  *
@@ -33,94 +31,91 @@ public class EmptyTransformTest extends TransformTest {
 
     private static final int NUM = 51;
 
-    private static final Rules RULES;
-
-    static {
+    @Override
+    protected RulesBuilder builder() {
         var b = new RulesBuilder();
 
-        var forClass = b.forModule("xxx").forPackage("org.cojen.boxtin.tt")
-            .forClass("T_EmptyOperations")
-            .allowAllConstructors().denyVariant(DenyAction.empty());
+        RulesBuilder.ClassScope forClass = b.forModule("org.cojen.boxtin")
+            .forPackage("org.cojen.boxtin").forClass("EmptyOperations");
 
         for (int i=1; i<=NUM; i++) {
-            if ((i & 1) == 0) {
-                forClass.callerCheck();
-            } else {
-                forClass.targetCheck();
-            }
             forClass.denyMethod(DenyAction.empty(), "op" + i);
         }
 
-        RULES = b.build();
+        forClass.allowAllConstructors().denyVariant(DenyAction.empty());
+
+        b.forModule("java.base").allowAll();
+
+        return b;
     }
 
     @Test
     public void empty() throws Exception {
-        if (runWith(RULES)) {
+        if (runTransformed()) {
             return;
         }
 
-        assertNotNull(T_EmptyOperations.op1());
-        assertFalse(T_EmptyOperations.op2());
-        assertFalse(T_EmptyOperations.op3());
-        assertEquals((byte) 0, T_EmptyOperations.op4());
-        assertEquals((byte) 0, (byte) T_EmptyOperations.op5());
-        assertEquals('\0', T_EmptyOperations.op6());
-        assertEquals('\0', (char) T_EmptyOperations.op7());
-        assertEquals((short) 0, T_EmptyOperations.op8());
-        assertEquals((short) 0, (short) T_EmptyOperations.op9());
-        assertEquals(0, T_EmptyOperations.op10());
-        assertEquals(0, (int) T_EmptyOperations.op11());
-        assertEquals(0L, T_EmptyOperations.op12());
-        assertEquals(0L, (long) T_EmptyOperations.op13());
-        assertTrue(0.0f == T_EmptyOperations.op14());
-        assertTrue(0.0f == (float) T_EmptyOperations.op15());
-        assertTrue(0.0d == T_EmptyOperations.op16());
-        assertTrue(0.0d == (double) T_EmptyOperations.op17());
-        assertTrue(T_EmptyOperations.op18().isEmpty());
-        assertFalse(T_EmptyOperations.op19().iterator().hasNext());
-        assertTrue(T_EmptyOperations.op20().isEmpty());
-        assertTrue(T_EmptyOperations.op21().isEmpty());
-        assertTrue(T_EmptyOperations.op22().isEmpty());
-        assertTrue(T_EmptyOperations.op23().isEmpty());
-        assertTrue(T_EmptyOperations.op24().isEmpty());
-        assertTrue(T_EmptyOperations.op25().toList().isEmpty());
-        assertFalse(T_EmptyOperations.op26().hasMoreElements());
-        assertFalse(T_EmptyOperations.op27().hasNext());
-        assertTrue(T_EmptyOperations.op28().isEmpty());
-        assertFalse(T_EmptyOperations.op29().hasNext());
-        assertTrue(T_EmptyOperations.op30().isEmpty());
-        assertTrue(T_EmptyOperations.op31().isEmpty());
-        assertTrue(T_EmptyOperations.op32().isEmpty());
-        assertTrue(T_EmptyOperations.op33().isEmpty());
-        assertTrue(T_EmptyOperations.op34().isEmpty());
-        assertTrue(T_EmptyOperations.op35().isEmpty());
-        assertEquals(0L, T_EmptyOperations.op36().getExactSizeIfKnown());
-        assertEquals(0L, T_EmptyOperations.op37().getExactSizeIfKnown());
-        assertEquals(0L, T_EmptyOperations.op38().getExactSizeIfKnown());
-        assertEquals(0L, T_EmptyOperations.op39().getExactSizeIfKnown());
-        T_EmptyOperations.op40();
-        assertEquals(0, T_EmptyOperations.op41().length);
-        assertEquals(0, T_EmptyOperations.op42().length);
-        assertEquals(0, T_EmptyOperations.op43().length);
-        assertEquals(0, T_EmptyOperations.op44().length);
-        assertEquals(0, T_EmptyOperations.op45().length);
-        assertEquals(0, T_EmptyOperations.op46().length);
-        assertEquals(0, T_EmptyOperations.op47().length);
-        assertEquals(0, T_EmptyOperations.op48().length);
-        assertEquals(0, T_EmptyOperations.op49().length);
-        assertEquals(0, T_EmptyOperations.op50().length);
-        assertEquals(0, T_EmptyOperations.op51().length);
+        assertNotNull(EmptyOperations.op1());
+        assertFalse(EmptyOperations.op2());
+        assertFalse(EmptyOperations.op3());
+        assertEquals((byte) 0, EmptyOperations.op4());
+        assertEquals((byte) 0, (byte) EmptyOperations.op5());
+        assertEquals('\0', EmptyOperations.op6());
+        assertEquals('\0', (char) EmptyOperations.op7());
+        assertEquals((short) 0, EmptyOperations.op8());
+        assertEquals((short) 0, (short) EmptyOperations.op9());
+        assertEquals(0, EmptyOperations.op10());
+        assertEquals(0, (int) EmptyOperations.op11());
+        assertEquals(0L, EmptyOperations.op12());
+        assertEquals(0L, (long) EmptyOperations.op13());
+        assertTrue(0.0f == EmptyOperations.op14());
+        assertTrue(0.0f == (float) EmptyOperations.op15());
+        assertTrue(0.0d == EmptyOperations.op16());
+        assertTrue(0.0d == (double) EmptyOperations.op17());
+        assertTrue(EmptyOperations.op18().isEmpty());
+        assertFalse(EmptyOperations.op19().iterator().hasNext());
+        assertTrue(EmptyOperations.op20().isEmpty());
+        assertTrue(EmptyOperations.op21().isEmpty());
+        assertTrue(EmptyOperations.op22().isEmpty());
+        assertTrue(EmptyOperations.op23().isEmpty());
+        assertTrue(EmptyOperations.op24().isEmpty());
+        assertTrue(EmptyOperations.op25().toList().isEmpty());
+        assertFalse(EmptyOperations.op26().hasMoreElements());
+        assertFalse(EmptyOperations.op27().hasNext());
+        assertTrue(EmptyOperations.op28().isEmpty());
+        assertFalse(EmptyOperations.op29().hasNext());
+        assertTrue(EmptyOperations.op30().isEmpty());
+        assertTrue(EmptyOperations.op31().isEmpty());
+        assertTrue(EmptyOperations.op32().isEmpty());
+        assertTrue(EmptyOperations.op33().isEmpty());
+        assertTrue(EmptyOperations.op34().isEmpty());
+        assertTrue(EmptyOperations.op35().isEmpty());
+        assertEquals(0L, EmptyOperations.op36().getExactSizeIfKnown());
+        assertEquals(0L, EmptyOperations.op37().getExactSizeIfKnown());
+        assertEquals(0L, EmptyOperations.op38().getExactSizeIfKnown());
+        assertEquals(0L, EmptyOperations.op39().getExactSizeIfKnown());
+        EmptyOperations.op40();
+        assertEquals(0, EmptyOperations.op41().length);
+        assertEquals(0, EmptyOperations.op42().length);
+        assertEquals(0, EmptyOperations.op43().length);
+        assertEquals(0, EmptyOperations.op44().length);
+        assertEquals(0, EmptyOperations.op45().length);
+        assertEquals(0, EmptyOperations.op46().length);
+        assertEquals(0, EmptyOperations.op47().length);
+        assertEquals(0, EmptyOperations.op48().length);
+        assertEquals(0, EmptyOperations.op49().length);
+        assertEquals(0, EmptyOperations.op50().length);
+        assertEquals(0, EmptyOperations.op51().length);
     }
 
     @Test
     public void deniedCtor() throws Exception {
-        if (runWith(RULES)) {
+        if (runTransformed()) {
             return;
         }
 
         try {
-            new T_EmptyOperations();
+            new EmptyOperations();
             fail();
         } catch (SecurityException e) {
         }

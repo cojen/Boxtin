@@ -18,6 +18,9 @@ package org.cojen.boxtin;
 
 import java.io.IOException;
 
+import java.lang.constant.ClassDesc;
+import java.lang.constant.MethodTypeDesc;
+
 import java.lang.invoke.MethodHandleInfo;
 
 import java.util.Arrays;
@@ -138,6 +141,9 @@ final class ConstantPool {
         if (constants == null) {
             mConstants = constants = new Constant[mOffsets.length];
         } else {
+            if ((index - 1) >= constants.length && mAddedConstants != null) {
+                return mAddedConstants.get(index - constants.length - 1);
+            }
             Constant c = constants[index - 1];
             if (c != null) {
                 return c;
@@ -173,6 +179,13 @@ final class ConstantPool {
      */
     C_UTF8 findConstantUTF8(int index) throws ClassFormatException {
         return findConstant(index, C_UTF8.class);
+    }
+
+    /**
+     * @throws ClassFormatException if cast fails
+     */
+    C_Class findConstantClass(int index) throws ClassFormatException {
+        return findConstant(index, C_Class.class);
     }
 
     private Constant resolveConstant(int index) throws IOException, ClassFormatException {
@@ -223,6 +236,12 @@ final class ConstantPool {
                 c = new C_Class(tag, (C_UTF8) findConstant(name_index));
             }
 
+            // CONSTANT_String
+            case 8 -> {
+                int string_index = decoder.readUnsignedShort();
+                c = new C_String(tag, (C_UTF8) findConstant(string_index));
+            }
+
             // CONSTANT_Fieldref, CONSTANT_Methodref, CONSTANT_InterfaceMethodref
             case 9, 10, 11 -> {
                 int class_index = decoder.readUnsignedShort();
@@ -244,6 +263,13 @@ final class ConstantPool {
                 int kind = decoder.readUnsignedByte();
                 int reference_index = decoder.readUnsignedShort();
                 c = new C_MethodHandle(tag, kind, (C_MemberRef) findConstant(reference_index));
+            }
+
+            // CONSTANT_Dynamic, CONSTANT_InvokeDynamic
+            case 17, 18 -> {
+                int bootstrapIndex = decoder.readUnsignedShort();
+                int natIndex = decoder.readUnsignedShort();
+                c = new C_Dynamic(tag, bootstrapIndex, (C_NameAndType) findConstant(natIndex));
             }
         }
 
@@ -393,32 +419,20 @@ final class ConstantPool {
         }
     }
 
+    C_Class addClass(Class<?> clazz) {
+        return addClass(clazz.getName().replace('.', '/'));
+    }
+
     C_Class addClass(String className) {
         return addConstant(new C_Class(7, addUTF8(className)));
-    }
-
-    C_MemberRef addFieldRef(String className, String name, String desc) {
-        return addMemberRef(9, className, name, desc);
-    }
-
-    C_MemberRef addFieldRef(C_Class clazz, String name, String desc) {
-        return addMemberRef(9, clazz, addNameAndType(name, desc));
     }
 
     C_MemberRef addMethodRef(String className, String name, String desc) {
         return addMemberRef(10, className, name, desc);
     }
 
-    C_MemberRef addMethodRef(String className, String name, C_UTF8 desc) {
-        return addMemberRef(10, addClass(className), addUTF8(name), desc);
-    }
-
     C_MemberRef addMethodRef(C_Class clazz, String name, String desc) {
         return addMemberRef(10, clazz, addNameAndType(name, desc));
-    }
-
-    C_MemberRef addMethodRef(C_Class clazz, C_UTF8 name, C_UTF8 desc) {
-        return addMemberRef(10, clazz, name, desc);
     }
 
     C_MemberRef addMethodRef(C_Class clazz, C_NameAndType nat) {
@@ -429,20 +443,12 @@ final class ConstantPool {
         return addMemberRef(tag, addClass(className), addNameAndType(name, desc));
     }
 
-    private C_MemberRef addMemberRef(int tag, C_Class clazz, C_UTF8 name, C_UTF8 desc) {
-        return addMemberRef(tag, clazz, addNameAndType(name, desc));
-    }
-
     private C_MemberRef addMemberRef(int tag, C_Class clazz, C_NameAndType nat) {
         return addConstant(new C_MemberRef(tag, clazz, nat));
     }
 
     C_NameAndType addNameAndType(String name, String desc) {
         return addConstant(new C_NameAndType(12, addUTF8(name), addUTF8(desc)));
-    }
-
-    C_NameAndType addNameAndType(C_UTF8 name, C_UTF8 desc) {
-        return addConstant(new C_NameAndType(12, name, desc));
     }
 
     C_MethodHandle addMethodHandle(MethodHandleInfo mhi) {
@@ -562,13 +568,6 @@ final class ConstantPool {
         return addConstant(new C_MemberRef(10, clazz, nat));
     }
 
-    /**
-     * Adds a member reference with a different class reference.
-     */
-    C_MemberRef addWithClass(C_MemberRef memberRef, C_Class clazz) {
-        return addConstant(new C_MemberRef(memberRef.mTag, clazz, memberRef.mNameAndType));
-    }
-
     @SuppressWarnings("unchecked")
     private <C extends Constant> C addConstant(C constant) {
         Constant existing = mMappedConstants.putIfAbsent(constant, constant);
@@ -655,6 +654,13 @@ final class ConstantPool {
         }
 
         /**
+         * @see StackMapTable
+         */
+        int smTag(ConstantPool cp) throws ClassFormatException {
+            throw new ClassFormatException();
+        }
+
+        /**
          * Returns the size of the constant, in bytes.
          */
         abstract long size();
@@ -670,6 +676,9 @@ final class ConstantPool {
         private int mState;
         private int mHash;
         private String mStr;
+
+        private ClassDesc mAsClassDesc;
+        private MethodTypeDesc mAsMethodTypeDesc;
 
         C_UTF8(int tag, byte[] buffer, int offset, int length) {
             super(tag);
@@ -706,19 +715,6 @@ final class ConstantPool {
             int offset = mOffset;
             return Utils.decodeIntBE(buffer, offset) == 0x3c696e69 // <ini
                 && Utils.decodeUnsignedShortBE(buffer, offset + 4) == 0x743e; // t>
-        }
-
-        /**
-         * Returns true if the value is <clinit>.
-         */
-        boolean isClinit() {
-            int length = mLength;
-            if (length != 8) {
-                return false;
-            }
-            byte[] buffer = mBuffer;
-            int offset = mOffset;
-            return Utils.decodeLongBE(buffer, offset) == 0x3c636c696e69743eL;
         }
 
         String str() throws ClassFormatException {
@@ -859,273 +855,20 @@ final class ConstantPool {
             }
         }
 
-        /**
-         * Assume that the string refers to a method type descriptor, and return the number of
-         * arguments or slots it has.
-         *
-         * @param wideSize pass 1 to count number of arguments, or pass 2 to count slots
-         * @return number of stack slots pushed
-         */
-        int numArgs(int wideSize) {
-            int numPushed = 0;
-
-            byte[] buffer = mBuffer;
-            int offset = mOffset + 1; // skip the '('
-            int endOffset = offset + mLength;
-
-            loop: while (offset < endOffset) {
-                int c = buffer[offset++] & 0xff;
-
-                switch (c) {
-                    default -> {
-                        break loop;
-                    }
-                    case 'B', 'C', 'I', 'S', 'Z', 'F' -> {
-                        numPushed++;
-                    }
-                    case 'J', 'D' -> {
-                        numPushed += wideSize;
-                    }
-                    case 'L', '[' -> {
-                        numPushed++;
-                        // Find the ';' terminator.
-                        while (offset < endOffset && (buffer[offset++] & 0xff) != ';');
-                    }
-                }
+        ClassDesc asClassDesc() {
+            ClassDesc desc = mAsClassDesc;
+            if (desc == null) {
+                mAsClassDesc = desc = ClassDesc.ofDescriptor(str());
             }
-
-            return numPushed;
+            return desc;
         }
 
-        /**
-         * Assume that the string refers to a method type descriptor, and generate operations
-         * to push all the arguments to the operand stack.
-         *
-         * @param firstSlot first parameter slot
-         * @return number of stack slots pushed
-         */
-        int pushArgs(BufferEncoder encoder, int firstSlot) throws IOException {
-            int numPushed = firstSlot;
-
-            byte[] buffer = mBuffer;
-            int offset = mOffset + 1; // skip the '('
-            int endOffset = offset + mLength;
-
-            loop: while (offset < endOffset) {
-                int c = buffer[offset++] & 0xff;
-
-                switch (c) {
-                    default -> {
-                        break loop;
-                    }
-                    case 'B', 'C', 'I', 'S', 'Z' -> {
-                        encoder.writeByte(ILOAD);
-                        encoder.writeByte(numPushed++);
-                    }
-                    case 'J' -> {
-                        encoder.writeByte(LLOAD);
-                        encoder.writeByte(numPushed); numPushed += 2;
-                    }
-                    case 'F' -> {
-                        encoder.writeByte(FLOAD);
-                        encoder.writeByte(numPushed++);
-                    }
-                    case 'D' -> {
-                        encoder.writeByte(DLOAD);
-                        encoder.writeByte(numPushed); numPushed += 2;
-                    }
-                    case 'L', '[' -> {
-                        encoder.writeByte(ALOAD);
-                        encoder.writeByte(numPushed++);
-
-                        if (c == '[') {
-                            // Skip all array prefixes.
-                            while (offset < endOffset && (c = buffer[offset++] & 0xff) == '[');
-                            if (c != 'L') {
-                                // Assume parameter is a primitive array.
-                                continue;
-                            }
-                        }
-
-                        // Find the ';' terminator.
-                        while (offset < endOffset && (buffer[offset++] & 0xff) != ';');
-                    }
-                }
+        MethodTypeDesc asMethodTypeDesc() {
+            MethodTypeDesc desc = mAsMethodTypeDesc;
+            if (desc == null) {
+                mAsMethodTypeDesc = desc = MethodTypeDesc.ofDescriptor(str());
             }
-
-            return numPushed - firstSlot;
-        }
-
-        /**
-         * Assume that the string refers to a method type descriptor, and generate operations
-         * to push an object[] which contains all of the arguments.
-         *
-         * @param pushThis when true, also push `this` as an argument
-         * @param slot first local variable slot to push
-         * @return maximum number of stack slots used: [1..5]
-         */
-        int pushArgsObject(BufferEncoder encoder, boolean pushThis, int slot) throws IOException {
-            int numArgs = numArgs(1);
-
-            if (pushThis) {
-                numArgs++;
-            }
-
-            pushInt(encoder, numArgs);
-            encoder.writeByte(ANEWARRAY);
-            encoder.writeShort(addClass("java/lang/Object").mIndex);
-
-            int maxPushed = 4, extra = 0;
-            int ix = 0;
-
-            if (pushThis) {
-                encoder.writeByte(DUP); // dup the array
-                pushInt(encoder, 0);    // push the array index
-                encoder.writeByte(ALOAD_0);
-                encoder.writeByte(AASTORE);
-                ix = 1;
-            }
-
-            byte[] buffer = mBuffer;
-            int offset = mOffset + 1; // skip the '('
-            int endOffset = offset + mLength;
-
-            loop: while (offset < endOffset) {
-                int c = buffer[offset++] & 0xff;
-
-                switch (c) {
-                    default -> {
-                        break loop;
-                    }
-                    case 'B', 'C', 'I', 'S', 'Z', 'J', 'F', 'D', 'L', '[' -> {
-                        break;
-                    }
-                }
-
-                encoder.writeByte(DUP); // dup the array
-                pushInt(encoder, ix++); // push the array index
-
-                switch (c) {
-                    default -> {
-                        throw new AssertionError();
-                    }
-                    case 'B' -> {
-                        pushAndBox(encoder, ILOAD, slot++, c, Byte.class);
-                    }
-                    case 'C' -> {
-                        pushAndBox(encoder, ILOAD, slot++, c, Character.class);
-                    }
-                    case 'I' -> {
-                        pushAndBox(encoder, ILOAD, slot++, c, Integer.class);
-                    }
-                    case 'S' -> {
-                        pushAndBox(encoder, ILOAD, slot++, c, Short.class);
-                    }
-                    case 'Z' -> {
-                        pushAndBox(encoder, ILOAD, slot++, c, Boolean.class);
-                    }
-                    case 'F' -> {
-                        pushAndBox(encoder, FLOAD, slot++, c, Float.class);
-                    }
-                    case 'J' -> {
-                        pushAndBox(encoder, LLOAD, slot, c, Long.class);
-                        slot += 2;
-                        extra = 1;
-                    }
-                    case 'D' -> {
-                        pushAndBox(encoder, DLOAD, slot, c, Double.class);
-                        slot += 2;
-                        extra = 1;
-                    }
-                    case 'L', '[' -> {
-                        encoder.writeByte(ALOAD);
-                        encoder.writeByte(slot++);
-                        // Find the ';' terminator.
-                        while (offset < endOffset && (buffer[offset++] & 0xff) != ';');
-                    }
-                }
-
-                encoder.writeByte(AASTORE);
-            }
-
-            return maxPushed + extra;
-        }
-
-        private void pushAndBox(BufferEncoder encoder, byte op, int slot, int type, Class<?> boxed)
-            throws IOException
-        {
-            encoder.writeByte(op);
-            encoder.writeByte(slot);
-            box(encoder, type, boxed);
-        }
-
-        private void box(BufferEncoder encoder, int type, Class<?> boxed) throws IOException {
-            String className = boxed.getName().replace('.', '/');
-            String methodDesc = "(" + ((char) type) + ')' + 'L' + className + ';';
-            encoder.writeByte(INVOKESTATIC);
-            encoder.writeShort(addMethodRef(className, "valueOf", methodDesc).mIndex);
-        }
-
-        /**
-         * Assume that the string refers to a method type descriptor, and generate a return
-         * operation.
-         *
-         * @return number of stack slots popped
-         */
-        int returnValue(BufferEncoder encoder) throws IOException {
-            int type = Utils.decodeUnsignedShortBE(mBuffer, mOffset + mLength - 2);
-
-            type = (type >> 8) == '[' ? ';' : type & 0xff;
-
-            switch (type) {
-                default -> {
-                    encoder.writeByte(RETURN);
-                    return 0;
-                }
-                case 'B', 'C', 'I', 'S', 'Z' -> {
-                    encoder.writeByte(IRETURN);
-                    return 1;
-                }
-                case 'J' -> {
-                    encoder.writeByte(LRETURN);
-                    return 2;
-                }
-                case 'F' -> {
-                    encoder.writeByte(FRETURN);
-                    return 1;
-                }
-                case 'D' -> {
-                    encoder.writeByte(DRETURN);
-                    return 2;
-                }
-                case ';' -> {
-                    encoder.writeByte(ARETURN);
-                    return 1;
-                }
-            }
-        }
-
-        /**
-         * Returns true if this method descriptor matches the given descriptor, ignoring any
-         * extra leading parameters it might have. The descriptors must only contain ASCII
-         * characters.
-         */
-        boolean tailMatches(String str) {
-            int length = mLength;
-            int strIndex = str.length();
-
-            if (strIndex >= length) {
-                byte[] buffer = mBuffer;
-                int start = mOffset;
-                for (int offset = start + length; --offset >= start; ) {
-                    int c = buffer[offset] & 0xff;
-                    if (str.charAt(--strIndex) != c) {
-                        return c == '(';
-                    }
-                }
-            }
-
-            return false;
+            return desc;
         }
 
         @Override
@@ -1161,6 +904,11 @@ final class ConstantPool {
         }
 
         @Override
+        int smTag(ConstantPool cp) {
+            return StackMapTable.tagForType(cp.addClass(String.class));
+        }
+
+        @Override
         long size() {
             return 1 + 2;
         }
@@ -1192,6 +940,11 @@ final class ConstantPool {
         }
 
         @Override
+        int smTag(ConstantPool cp) {
+            return StackMapTable.TAG_INT;
+        }
+
+        @Override
         long size() {
             return 1 + 4;
         }
@@ -1220,6 +973,11 @@ final class ConstantPool {
         public boolean equals(Object obj) {
             return this == obj || obj instanceof C_Float other
                 && mTag == other.mTag && mValue == other.mValue;
+        }
+
+        @Override
+        int smTag(ConstantPool cp) {
+            return StackMapTable.TAG_FLOAT;
         }
 
         @Override
@@ -1259,6 +1017,11 @@ final class ConstantPool {
         }
 
         @Override
+        int smTag(ConstantPool cp) {
+            return StackMapTable.TAG_LONG;
+        }
+
+        @Override
         long size() {
             return 1 + 8;
         }
@@ -1295,6 +1058,11 @@ final class ConstantPool {
         }
 
         @Override
+        int smTag(ConstantPool cp) {
+            return StackMapTable.TAG_DOUBLE;
+        }
+
+        @Override
         long size() {
             return 1 + 8;
         }
@@ -1309,6 +1077,11 @@ final class ConstantPool {
     static final class C_Class extends C_String {
         C_Class(int tag, C_UTF8 name) {
             super(tag, name);
+        }
+
+        @Override
+        int smTag(ConstantPool cp) {
+            return StackMapTable.tagForType(cp.addClass(Class.class));
         }
 
         /**
@@ -1444,6 +1217,46 @@ final class ConstantPool {
             encoder.writeByte(mTag);
             encoder.writeByte(mKind);
             encoder.writeShort(mRef.mIndex);
+        }
+    }
+
+    static final class C_Dynamic extends Constant {
+        final int mBootstrapIndex;
+        final C_NameAndType mNameAndType;
+
+        C_Dynamic(int tag, int bootstrapIndex, C_NameAndType nat) {
+            super(tag);
+            mBootstrapIndex = bootstrapIndex;
+            mNameAndType = nat;
+        }
+
+        @Override
+        public int hashCode() {
+            return ((mNameAndType.hashCode() * 31) + mBootstrapIndex) * 31 + mTag;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return this == obj || obj instanceof C_Dynamic other
+                && mTag == other.mTag && mBootstrapIndex == other.mBootstrapIndex
+                && mNameAndType.equals(other.mNameAndType);
+        }
+
+        @Override
+        int smTag(ConstantPool cp) throws ClassFormatException {
+            return StackMapTable.tagForType(cp, mNameAndType.mTypeDesc.asClassDesc());
+        }
+
+        @Override
+        long size() {
+            return 1 + 4;
+        }
+
+        @Override
+        void writeTo(BufferEncoder encoder) throws IOException {
+            encoder.writeByte(mTag);
+            encoder.writeShort(mBootstrapIndex);
+            encoder.writeShort(mNameAndType.mIndex);
         }
     }
 }

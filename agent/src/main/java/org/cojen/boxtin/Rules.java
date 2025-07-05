@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 
+import java.util.Map;
+
 /**
  * Checks if access to a class member is allowed or denied, defined by a set of rules, built
  * using a {@link RulesBuilder}.
@@ -28,23 +30,30 @@ import java.io.PrintWriter;
  */
 public interface Rules {
     /**
-     * Returns true if all operations are allowed.
-     */
-    public boolean isAllAllowed();
-
-    /**
      * @param packageName package name must have '/' characters as separators
-     * @return non-null ForClass instance
+     * @return a non-null ForClass instance
      */
     public ForClass forClass(CharSequence packageName, CharSequence className);
 
     /**
-     * @return non-null ForClass instance
+     * @return a non-null ForClass instance
      */
     public default ForClass forClass(Class<?> clazz) {
         String packageName = clazz.getPackageName();
         return forClass(packageName.replace('.', '/'), Utils.className(packageName, clazz));
     }
+
+    /**
+     * For the given method name and descriptor, return a map of classes which have an explicit
+     * deny rule against a matching method. If none match, the returned map is empty.
+     *
+     * @param name method name
+     * @param descriptor descriptor for the parameters, not including parenthesis or the return
+     * type
+     * @return a non-null map of fully qualified class names to deny rules; '/' characters are
+     * used as separators
+     */
+    public Map<String, Rule> denialsForMethod(CharSequence name, CharSequence descriptor);
 
     /**
      * Print a description of the rules to the given Appendable object.
@@ -109,20 +118,5 @@ public interface Rules {
         {
             return ruleForMethod(name, Utils.partialDescriptorFor(paramTypes));
         }
-
-        /**
-         * Check if at least one constructor in the class can deny access.
-         */
-        public boolean isAnyConstructorDenied();
-
-        /**
-         * Returns true if at least one operation is denied at the caller class.
-         */
-        public boolean isAnyDeniedAtCaller();
-
-        /**
-         * Returns true if at least one operation is denied at the target class.
-         */
-        public boolean isAnyDeniedAtTarget();
     }
 }

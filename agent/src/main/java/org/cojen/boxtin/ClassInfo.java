@@ -173,7 +173,7 @@ final class ClassInfo {
                                 Consumer<String> reporter)
     {
         Rule rule = forClass.ruleForMethod(name, desc);
-        if (!rule.isDeniedAtTarget() && mSuperClasses != null) {
+        if (rule.isDenied() && mSuperClasses != null) {
             for (ClassInfo sup : mSuperClasses) {
                 sup.validateInherited(this, rules, rule, name, desc, reporter);
             }
@@ -186,7 +186,7 @@ final class ClassInfo {
     {
         if (isMethodDefined(name, desc)) {
             Rule rule = rules.forClass(mPackageName, mClassName).ruleForMethod(name, desc);
-            if (!rule.isDeniedAtTarget() && !rule.equals(expect)) {
+            if (rule.isDenied() && !rule.equals(expect)) {
                 reporter.accept("Rule defined at " + base + '.' + name + '(' + desc + ") is " +
                                 expect + ", but rule inherited from " + this + " is " + rule);
             }

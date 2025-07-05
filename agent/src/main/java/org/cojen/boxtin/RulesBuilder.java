@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.annotation.Annotation;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
@@ -30,11 +31,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.NavigableMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import static org.cojen.boxtin.Rule.*;
@@ -76,7 +77,7 @@ public final class RulesBuilder {
      * @return this
      */
     public RulesBuilder denyAll() {
-        return ruleForAll(denyAtTarget());
+        return ruleForAll(deny());
     }
 
     /**
@@ -149,8 +150,8 @@ public final class RulesBuilder {
 
     /**
      * Validates that all classes are loadable, and that all class members are found. This
-     * variant also examines the entire class hierarchy, for validating caller-side rules. An
-     * exception is thrown if validation fails.
+     * variant also examines the entire class hierarchy. An exception is thrown if validation
+     * fails.
      *
      * @param layer required
      * @param reporter pass non-null for reporting multiple validation failures
@@ -338,37 +339,25 @@ public final class RulesBuilder {
         return null;
     }
 
-    /**
-     * @param consumer the boolean part is true if the method is inherited
-     */
-    private static int forAllMethods(boolean checkInherited,
-                                     Class<?> clazz, String name,
-                                     BiConsumer<Boolean, Method> consumer)
-    {
-        return doForAllMethods(false, checkInherited, clazz, name, consumer);
-    }
-
-    private static int doForAllMethods(boolean isInherited, boolean checkInherited,
-                                       Class<?> clazz, String name,
-                                       BiConsumer<Boolean, Method> consumer)
-    {
+    private static int forAllMethods(Class<?> clazz, String name, Consumer<Method> consumer) {
         int count = 0;
 
         for (Method m : clazz.getDeclaredMethods()) {
             if (isAccessible(m) && m.getName().equals(name)) {
                 count++;
-                consumer.accept(isInherited, m);
+                consumer.accept(m);
             }
         }
 
-        if (checkInherited) {
-            Class<?> superclass = clazz.getSuperclass();
-            if (superclass != null) {
-                count += doForAllMethods(true, true, superclass, name, consumer);
-            }
-            for (Class<?> iface : clazz.getInterfaces()) {
-                count += doForAllMethods(true, true, iface, name, consumer);
-            }
+        // Now do the inherited methods.
+
+        Class<?> superclass = clazz.getSuperclass();
+        if (superclass != null) {
+            count += forAllMethods(superclass, name, consumer);
+        }
+
+        for (Class<?> iface : clazz.getInterfaces()) {
+            count += forAllMethods(iface, name, consumer);
         }
 
         return count;
@@ -399,7 +388,7 @@ public final class RulesBuilder {
          * @return this
          */
         public ModuleScope denyAll() {
-            return ruleForAll(denyAtTarget());
+            return ruleForAll(deny());
         }
 
         /**
@@ -409,7 +398,7 @@ public final class RulesBuilder {
          * @return this
          */
         public ModuleScope denyAll(DenyAction action) {
-            return ruleForAll(denyAtTarget(action));
+            return ruleForAll(deny(action));
         }
 
         /**
@@ -417,9 +406,29 @@ public final class RulesBuilder {
          * recursive, allowing access to all classes, constructors, etc.
          *
          * @return this
+         * @throws NoSuchElementException if the module name isn't found
          */
-        public ModuleScope allowAll() {
-            return ruleForAll(allow());
+        public ModuleScope allowAll() throws NoSuchElementException {
+            // Need to expand all the packages, given that the module associations aren't known
+            // when classes are transformed.
+
+            ModuleLayer layer = getClass().getModule().getLayer();
+
+            if (layer == null) {
+                layer = ModuleLayer.boot();
+            }
+
+            Module module = layer.findModule(mName).get();
+
+            denyAll();
+
+            for (String packageName : module.getPackages()) {
+                if (module.isExported(packageName)) {
+                    forPackage(packageName).allowAll();
+                }
+            }
+
+            return this;
         }
 
         /**
@@ -525,7 +534,7 @@ public final class RulesBuilder {
         }
 
         private void buildInto(Map<String, RuleSet.PackageScope> builtPackages) {
-            for (Map.Entry<String, PackageScope> e : mPackages.entrySet()) {
+            if (mPackages != null) for (Map.Entry<String, PackageScope> e : mPackages.entrySet()) {
                 RuleSet.PackageScope scope = e.getValue().build(mDefaultRule);
                 if (scope != null) {
                     String key = e.getKey().replace('.', '/').intern();
@@ -563,7 +572,7 @@ public final class RulesBuilder {
          * @return this
          */
         public PackageScope denyAll() {
-            return ruleForAll(denyAtTarget());
+            return ruleForAll(deny());
         }
 
         /**
@@ -573,7 +582,7 @@ public final class RulesBuilder {
          * @return this
          */
         public PackageScope denyAll(DenyAction action) {
-            return ruleForAll(denyAtTarget(action));
+            return ruleForAll(deny(action));
         }
 
         /**
@@ -729,9 +738,6 @@ public final class RulesBuilder {
         private final PackageScope mParent;
         private final String mName;
 
-        // The current deny rule.
-        private Rule mDenyRule;
-
         // Can be null when empty.
         private MethodScope mConstructors;
 
@@ -750,32 +756,6 @@ public final class RulesBuilder {
         private ClassScope(PackageScope parent, String name) {
             mParent = parent;
             mName = name;
-            mDenyRule = denyAtTarget();
-        }
-
-        /**
-         * Indicate that access checking code should be generated in the caller class. By
-         * default, access checks are performed in the target class. Checking in the caller is
-         * more efficient, but it doesn't work reliably against a method which is inherited or
-         * can be inherited.
-         *
-         * @return this
-         */
-        public ClassScope callerCheck() {
-            mDenyRule = denyAtCaller();
-            return this;
-        }
-
-        /**
-         * Indicate that access checking code should be generated in the target class, which is
-         * the default behavior. Checking in the target is less efficient, but the check isn't
-         * affected by inheritance.
-         *
-         * @return this
-         */
-        public ClassScope targetCheck() {
-            mDenyRule = denyAtTarget();
-            return this;
         }
 
         /**
@@ -785,7 +765,7 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope denyAll() {
-            return ruleForAll(mDenyRule);
+            return ruleForAll(deny());
         }
 
         /**
@@ -795,7 +775,7 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope denyAll(DenyAction action) {
-            return ruleForAll(mDenyRule.withDenyAction(action));
+            return ruleForAll(deny(action));
         }
 
         /**
@@ -806,8 +786,8 @@ public final class RulesBuilder {
         public ClassScope denyAllConstructors() {
             modified();
             mConstructors = null;
-            mDefaultConstructorRule = mDenyRule;
-            mVariantScope = mConstructors = new MethodScope().ruleForAll(mDenyRule);
+            mDefaultConstructorRule = deny();
+            mVariantScope = mConstructors = new MethodScope().ruleForAll(deny());
             return this;
         }
 
@@ -819,7 +799,7 @@ public final class RulesBuilder {
         public ClassScope denyAllConstructors(DenyAction action) {
             modified();
             mConstructors = null;
-            Rule rule = mDenyRule.withDenyAction(action);
+            Rule rule = deny(action);
             mDefaultConstructorRule = rule;
             mVariantScope = mConstructors = new MethodScope().ruleForAll(rule);
             return this;
@@ -833,7 +813,7 @@ public final class RulesBuilder {
         public ClassScope denyAllMethods() {
             modified();
             mMethods = null;
-            mDefaultMethodRule = mDenyRule;
+            mDefaultMethodRule = deny();
             mVariantScope = null;
             return this;
         }
@@ -846,7 +826,7 @@ public final class RulesBuilder {
         public ClassScope denyAllMethods(DenyAction action) {
             modified();
             mMethods = null;
-            mDefaultMethodRule = mDenyRule.withDenyAction(action);
+            mDefaultMethodRule = deny(action);
             mVariantScope = null;
             return this;
         }
@@ -858,7 +838,7 @@ public final class RulesBuilder {
          * @throws IllegalArgumentException if not a valid method name
          */
         public ClassScope denyMethod(String name) {
-            mVariantScope = forMethod(name).ruleForAll(mDenyRule);
+            mVariantScope = forMethod(name).ruleForAll(deny());
             return this;
         }
 
@@ -869,7 +849,7 @@ public final class RulesBuilder {
          * @throws IllegalArgumentException if not a valid method name
          */
         public ClassScope denyMethod(DenyAction action, String name) {
-            mVariantScope = forMethod(name).ruleForAll(mDenyRule.withDenyAction(action));
+            mVariantScope = forMethod(name).ruleForAll(deny(action));
             return this;
         }
 
@@ -985,7 +965,7 @@ public final class RulesBuilder {
             if (mVariantScope.isAllDenied()) {
                 throw new IllegalStateException("All variants are explicitly denied");
             }
-            mVariantScope.ruleForVariant(mDenyRule, descriptor);
+            mVariantScope.ruleForVariant(deny(), descriptor);
             return this;
         }
 
@@ -1003,7 +983,7 @@ public final class RulesBuilder {
             if (mVariantScope == null) {
                 throw new IllegalStateException("No current constructor or method");
             }
-            mVariantScope.ruleForVariant(mDenyRule.withDenyAction(action), descriptor);
+            mVariantScope.ruleForVariant(deny(action), descriptor);
             return this;
         }
 
@@ -1111,48 +1091,10 @@ public final class RulesBuilder {
             }
 
             if (mMethods != null) {
-                boolean classIsFinal = isEffectivelyFinal(clazz);
                 for (Map.Entry<String, MethodScope> e : mMethods.entrySet()) {
-                    e.getValue().validateMethod(loader, clazz, classIsFinal, e.getKey(), reporter);
+                    e.getValue().validateMethod(loader, clazz, e.getKey(), reporter);
                 }
             }
-        }
-
-        private boolean isEffectivelyFinal(Class<?> clazz) {
-            if (!isAccessible(clazz) || Modifier.isFinal(clazz.getModifiers()) ||
-                // Note: a sealed class is treated as effectively final because when doing deep
-                // validation, all subclasses can be examined.
-                clazz.isSealed())
-            {
-                return true;
-            }
-
-            if (clazz.isInterface()) {
-                return false;
-            }
-
-            if (mConstructors == null) {
-                if (mDefaultConstructorRule.isDenied()) {
-                    return true;
-                }
-            } else if (mConstructors.isAllDenied()) {
-                return true;
-            }
-
-            for (Constructor<?> ctor : clazz.getDeclaredConstructors()) {
-                if (isAccessible(ctor)) {
-                    if (mConstructors != null) {
-                        String desc = partialDescriptorFor(ctor.getParameterTypes());
-                        if (mConstructors.isDenied(desc)) {
-                            continue;
-                        }
-                    }
-                    // Subclassing is possible outside the module.
-                    return false;
-                }
-
-            }
-            return true;
         }
 
         void modified() {
@@ -1302,7 +1244,7 @@ public final class RulesBuilder {
                         continue;
                     }
                     count++;
-                    validateConstructor(loader, ctor, mDefaultRule, reporter);
+                    validateExecutable(loader, ctor, mDefaultRule, reporter);
                 }
 
                 if (count == 0) {
@@ -1332,54 +1274,29 @@ public final class RulesBuilder {
                     }
                 }
 
-                validateConstructor(loader, ctor, e.getValue(), reporter);
+                validateExecutable(loader, ctor, e.getValue(), reporter);
             }
         }
 
-        private static void validateConstructor(ClassLoader loader, Constructor ctor, Rule rule,
-                                                Consumer<String> reporter)
-        {
-            DenyAction action = rule.denyAction();
-            if (action == null) {
-                return;
-            }
-
-            try {
-                action.validateDependencies(loader);
-            } catch (ClassNotFoundException e) {
-                reporter.accept(e.toString());
-            }
-
-            action.validateParameters(ctor);
-        }
-
-        /**
-         * @param classIsFinal pass true if the class is final or effectively final
-         */
-        void validateMethod(ClassLoader loader, Class<?> clazz, boolean classIsFinal,
+        void validateMethod(ClassLoader loader, Class<?> clazz,
                             String name, Consumer<String> reporter)
         {
             int count;
 
             if (isEmpty(mVariants)) {
                 Rule rule = mDefaultRule;
-
-                // If target-side, don't examine inherited methods, because no code
-                // modifications can be made against them.
-                boolean forTarget = rule.isDeniedAtTarget();
-
-                count = forAllMethods(!forTarget, clazz, name, (inherited, method) -> {
-                    validateMethod(loader, classIsFinal, method, rule, reporter);
+                count = forAllMethods(clazz, name, method -> {
+                    validateExecutable(loader, method, rule, reporter);
                 });
             } else {
-                count = forAllMethods(true, clazz, name, (inherited, method) -> {
+                count = forAllMethods(clazz, name, method -> {
                     String desc = partialDescriptorFor(method.getParameterTypes());
                     Rule rule = mVariants.get(desc);
                     if (rule == null) {
                         rule = mDefaultRule;
                     }
-                    if (!rule.isAllowed() && (!inherited || !rule.isDeniedAtTarget())) {
-                        validateMethod(loader, classIsFinal, method, rule, reporter);
+                    if (rule.isDenied()) {
+                        validateExecutable(loader, method, rule, reporter);
                     }
                 });
             }
@@ -1389,60 +1306,17 @@ public final class RulesBuilder {
             }
         }
 
-        private static void validateMethod(ClassLoader loader, boolean classIsFinal,
-                                           Method method, Rule rule, Consumer<String> reporter)
+        private static void validateExecutable(ClassLoader loader, Executable executable,
+                                               Rule rule, Consumer<String> reporter)
         {
             DenyAction action = rule.denyAction();
-            if (action == null) {
-                return;
-            }
-
-            if (rule.isDeniedAtTarget()) {
-                if (Modifier.isAbstract(method.getModifiers())) {
-                    reporter.accept(fullMessage("Target method is abstract", method));
-                }
-                for (Annotation ann : method.getDeclaredAnnotations()) {
-                    if (ann.annotationType().getName()
-                        .equals("jdk.internal.reflect.CallerSensitive"))
-                    {
-                        reporter.accept
-                            (fullMessage("Target method is CallerSensitive and should instead " +
-                                         "be caller-side checked", method));
-                    }
-                }
-            } else {
-                /*
-                  Caller-side denials against inheritable methods require extra checks to
-                  ensure that subclassing doesn't allow access. Deep validation is still
-                  required to be extra sure.
-
-                  - If the method is a default interface method, assume that it only calls
-                    other interface methods.
-
-                  - If the method is abstract, then rely on deep validation checks.
-
-                  - If the method is static and defined in an interface, it cannot be called
-                    via a subclass except from within the subclass itself. Calls from within
-                    are handled specially by the ClassFileProcessor.
-                 */
-                if (!classIsFinal && !method.isDefault() && !method.isBridge() &&
-                    !Modifier.isAbstract(method.getModifiers()) &&
-                    (!Modifier.isStatic(method.getModifiers()) ||
-                     !method.getDeclaringClass().isInterface()))
-                {
-                    reporter.accept
-                        (fullMessage("Caller-side denial can bypassed via a subclass", method));
+            if (action != null) {
+                try {
+                    action.validate(loader, executable);
+                } catch (Exception e) {
+                    reporter.accept(e.toString());
                 }
             }
-
-            try {
-                action.validateDependencies(loader);
-            } catch (ClassNotFoundException e) {
-                reporter.accept(e.toString());
-            }
-
-            action.validateReturnType(method);
-            action.validateParameters(method);
         }
 
         private static String fullMessage(String message, Method method) {

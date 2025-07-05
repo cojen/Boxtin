@@ -17,46 +17,44 @@
 package org.cojen.boxtin;
 
 /**
- * Maps of method definitions, used for determining if any invocations refer to them.
+ * Map of method definitions, used for determining if any invocations refer to them.
  *
  * @author Brian S. O'Neill
  */
 final class MethodMap {
-    private Entry[] mEntries;
+    private final Entry[] mEntries;
 
     MethodMap(int capacity) {
         mEntries = new Entry[Utils.roundUpPower2(capacity)];
     }
 
     /**
-     * Puts a method into the map, unless it refers to a constructor.
+     * Puts a method into the map.
      */
-    void put(ConstantPool cp, int name_index, int desc_index) {
-        ConstantPool.C_UTF8 name = cp.findConstantUTF8(name_index);
-        if (!name.isConstructor()) {
-            ConstantPool.C_UTF8 desc = cp.findConstantUTF8(desc_index);
-            int hash = hash(name, desc);
-            var entries = mEntries;
-            int slot = hash & (entries.length - 1);
-            entries[slot] = new Entry(name, desc, hash, entries[slot]);
-        }
+    Entry put(ConstantPool.C_UTF8 name, ConstantPool.C_UTF8 desc) {
+        int hash = hash(name, desc);
+        var entries = mEntries;
+        int slot = hash & (entries.length - 1);
+        return entries[slot] = new Entry(name, desc, entries[slot]);
     }
 
-    boolean contains(ConstantPool.C_MemberRef methodRef) {
-        return contains(methodRef.mNameAndType);
+    Entry find(ConstantPool.C_MemberRef methodRef) {
+        return find(methodRef.mNameAndType);
     }
 
-    boolean contains(ConstantPool.C_NameAndType nat) {
-        ConstantPool.C_UTF8 name = nat.mName;
-        ConstantPool.C_UTF8 desc = nat.mTypeDesc;
+    Entry find(ConstantPool.C_NameAndType nat) {
+        return find(nat.mName, nat.mTypeDesc);
+    }
+
+    Entry find(ConstantPool.C_UTF8 name, ConstantPool.C_UTF8 desc) {
         int hash = hash(name, desc);
         var entries = mEntries;
         for (var e = entries[hash & (entries.length - 1)]; e != null; e = e.mNext) {
             if (equals(e.mName, name) && equals(e.mDesc, desc)) {
-                return true;
+                return e;
             }
         }
-        return false;
+        return null;
     }
 
     private static int hash(ConstantPool.C_UTF8 a, ConstantPool.C_UTF8 b) {
@@ -67,15 +65,13 @@ final class MethodMap {
         return a.mIndex == b.mIndex || a.equals(b);
     }
 
-    private static final class Entry {
+    static final class Entry {
         final ConstantPool.C_UTF8 mName, mDesc;
-        final int mHash;
-        final Entry mNext;
+        private final Entry mNext;
 
-        Entry(ConstantPool.C_UTF8 name, ConstantPool.C_UTF8 desc, int hash, Entry next) {
+        Entry(ConstantPool.C_UTF8 name, ConstantPool.C_UTF8 desc, Entry next) {
             mName = name;
             mDesc = desc;
-            mHash = hash;
             mNext = next;
         }
     }

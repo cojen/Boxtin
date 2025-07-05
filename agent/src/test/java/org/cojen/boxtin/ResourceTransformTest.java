@@ -29,11 +29,6 @@ public class ResourceTransformTest extends TransformTest {
         org.junit.runner.JUnitCore.main(ResourceTransformTest.class.getName());
     }
 
-    private static final Rules RULES = 
-        new RulesBuilder().applyRules(RulesApplier.java_base())
-        .forModule("java.base").forPackage("java.lang").forClass("System").allowAll()
-        .end().end().end().build();
-
     // To be used with ClassLoader.
     private static final String RESOURCE =
         ResourceTransformTest.class.getName().replace('.', '/') + ".class";
@@ -53,6 +48,13 @@ public class ResourceTransformTest extends TransformTest {
         System.getProperties().remove(PROP_KEY);
     }
 
+    @Override
+    protected RulesBuilder builder() {
+        return new RulesBuilder().applyRules(RulesApplier.java_base())
+            .forModule("java.base").forPackage("java.lang").forClass("System").allowAll()
+            .end().end().end();
+    }
+
     @Test
     public void fromClass() throws Exception {
         Class<?> thisClass = getClass();
@@ -60,7 +62,7 @@ public class ResourceTransformTest extends TransformTest {
         assertNotNull(thisClass.getResource(ABS_RESOURCE));
         thisClass.getResourceAsStream(ABS_RESOURCE).close();
 
-        if (runWith(RULES)) {
+        if (runTransformed()) {
             return;
         }
 
@@ -79,7 +81,7 @@ public class ResourceTransformTest extends TransformTest {
         assertTrue(loader.getResources(RESOURCE).hasMoreElements());
         assertTrue(loader.resources(RESOURCE).count() > 0);
 
-        if (runWith(RULES)) {
+        if (runTransformed()) {
             return;
         }
 
@@ -93,7 +95,7 @@ public class ResourceTransformTest extends TransformTest {
 
     @Test
     public void fromModule() throws Exception {
-        if (runWith(RULES)) {
+        if (runTransformed()) {
             getClass().getModule().getResourceAsStream(ABS_RESOURCE).close();
             return;
         }
@@ -105,7 +107,7 @@ public class ResourceTransformTest extends TransformTest {
 
     @Test
     public void classForName() throws Exception {
-        if (runWith(RULES)) {
+        if (runTransformed()) {
             return;
         }
 

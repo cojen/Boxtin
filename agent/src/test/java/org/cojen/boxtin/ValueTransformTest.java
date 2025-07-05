@@ -19,8 +19,6 @@ package org.cojen.boxtin;
 import org.junit.*;
 import static org.junit.Assert.*;
 
-import org.cojen.boxtin.tt.T_ValueOperations;
-
 /**
  * 
  *
@@ -31,13 +29,12 @@ public class ValueTransformTest extends TransformTest {
         org.junit.runner.JUnitCore.main(ValueTransformTest.class.getName());
     }
 
-    private static final Rules RULES;
-
-    static {
+    @Override
+    protected RulesBuilder builder() {
         var b = new RulesBuilder();
 
-        b.forModule("xxx").forPackage("org.cojen.boxtin.tt")
-            .forClass("T_ValueOperations")
+        b.forModule("org.cojen.boxtin").forPackage("org.cojen.boxtin")
+            .forClass("ValueOperations")
             .allowAllConstructors()
             .denyVariant(DenyAction.value(null))
             .denyMethod(DenyAction.value(null), "op1")
@@ -87,70 +84,72 @@ public class ValueTransformTest extends TransformTest {
             .denyMethod(DenyAction.value('a'), "op45")
             ;
 
-        RULES = b.build();
+        b.forModule("java.base").allowAll();
+
+        return b;
     }
 
     @Test
     public void values() throws Exception {
-        if (runWith(RULES)) {
+        if (runTransformed()) {
             return;
         }
 
-        T_ValueOperations.op1();
-        assertTrue(T_ValueOperations.op2());
-        assertEquals('\0', T_ValueOperations.op3());
-        assertEquals(5, T_ValueOperations.op4());
-        assertEquals('a', T_ValueOperations.op5());
-        assertEquals(-1, T_ValueOperations.op6());
-        assertEquals(5, T_ValueOperations.op7());
-        assertEquals(100, T_ValueOperations.op8());
-        assertEquals(-1, T_ValueOperations.op9());
-        assertEquals(5, T_ValueOperations.op10());
-        assertEquals(1000, T_ValueOperations.op11());
-        assertEquals(-1, T_ValueOperations.op12());
-        assertEquals(5, T_ValueOperations.op13());
-        assertEquals(100_000, T_ValueOperations.op14());
-        assertEquals(0, T_ValueOperations.op15());
-        assertEquals(1, T_ValueOperations.op16());
-        assertEquals(999_999_999_999L, T_ValueOperations.op17());
-        assertTrue(0.0f == T_ValueOperations.op18());
-        assertTrue(1.0f == T_ValueOperations.op19());
-        assertTrue(2.0f == T_ValueOperations.op20());
-        assertTrue(3.14f == T_ValueOperations.op21());
-        assertTrue(0.0d ==  T_ValueOperations.op22());
-        assertTrue(1.0d ==  T_ValueOperations.op23());
-        assertTrue(3.14159d == T_ValueOperations.op24());
-        assertEquals("hello", T_ValueOperations.op25());
-        assertNull(T_ValueOperations.op26());
-        assertNull(T_ValueOperations.op27());
-        assertEquals("hello", T_ValueOperations.op28());
-        assertEquals(123, (int) T_ValueOperations.op29());
-        assertEquals(Long.MAX_VALUE, (long) T_ValueOperations.op30());
-        assertTrue(Double.MAX_VALUE == (double) T_ValueOperations.op31());
-        assertTrue(Float.MAX_VALUE == (float) T_ValueOperations.op32());
-        assertEquals(Short.MAX_VALUE, (short) T_ValueOperations.op33());
-        assertEquals(Byte.MAX_VALUE, (byte) T_ValueOperations.op34());
-        assertEquals(Character.MAX_VALUE, (char) T_ValueOperations.op35());
-        assertTrue(T_ValueOperations.op36());
-        assertEquals(345, T_ValueOperations.op37().intValue());
-        assertNull(T_ValueOperations.op38());
-        assertNull(T_ValueOperations.op39());
-        assertNull(T_ValueOperations.op40());
-        assertNull(T_ValueOperations.op41());
-        assertNull(T_ValueOperations.op42());
-        assertNull(T_ValueOperations.op43());
-        assertNull(T_ValueOperations.op44());
-        assertNull(T_ValueOperations.op45());
+        ValueOperations.op1();
+        assertTrue(ValueOperations.op2());
+        assertEquals('\0', ValueOperations.op3());
+        assertEquals(5, ValueOperations.op4());
+        assertEquals('a', ValueOperations.op5());
+        assertEquals(-1, ValueOperations.op6());
+        assertEquals(5, ValueOperations.op7());
+        assertEquals(100, ValueOperations.op8());
+        assertEquals(-1, ValueOperations.op9());
+        assertEquals(5, ValueOperations.op10());
+        assertEquals(1000, ValueOperations.op11());
+        assertEquals(-1, ValueOperations.op12());
+        assertEquals(5, ValueOperations.op13());
+        assertEquals(100_000, ValueOperations.op14());
+        assertEquals(0, ValueOperations.op15());
+        assertEquals(1, ValueOperations.op16());
+        assertEquals(999_999_999_999L, ValueOperations.op17());
+        assertTrue(0.0f == ValueOperations.op18());
+        assertTrue(1.0f == ValueOperations.op19());
+        assertTrue(2.0f == ValueOperations.op20());
+        assertTrue(3.14f == ValueOperations.op21());
+        assertTrue(0.0d ==  ValueOperations.op22());
+        assertTrue(1.0d ==  ValueOperations.op23());
+        assertTrue(3.14159d == ValueOperations.op24());
+        assertEquals("hello", ValueOperations.op25());
+        assertNull(ValueOperations.op26());
+        assertNull(ValueOperations.op27());
+        assertEquals("hello", ValueOperations.op28());
+        assertEquals(123, (int) ValueOperations.op29());
+        assertEquals(Long.MAX_VALUE, (long) ValueOperations.op30());
+        assertTrue(Double.MAX_VALUE == (double) ValueOperations.op31());
+        assertTrue(Float.MAX_VALUE == (float) ValueOperations.op32());
+        assertEquals(Short.MAX_VALUE, (short) ValueOperations.op33());
+        assertEquals(Byte.MAX_VALUE, (byte) ValueOperations.op34());
+        assertEquals(Character.MAX_VALUE, (char) ValueOperations.op35());
+        assertTrue(ValueOperations.op36());
+        assertEquals(345, ValueOperations.op37().intValue());
+        assertNull(ValueOperations.op38());
+        assertNull(ValueOperations.op39());
+        assertNull(ValueOperations.op40());
+        assertNull(ValueOperations.op41());
+        assertNull(ValueOperations.op42());
+        assertNull(ValueOperations.op43());
+        assertNull(ValueOperations.op44());
+        assertNull(ValueOperations.op45());
     }
 
     @Test
     public void deniedCtor() throws Exception {
-        if (runWith(RULES)) {
+        if (runTransformed()) {
             return;
         }
 
         try {
-            new T_ValueOperations();
+            new ValueOperations();
             fail();
         } catch (SecurityException e) {
         }

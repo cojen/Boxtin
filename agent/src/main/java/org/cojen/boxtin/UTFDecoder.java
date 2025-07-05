@@ -32,10 +32,6 @@ final class UTFDecoder extends DataInputStream {
         super(new Buffer());
     }
 
-    String decode(byte[] buf) throws UTFDataFormatException {
-        return decode(buf, 0, buf.length);
-    }
-
     String decode(byte[] buf, int off, int len) throws UTFDataFormatException {
         if (len < 0 || len > 65535) {
             throw new IllegalArgumentException();

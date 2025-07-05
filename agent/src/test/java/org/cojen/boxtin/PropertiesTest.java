@@ -31,12 +31,14 @@ public class PropertiesTest extends TransformTest {
         org.junit.runner.JUnitCore.main(PropertiesTest.class.getName());
     }
 
-    private static final Rules RULES = 
-        new RulesBuilder().applyRules(RulesApplier.java_base()).build();
+    @Override
+    protected RulesBuilder builder() {
+        return new RulesBuilder().applyRules(RulesApplier.java_base());
+    }
 
     @Test
     public void basic() throws Exception {
-        if (runWith(RULES)) {
+        if (runTransformed()) {
             assertNotNull(System.getProperty("user.dir"));
             return;
         }

@@ -24,8 +24,6 @@ import java.lang.invoke.MethodType;
 import org.junit.*;
 import static org.junit.Assert.*;
 
-import org.cojen.boxtin.tt.T_CustomOperations;
-
 /**
  * 
  *
@@ -36,69 +34,66 @@ public class CustomTransformTest extends TransformTest {
         org.junit.runner.JUnitCore.main(CustomTransformTest.class.getName());
     }
 
-    private static final Rules RULES;
+    @Override
+    protected RulesBuilder builder() throws Exception {
+        var b = new RulesBuilder();
 
-    static {
-        try {
-            var b = new RulesBuilder();
+        b.forModule("org.cojen.boxtin").forPackage("org.cojen.boxtin")
+            .forClass("CustomOperations")
+            .allowAllConstructors()
+            .denyVariant(custom(void.class, null), int.class)
+            .denyMethod(custom(void.class, "c_op1",
+                               int.class, boolean.class, char.class, double.class), "op1")
+            .denyMethod(custom(boolean.class, "c_op2", long.class), "op2")
+            .denyMethod(custom(long.class, "c_op3", float.class), "op3")
+            .denyMethod(custom(float.class, "c_op4", short.class), "op4")
+            .denyMethod(custom(double.class, "c_op5", byte.class), "op5")
+            .denyMethod(custom(String.class, "c_op6", int.class, String.class), "op6")
+            .denyMethod(custom(String.class, "c_op7", String.class, int.class), "op7")
+            .denyMethod(custom(int[].class, "c_op8", String[].class, int[].class), "op8")
+            .denyMethod(custom(long.class, "c_op9", String.class), "op9")
+            .denyMethod(custom(int.class, "c_op10",
+                               long.class, long.class, long.class,
+                               long.class, long.class, long.class,
+                               long.class, long.class, long.class,
+                               long.class, long.class, long.class,
+                               long.class, long.class, long.class,
+                               long.class, long.class, long.class,
+                               long.class, long.class, long.class,
+                               long.class, long.class, long.class)
+                        , "op10")
+            .denyMethod(custom(String.class, "c_op11", int.class, String.class), "op11")
+            .denyMethod(custom(String.class, "c_op12", int.class, String.class), "op12")
+            .denyMethod(custom(String.class, "c_op13",
+                               double.class, double.class, double.class,
+                               double.class, double.class, double.class,
+                               double.class, double.class, double.class,
+                               double.class, double.class, double.class,
+                               long.class, long.class, long.class,
+                               long.class, long.class, long.class)
+                        , "op13")
+            .denyMethod(custom(String.class, "c_op14",
+                               int.class, String.class,
+                               long.class, long.class, long.class,
+                               long.class, long.class, long.class,
+                               long.class, long.class, long.class,
+                               long.class, long.class, long.class,
+                               long.class, long.class, long.class,
+                               long.class, long.class, long.class,
+                               long.class, long.class, long.class,
+                               long.class, long.class, long.class)
+                        , "op14")
+            .denyMethod(custom(String.class, "c_op15", int.class, String.class), "op15")
+            .denyMethod(custom(String.class, "c_op16", int.class), "op16")
+            .denyMethod(custom(Object.class, "c_op17",
+                               CustomOperations.class, int.class), "op17")
+            .denyMethod(custom(Object[].class, "c_op18",
+                               Class.class, CustomOperations.class, int.class), "op18")
+            ;
 
-            b.forModule("xxx").forPackage("org.cojen.boxtin.tt")
-                .forClass("T_CustomOperations")
-                .allowAllConstructors()
-                .denyVariant(custom(void.class, null), int.class)
-                .denyMethod(custom(void.class, "c_op1",
-                                   int.class, boolean.class, char.class, double.class), "op1")
-                .denyMethod(custom(boolean.class, "c_op2", long.class), "op2")
-                .denyMethod(custom(long.class, "c_op3", float.class), "op3")
-                .denyMethod(custom(float.class, "c_op4", short.class), "op4")
-                .denyMethod(custom(double.class, "c_op5", byte.class), "op5")
-                .denyMethod(custom(String.class, "c_op6", int.class, String.class), "op6")
-                .denyMethod(custom(String.class, "c_op7", String.class, int.class), "op7")
-                .denyMethod(custom(int[].class, "c_op8", String[].class, int[].class), "op8")
-                .denyMethod(custom(long.class, "c_op9", String.class), "op9")
-                .denyMethod(custom(int.class, "c_op10",
-                                   long.class, long.class, long.class,
-                                   long.class, long.class, long.class,
-                                   long.class, long.class, long.class,
-                                   long.class, long.class, long.class,
-                                   long.class, long.class, long.class,
-                                   long.class, long.class, long.class,
-                                   long.class, long.class, long.class,
-                                   long.class, long.class, long.class)
-                            , "op10")
-                .denyMethod(custom(String.class, "c_op11", int.class, String.class), "op11")
-                .denyMethod(custom(String.class, "c_op12", int.class, String.class), "op12")
-                .denyMethod(custom(String.class, "c_op13",
-                                   double.class, double.class, double.class,
-                                   double.class, double.class, double.class,
-                                   double.class, double.class, double.class,
-                                   double.class, double.class, double.class,
-                                   long.class, long.class, long.class,
-                                   long.class, long.class, long.class)
-                            , "op13")
-                .denyMethod(custom(String.class, "c_op14",
-                                   int.class, String.class,
-                                   long.class, long.class, long.class,
-                                   long.class, long.class, long.class,
-                                   long.class, long.class, long.class,
-                                   long.class, long.class, long.class,
-                                   long.class, long.class, long.class,
-                                   long.class, long.class, long.class,
-                                   long.class, long.class, long.class,
-                                   long.class, long.class, long.class)
-                            , "op14")
-                .denyMethod(custom(String.class, "c_op15", int.class, String.class), "op15")
-                .denyMethod(custom(String.class, "c_op16", int.class), "op16")
-                .denyMethod(custom(Object.class, "c_op17",
-                                   T_CustomOperations.class, int.class), "op17")
-                .denyMethod(custom(Object[].class, "c_op18",
-                                   Class.class, T_CustomOperations.class, int.class), "op18")
-                ;
+        b.forModule("java.base").allowAll();
 
-            RULES = b.build();
-        } catch (Exception e) {
-            throw new ExceptionInInitializerError(e);
-        }
+        return b;
     }
 
     private static DenyAction custom(Class returnType, String name, Class... paramTypes)
@@ -195,64 +190,64 @@ public class CustomTransformTest extends TransformTest {
         return "q" + a;
     }
 
-    public static Object c_op17(T_CustomOperations obj, int a) {
+    public static Object c_op17(CustomOperations obj, int a) {
         return obj;
     }
 
-    public static Object[] c_op18(Class<?> caller, T_CustomOperations obj, int a) {
+    public static Object[] c_op18(Class<?> caller, CustomOperations obj, int a) {
         return new Object[] {caller, obj};
     }
 
     @Test
     public void custom() throws Exception {
-        if (runWith(RULES)) {
+        if (runTransformed()) {
             return;
         }
 
-        T_CustomOperations.op1(1, true, 'a', 1.2);
+        CustomOperations.op1(1, true, 'a', 1.2);
 
         try {
-            T_CustomOperations.op1(0, false, '\0', 0);
+            CustomOperations.op1(0, false, '\0', 0);
             fail();
         } catch (SecurityException e) {
         }
 
-        assertTrue(T_CustomOperations.op2(5L));
-        assertEquals(3L, T_CustomOperations.op3(3.0f));
-        assertTrue(4.0f == T_CustomOperations.op4((short) 4));
-        assertTrue(5.0d == T_CustomOperations.op5((byte) 5));
-        assertEquals("1x", T_CustomOperations.op6(1, "x"));
-        assertEquals("x1", T_CustomOperations.op7("x", 1));
-        assertEquals(3, T_CustomOperations.op8(new String[1], new int[2])[0]);
-        assertEquals(5, T_CustomOperations.op9("hello"));
-        assertEquals(42, T_CustomOperations.op10(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
-                                                 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24));
+        assertTrue(CustomOperations.op2(5L));
+        assertEquals(3L, CustomOperations.op3(3.0f));
+        assertTrue(4.0f == CustomOperations.op4((short) 4));
+        assertTrue(5.0d == CustomOperations.op5((byte) 5));
+        assertEquals("1x", CustomOperations.op6(1, "x"));
+        assertEquals("x1", CustomOperations.op7("x", 1));
+        assertEquals(3, CustomOperations.op8(new String[1], new int[2])[0]);
+        assertEquals(5, CustomOperations.op9("hello"));
+        assertEquals(42, CustomOperations.op10(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+                                               13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24));
     }
 
     @Test
     public void complex() throws Exception {
-        if (runWith(RULES)) {
+        if (runTransformed()) {
             return;
         }
 
-        assertEquals("9hello", T_CustomOperations.op11(9, "hello"));
-        assertEquals("hello9", T_CustomOperations.op12(9, "hello"));
-        assertEquals("6.0", T_CustomOperations.op13
+        assertEquals("9hello", CustomOperations.op11(9, "hello"));
+        assertEquals("hello9", CustomOperations.op12(9, "hello"));
+        assertEquals("6.0", CustomOperations.op13
                      (1, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
-        assertEquals("1x3", T_CustomOperations.op14
+        assertEquals("1x3", CustomOperations.op14
                      (1, "x", 3, 4, 5, 6, 7, 8, 3, 4, 5, 6, 7, 8,
                       3, 4, 5, 6, 7, 8, 3, 4, 5, 6, 7, 8));
-        assertEquals("xhello9", T_CustomOperations.op15(9, "hello"));
-        assertEquals("q9", T_CustomOperations.op16(9));
+        assertEquals("xhello9", CustomOperations.op15(9, "hello"));
+        assertEquals("q9", CustomOperations.op16(9));
     }
 
     @Test
     public void instance() throws Exception {
-        if (runWith(RULES)) {
+        if (runTransformed()) {
             return;
         }
 
-        var obj = new T_CustomOperations();
+        var obj = new CustomOperations();
         assertSame(obj, obj.op17(1));
 
         Object[] pair = obj.op18(1);
@@ -262,12 +257,12 @@ public class CustomTransformTest extends TransformTest {
 
     @Test
     public void deniedCtor() throws Exception {
-        if (runWith(RULES)) {
+        if (runTransformed()) {
             return;
         }
 
         try {
-            new T_CustomOperations(123);
+            new CustomOperations(123);
             fail();
         } catch (SecurityException e) {
         }

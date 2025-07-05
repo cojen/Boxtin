@@ -1,0 +1,59 @@
+/*
+ *  Copyright 2025 Cojen.org
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+package org.cojen.boxtin;
+
+import java.io.IOException;
+
+import java.util.Collection;
+
+/**
+ * 
+ *
+ * @author Brian S. O'Neill
+ */
+final class CompositeReplacement implements RegionReplacement {
+    private final Collection<? extends RegionReplacement> mReplacements;
+
+    CompositeReplacement(Collection<? extends RegionReplacement> replacements) {
+        mReplacements = replacements;
+    }
+
+    @Override
+    public long finish(ConstantPool cp, byte[] originalBuffer) throws IOException {
+        long length = 0;
+        for (RegionReplacement rr : mReplacements) {
+            length += rr.finish(cp, originalBuffer);
+        }
+        return length;
+    }
+
+    @Override
+    public long originalLength() {
+        long length = 0;
+        for (RegionReplacement rr : mReplacements) {
+            length += rr.originalLength();
+        }
+        return length;
+    }
+
+    @Override
+    public void writeTo(BufferEncoder encoder) throws IOException {
+        for (RegionReplacement rr : mReplacements) {
+            rr.writeTo(encoder);
+        }
+    }
+}

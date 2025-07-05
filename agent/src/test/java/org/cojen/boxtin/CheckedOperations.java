@@ -14,19 +14,31 @@
  *  limitations under the License.
  */
 
-package org.cojen.boxtin.tt;
+package org.cojen.boxtin;
 
 import org.junit.Ignore;
 
 /**
- * Defines various target operations which should be denied.
+ * Defines various operations which should be denied.
  *
  * @author Brian S. O'Neill
- * @see TransformTest.Injector
+ * @see CheckedTransformTest
  */
 @Ignore
-public interface T_InterfaceOperations {
-    default int op1(int a) {
-        return a + 1;
+public class CheckedOperations {
+
+    public CheckedOperations() {
+    }
+
+    public static String op1(int a) {
+        return "" + a;
+    }
+
+    public static long op2(int a, long b) {
+        return a + b;
+    }
+
+    public static String[] op3(String a) {
+        return new String[] {a};
     }
 }

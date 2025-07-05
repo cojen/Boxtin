@@ -16,9 +16,14 @@
 
 package org.cojen.boxtin;
 
+import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodHandleInfo;
 import java.lang.invoke.MethodType;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.lang.reflect.RecordComponent;
 
 import java.nio.ByteBuffer;
 
@@ -46,12 +51,19 @@ final class JavaBaseApplier implements RulesApplier {
 
     @Override
     public void applyRulesTo(RulesBuilder b) {
-        MethodHandleInfo iv1, iv2, lv1, lv2, sv1;
+        MethodHandleInfo iv1, iv2, lv1, lv2;
         MethodHandleInfo fp1, fp2, fp3, fp4, fp5, fp6;
         MethodHandleInfo cdc1, cdc2;
         MethodHandleInfo cfn1;
         MethodHandleInfo cgr1, cgr2, cgr3;
         MethodHandleInfo cna1;
+
+        // Custom deny actions used by reflection methods.
+        MethodHandleInfo cref1, cref2, cref3, cref4, cref5, cref6,
+            cref7, cref8, cref9, cref10, cref11;
+
+        // Custom deny actions used by MethodHandle.Lookup methods.
+        MethodHandleInfo cmh1, cmh2, cmh3, cmh4, cmh5;
 
         DenyAction restricted, inaccessible;
 
@@ -62,7 +74,6 @@ final class JavaBaseApplier implements RulesApplier {
             iv2 = findMethod(lookup, "intValue", mt(Integer.class, String.class, Integer.class));
             lv1 = findMethod(lookup, "longValue", mt(Long.class, String.class, long.class));
             lv2 = findMethod(lookup, "longValue", mt(Long.class, String.class, Long.class));
-            sv1 = findMethod(lookup, "stringValue", mt(String.class, String.class, String.class));
 
             fp1 = findMethod(lookup, "getProperties", mt(Properties.class, Class.class));
             fp2 = findMethod(lookup, "getProperty",
@@ -94,6 +105,47 @@ final class JavaBaseApplier implements RulesApplier {
                               mt(boolean.class, Class.class, Module.class));
 
             cna1 = findMethod(lookup, "checkNativeAccess", mt(boolean.class, Class.class));
+
+            cref1 = findMethod(lookup, "getConstructor",
+                               mt(Constructor.class, Class.class, Class.class, Class[].class));
+            cref2 = findMethod(lookup, "getConstructors",
+                               mt(Constructor[].class, Class.class, Class.class));
+            cref3 = findMethod(lookup, "getDeclaredConstructor",
+                               mt(Constructor.class, Class.class, Class.class, Class[].class));
+            cref4 = findMethod(lookup, "getDeclaredConstructors",
+                               mt(Constructor[].class, Class.class, Class.class));
+            cref5 = findMethod(lookup, "getDeclaredMethod",
+                               mt(Method.class, Class.class,
+                                  Class.class, String.class, Class[].class));
+            cref6 = findMethod(lookup, "getDeclaredMethods",
+                               mt(Method[].class, Class.class, Class.class));
+            cref7 = findMethod(lookup, "getEnclosingConstructor",
+                               mt(Constructor.class, Class.class, Class.class));
+            cref8 = findMethod(lookup, "getEnclosingMethod",
+                               mt(Method.class, Class.class, Class.class));
+            cref9 = findMethod(lookup, "getMethod",
+                               mt(Method.class, Class.class, Class.class,
+                                  String.class, Class[].class));
+            cref10 = findMethod(lookup, "getMethods",
+                                mt(Method[].class, Class.class, Class.class));
+            cref11 = findMethod(lookup, "getRecordComponents",
+                                mt(RecordComponent[].class, Class.class, Class.class));
+
+            cmh1 = findMethod(lookup, "lookupBind",
+                              mt(MethodHandle.class, Class.class, MethodHandles.Lookup.class,
+                                 Object.class, String.class, MethodType.class));
+            cmh2 = findMethod(lookup, "lookupFindConstructor",
+                              mt(MethodHandle.class, Class.class, MethodHandles.Lookup.class,
+                                 Class.class, MethodType.class));
+            cmh3 = findMethod(lookup, "lookupFindSpecial",
+                              mt(MethodHandle.class, Class.class, MethodHandles.Lookup.class,
+                                 Class.class, String.class, MethodType.class, Class.class));
+            cmh4 = findMethod(lookup, "lookupFindStatic",
+                              mt(MethodHandle.class, Class.class, MethodHandles.Lookup.class,
+                                 Class.class, String.class, MethodType.class));
+            cmh5 = findMethod(lookup, "lookupFindVirtual",
+                              mt(MethodHandle.class, Class.class, MethodHandles.Lookup.class,
+                                 Class.class, String.class, MethodType.class));
 
             restricted = DenyAction.checked
                 (cna1, DenyAction.exception("java.lang.IllegalCallerException"));
@@ -152,9 +204,19 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forClass("FileInputStream")
             .denyAllConstructors(DenyAction.exception("java.io.FileNotFoundException"))
+            .denyVariant(DenyAction.standard(), "Ljava/io/FileDescriptor;")
 
             .forClass("FileOutputStream")
             .denyAllConstructors(DenyAction.exception("java.io.FileNotFoundException"))
+            .denyVariant(DenyAction.standard(), "Ljava/io/FileDescriptor;")
+
+            .forClass("FileReader")
+            .denyAllConstructors(DenyAction.exception("java.io.FileNotFoundException"))
+            .denyVariant(DenyAction.standard(), "Ljava/io/FileDescriptor;")
+
+            .forClass("FileWriter")
+            .denyAllConstructors(DenyAction.exception("java.io.FileNotFoundException"))
+            .denyVariant(DenyAction.standard(), "Ljava/io/FileDescriptor;")
 
             .forClass("ObjectInputFilter.Config")
             .denyMethod("setSerialFilter")
@@ -193,34 +255,27 @@ final class JavaBaseApplier implements RulesApplier {
             .allowAll()
 
             .forClass("Boolean")
-            .callerCheck()
             // Always return false.
             .denyMethod(DenyAction.value("false"), "getBoolean")
 
-            // Note: The methods which return Constructors, Methods, and RecordComponents are
-            // treated specially. Denying access here only denies access to those methods
-            // themselves. Checks are put in place for when callers obtain members, ensuring
-            // that access is allowed to the underlying class member as if it was called
-            // directly. See the Reflection class.
             .forClass("Class")
-            .callerCheck()
             .denyMethod("forName")
             .allowVariant(String.class)
             .allowVariant(Module.class, String.class)
             .denyVariant(DenyAction.checked(cfn1, DenyAction.standard()),
                          String.class, boolean.class, ClassLoader.class)
-            .denyMethod("getConstructor")
-            .denyMethod("getConstructors")
-            .denyMethod("getDeclaredConstructor")
-            .denyMethod("getDeclaredConstructors")
-            .denyMethod("getDeclaredMethod")
-            .denyMethod("getDeclaredMethods")
-            .denyMethod("getEnclosingConstructor")
-            .denyMethod("getEnclosingMethod")
-            .denyMethod("getMethod")
-            .denyMethod("getMethods")
+            .denyMethod(DenyAction.custom(cref1), "getConstructor")
+            .denyMethod(DenyAction.custom(cref2), "getConstructors")
+            .denyMethod(DenyAction.custom(cref3), "getDeclaredConstructor")
+            .denyMethod(DenyAction.custom(cref4), "getDeclaredConstructors")
+            .denyMethod(DenyAction.custom(cref5), "getDeclaredMethod")
+            .denyMethod(DenyAction.custom(cref6), "getDeclaredMethods")
+            .denyMethod(DenyAction.custom(cref7), "getEnclosingConstructor")
+            .denyMethod(DenyAction.custom(cref8), "getEnclosingMethod")
+            .denyMethod(DenyAction.custom(cref9), "getMethod")
+            .denyMethod(DenyAction.custom(cref10), "getMethods")
             .denyMethod("getProtectionDomain")
-            .denyMethod("getRecordComponents")
+            .denyMethod(DenyAction.custom(cref11), "getRecordComponents")
             .denyMethod("newInstance") // deprecated
             .denyMethod(DenyAction.checked(cgr1, DenyAction.value(null)), "getResource")
             .denyMethod(DenyAction.checked(cgr1, DenyAction.value(null)), "getResourceAsStream")
@@ -240,14 +295,12 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("setClassAssertionStatus")
             .denyMethod("setDefaultAssertionStatus")
             .denyMethod("setPackageAssertionStatus")
-            .callerCheck()
             .denyMethod(DenyAction.checked(cgr2, DenyAction.value(null)), "getResource")
             .denyMethod(DenyAction.checked(cgr2, DenyAction.value(null)), "getResourceAsStream")
             .denyMethod(DenyAction.checked(cgr2, DenyAction.empty()), "getResources")
             .denyMethod(DenyAction.checked(cgr2, DenyAction.empty()), "resources")
 
             .forClass("Integer")
-            .callerCheck()
             .denyMethod("getInteger")
             // Always return null.
             .denyVariant(DenyAction.value(null), "Ljava/lang/String;")
@@ -256,7 +309,6 @@ final class JavaBaseApplier implements RulesApplier {
             .denyVariant(DenyAction.custom(iv2), "Ljava/lang/String;Ljava/lang/Integer;")
 
             .forClass("Long")
-            .callerCheck()
             .denyMethod("getLong")
             // Always return null.
             .denyVariant(DenyAction.value(null), "Ljava/lang/String;")
@@ -265,7 +317,6 @@ final class JavaBaseApplier implements RulesApplier {
             .denyVariant(DenyAction.custom(lv2), "Ljava/lang/String;Ljava/lang/Long;")
 
             .forClass("Module")
-            .callerCheck()
             .denyMethod(DenyAction.checked(cgr3, DenyAction.value(null)), "getResourceAsStream")
 
             .forClass("ModuleLayer")
@@ -274,11 +325,9 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("defineModulesWithManyLoaders")
 
             .forClass("ModuleLayer.Controller")
-            .callerCheck()
             .denyMethod(restricted, "enableNativeAccess")
 
             .forClass("Package")
-            .callerCheck()
             .denyMethod("getPackage") // deprecated
 
             .forClass("Process")
@@ -295,13 +344,11 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("allProcesses")
             .denyMethod("current")
             .denyMethod("of")
-            .callerCheck()
             .denyMethod("children")
             .denyMethod("descendants")
             .denyMethod("parent")
 
             .forClass("Runtime")
-            .callerCheck()
             .denyAll()
             .denyMethod(restricted, "load")
             .denyMethod(restricted, "loadLibrary")
@@ -315,15 +362,14 @@ final class JavaBaseApplier implements RulesApplier {
             .allowMethod("version")
 
             .forClass("System")
-            .callerCheck()
             .denyAll()
             .denyMethod(restricted, "load")
             .denyMethod(restricted, "loadLibrary")
             .denyMethod("getenv")
-            // Return null for all environment variables.
-            .denyVariant(DenyAction.value(null))
             // Return an empty map of environment variables.
-            .denyVariant(DenyAction.empty(), "Ljava/lang/String;")
+            .denyVariant(DenyAction.empty())
+            // Return null for all environment variables.
+            .denyVariant(DenyAction.value(null), "Ljava/lang/String;")
             // Return a filtered set of properties.
             .denyMethod(DenyAction.custom(fp1), "getProperties")
             .denyMethod("getProperty")
@@ -381,7 +427,6 @@ final class JavaBaseApplier implements RulesApplier {
             .allowMethod("yield")
 
             .forClass("Thread.Builder.OfPlatform")
-            .callerCheck()
             .denyMethod("priority")
 
             .forClass("ThreadGroup")
@@ -415,28 +460,28 @@ final class JavaBaseApplier implements RulesApplier {
             .allowAll()
 
             .forClass("AddressLayout")
-            .callerCheck()
             .denyMethod(restricted, "withTargetLayout")
 
             .forClass("Linker")
-            .callerCheck()
             .denyMethod(restricted, "downcallHandle")
             .denyMethod(restricted, "upcallStub")
 
             .forClass("MemorySegment")
-            .callerCheck()
             .denyMethod(restricted, "reinterpret")
 
             .forClass("SymbolLookup")
-            .callerCheck()
             .denyMethod(restricted, "libraryLookup")
 
             .forPackage("java.lang.invoke")
             .allowAll()
 
             .forClass("MethodHandles.Lookup")
-            .callerCheck()
             .denyAllMethods()
+            .denyMethod(DenyAction.custom(cmh1), "bind")
+            .denyMethod(DenyAction.custom(cmh2), "findConstructor")
+            .denyMethod(DenyAction.custom(cmh3), "findSpecial")
+            .denyMethod(DenyAction.custom(cmh4), "findStatic")
+            .denyMethod(DenyAction.custom(cmh5), "findVirtual")
             .allowMethod("accessClass")
             .allowMethod("dropLookupMode")
             .allowMethod("ensureInitialized")
@@ -465,22 +510,18 @@ final class JavaBaseApplier implements RulesApplier {
             .allowAll()
 
             .forClass("Configuration")
-            .callerCheck()
             .denyMethod("resolve")
             .denyMethod("resolveAndBind")
 
             .forClass("ModuleFinder")
-            .callerCheck()
             .denyAll()
 
             .forClass("ModuleReader")
-            .callerCheck()
             .denyAll()
             .allowMethod("close")
 
             .forClass("ModuleReference")
             .allowAll()
-            .callerCheck()
             .denyMethod("open")
 
             .forPackage("java.lang.ref").allowAll()
@@ -489,24 +530,20 @@ final class JavaBaseApplier implements RulesApplier {
             .allowAll()
 
             .forClass("AccessibleObject")
-            .callerCheck()
             .denyMethod(inaccessible, "setAccessible")
             .denyMethod(DenyAction.value(false), "trySetAccessible")
 
             .forClass("Constructor")
-            .callerCheck()
-            .denyMethod(inaccessible, "setAccessible")
-            .denyMethod(DenyAction.value(false), "trySetAccessible")
+            .denyMethod(inaccessible, "setAccessible") // FIXME: inherited
+            .denyMethod(DenyAction.value(false), "trySetAccessible") // FIXME: inherited
 
             .forClass("Field")
-            .callerCheck()
-            .denyMethod(inaccessible, "setAccessible")
-            .denyMethod(DenyAction.value(false), "trySetAccessible")
+            .denyMethod(inaccessible, "setAccessible") // FIXME: inherited
+            .denyMethod(DenyAction.value(false), "trySetAccessible") // FIXME: inherited
 
             .forClass("Method")
-            .callerCheck()
-            .denyMethod(inaccessible, "setAccessible")
-            .denyMethod(DenyAction.value(false), "trySetAccessible")
+            .denyMethod(inaccessible, "setAccessible") // FIXME: inherited
+            .denyMethod(DenyAction.value(false), "trySetAccessible") // FIXME: inherited
 
             .forClass("RecordComponent")
             .denyMethod("getAccessor")
@@ -591,9 +628,9 @@ final class JavaBaseApplier implements RulesApplier {
             .forClass("URLClassLoader")
             .denyAllConstructors()
             .denyMethod("close")
-            .denyMethod("findResource")
-            .denyMethod("findResources")
-            .denyMethod("getResourceAsStream")
+            .denyMethod("findResource") // FIXME: inherited
+            .denyMethod("findResources") // FIXME: inherited
+            .denyMethod("getResourceAsStream") // FIXME: inherited
 
             .forClass("URLConnection")
             .denyMethod("setContentHandlerFactory")
@@ -615,20 +652,17 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forClass("AsynchronousServerSocketChannel")
             .denyAllConstructors()
-            .callerCheck()
-            .denyMethod("bind")
+            .denyMethod("bind") // FIXME: inherit from NetworkChannel
             .denyMethod("open")
 
             .forClass("AsynchronousSocketChannel")
             .denyAllConstructors()
-            .callerCheck()
-            .denyMethod("bind")
+            .denyMethod("bind") // FIXME: inherit from NetworkChannel
             .denyMethod("connect")
 
             .forClass("DatagramChannel")
             .denyAllConstructors()
-            .callerCheck()
-            .denyMethod("bind")
+            .denyMethod("bind") // FIXME: inherit from NetworkChannel
             .denyMethod("connect")
             .denyMethod("receive")
             .denyMethod("send")
@@ -637,24 +671,20 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("open")
 
             .forClass("MulticastChannel")
-            .callerCheck()
             .denyMethod("join")
 
             .forClass("NetworkChannel")
-            .callerCheck()
             .denyMethod("bind")
 
             .forClass("ServerSocketChannel")
             .denyAllConstructors()
-            .callerCheck()
             .denyMethod("accept")
-            .denyMethod("bind")
+            .denyMethod("bind") // FIXME: inherit from NetworkChannel
 
             .forClass("SocketChannel")
             .denyAllConstructors()
             .denyMethod("open")
-            .callerCheck()
-            .denyMethod("bind")
+            .denyMethod("bind") // FIXME: inherit from NetworkChannel
             .denyMethod("connect")
 
             .forPackage("java.nio.channels.spi").denyAll()
@@ -667,63 +697,51 @@ final class JavaBaseApplier implements RulesApplier {
             .allowAll()
 
             .forClass("Files")
-            .callerCheck()
             .denyAll()
 
             .forClass("FileSystems")
-            .callerCheck()
             .denyAll()
 
             .forClass("Path")
             .denyMethod("of")
-            .callerCheck()
             .denyMethod("register")
             .denyMethod("toAbsolutePath")
             .denyMethod("toRealPath")
             .denyMethod("toUri")
 
             .forClass("Paths")
-            .callerCheck()
             .denyAll()
 
             .forClass("SecureDirectoryStream")
-            .callerCheck()
             .denyAll()
 
             .forClass("Watchable")
-            .callerCheck()
             .denyMethod("register")
 
             .forPackage("java.nio.file.attribute")
             .allowAll()
 
             .forClass("AclFileAttributeView")
-            .callerCheck()
             .denyAll()
             .allowMethod("name")
 
             .forClass("BasicFileAttributeView")
-            .callerCheck()
             .denyAll()
             .allowMethod("name")
 
             .forClass("DosFileAttributeView")
-            .callerCheck()
             .denyAll()
             .allowMethod("name")
 
             .forClass("FileOwnerAttributeView")
-            .callerCheck()
             .denyAll()
             .allowMethod("name")
 
             .forClass("PosixFileAttributeView")
-            .callerCheck()
             .denyAll()
             .allowMethod("name")
 
             .forClass("UserDefinedFileAttributeView")
-            .callerCheck()
             .denyAll()
             .allowMethod("name")
 
@@ -739,13 +757,11 @@ final class JavaBaseApplier implements RulesApplier {
             .denyAll()
 
             .forClass("AuthProvider")
-            .callerCheck()
             .denyMethod("login")
             .denyMethod("logout")
             .denyMethod("setCallbackHandler")
 
             .forClass("Guard")
-            .callerCheck()
             .denyMethod("checkGuard")
 
             .forClass("GuardedObject")
@@ -784,7 +800,7 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forClass("SecureClassLoader")
             .denyAllConstructors()
-            .denyMethod("defineClass")
+            .denyMethod("defineClass") // FIXME: inherited? just deny the new variants?
 
             .forClass("Security")
             .denyMethod("addProvider")
@@ -835,7 +851,6 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("setDefault")
 
             .forClass("ResourceBundle")
-            .callerCheck()
             .denyMethod("getBundle")
             .allowVariant("Ljava/lang.String;")
             .allowVariant("Ljava/lang.String;Ljava/util/Locale;")
@@ -897,19 +912,16 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forClass("ServerSocketFactory")
             .denyAllConstructors()
-            .callerCheck()
             .denyMethod("createServerSocket")
 
             .forClass("SocketFactory")
             .denyAllConstructors()
-            .callerCheck()
             .denyMethod("createSocket")
 
             .forPackage("javax.net.ssl")
             .allowAll()
 
             .forClass("ExtendedSSLSession")
-            .callerCheck()
             .denyMethod("getSessionContext")
 
             .forClass("HttpsURLConnection")
@@ -924,7 +936,6 @@ final class JavaBaseApplier implements RulesApplier {
             .denyAllConstructors()
 
             .forClass("SSLSession")
-            .callerCheck()
             .denyMethod("getSessionContext")
 
             .forClass("SSLSocket")

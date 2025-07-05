@@ -14,20 +14,20 @@
  *  limitations under the License.
  */
 
-package org.cojen.boxtin.tt;
+package org.cojen.boxtin;
 
 import org.junit.Ignore;
 
 /**
- * Defines various target operations which should be denied.
+ * Defines various operations which should be denied.
  *
  * @author Brian S. O'Neill
- * @see TransformTest.Injector
+ * @see ValueTransformTest
  */
 @Ignore
-public class T_ValueOperations {
+public class ValueOperations {
 
-    public T_ValueOperations() {
+    public ValueOperations() {
     }
 
     public static void op1() {
