@@ -205,7 +205,7 @@ class CodeAttr implements RegionReplacement {
             for (int j=0; j<numReplaced; j++) {
                 int opAddress = replaced.get(j * 3);
 
-                long key = (opAddress << 16) | 0xffff;
+                long key = (((long) opAddress) << 16) | 0xffff;
                 int ix = Arrays.binarySearch(lnTable, key);
                 if (ix < 0) {
                     ix = ~ix;
@@ -224,7 +224,7 @@ class CodeAttr implements RegionReplacement {
             }
 
             if (newEntries != null) {
-                attrLength += newEntries.length() * 4;
+                attrLength += newEntries.length() * 4L;
             }
 
             codeEncoder.writeInt((int) attrLength);

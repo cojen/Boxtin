@@ -143,6 +143,9 @@ public final class CustomActions {
     public static boolean checkNativeAccess(Class<?> caller) {
         // Allowed for named modules for which access has been granted using the
         // --enable-native-access option.
+        if (Runtime.getRuntime().version().feature() < 22) {
+            return false;
+        }
         Module module = caller.getModule();
         return module.isNamed() && module.isNativeAccessEnabled();
     }
