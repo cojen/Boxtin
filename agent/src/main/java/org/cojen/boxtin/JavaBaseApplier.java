@@ -534,16 +534,16 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod(DenyAction.value(false), "trySetAccessible")
 
             .forClass("Constructor")
-            .denyMethod(inaccessible, "setAccessible") // FIXME: inherited
-            .denyMethod(DenyAction.value(false), "trySetAccessible") // FIXME: inherited
+            .denyMethod(inaccessible, "setAccessible")
+            .denyMethod(DenyAction.value(false), "trySetAccessible")
 
             .forClass("Field")
-            .denyMethod(inaccessible, "setAccessible") // FIXME: inherited
-            .denyMethod(DenyAction.value(false), "trySetAccessible") // FIXME: inherited
+            .denyMethod(inaccessible, "setAccessible")
+            .denyMethod(DenyAction.value(false), "trySetAccessible")
 
             .forClass("Method")
-            .denyMethod(inaccessible, "setAccessible") // FIXME: inherited
-            .denyMethod(DenyAction.value(false), "trySetAccessible") // FIXME: inherited
+            .denyMethod(inaccessible, "setAccessible")
+            .denyMethod(DenyAction.value(false), "trySetAccessible")
 
             .forClass("RecordComponent")
             .denyMethod("getAccessor")
@@ -628,9 +628,6 @@ final class JavaBaseApplier implements RulesApplier {
             .forClass("URLClassLoader")
             .denyAllConstructors()
             .denyMethod("close")
-            .denyMethod("findResource") // FIXME: inherited
-            .denyMethod("findResources") // FIXME: inherited
-            .denyMethod("getResourceAsStream") // FIXME: inherited
 
             .forClass("URLConnection")
             .denyMethod("setContentHandlerFactory")
@@ -652,17 +649,17 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forClass("AsynchronousServerSocketChannel")
             .denyAllConstructors()
-            .denyMethod("bind") // FIXME: inherit from NetworkChannel
+            .denyMethod("bind")
             .denyMethod("open")
 
             .forClass("AsynchronousSocketChannel")
             .denyAllConstructors()
-            .denyMethod("bind") // FIXME: inherit from NetworkChannel
+            .denyMethod("bind")
             .denyMethod("connect")
 
             .forClass("DatagramChannel")
             .denyAllConstructors()
-            .denyMethod("bind") // FIXME: inherit from NetworkChannel
+            .denyMethod("bind")
             .denyMethod("connect")
             .denyMethod("receive")
             .denyMethod("send")
@@ -679,12 +676,12 @@ final class JavaBaseApplier implements RulesApplier {
             .forClass("ServerSocketChannel")
             .denyAllConstructors()
             .denyMethod("accept")
-            .denyMethod("bind") // FIXME: inherit from NetworkChannel
+            .denyMethod("bind")
 
             .forClass("SocketChannel")
             .denyAllConstructors()
             .denyMethod("open")
-            .denyMethod("bind") // FIXME: inherit from NetworkChannel
+            .denyMethod("bind")
             .denyMethod("connect")
 
             .forPackage("java.nio.channels.spi").denyAll()
