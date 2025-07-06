@@ -323,50 +323,60 @@ class CodeAttr implements RegionReplacement {
         mReplacedOpAddresses.push(checkEndAddress);
     }
 
+    record StoredArgs(int[] argSlots, StackMapTable.Entry withArgs) { }
+
     /**
      * Store method arguments (and the instance if applicable) on the operand stack to
      * temporary local variables.
      *
+     * @param entry entry at the code location
      * @param methodRef the denied method being called
      * @return array of local variable slots
      */
-    int[] storeArgs(BufferEncoder encoder, boolean hasInstance, C_MemberRef methodRef)
+    StoredArgs storeArgs(BufferEncoder encoder, StackMapTable.Entry entry,
+                         boolean hasInstance, C_MemberRef methodRef)
         throws IOException, ClassFormatException
     {
         MethodTypeDesc desc = methodRef.mNameAndType.mTypeDesc.asMethodTypeDesc();
         int count = desc.parameterCount();
         int localNum = maxLocals;
+        int entryLocalNum = localNum;
 
         int slotNum = count;
         if (hasInstance) {
             slotNum++;
         }
+
         var argSlots = new int[slotNum];
 
+        IntArray localTypes = entry.localTypes().copy();
+        IntArray stackTypes = entry.stackTypes().copy();
+
         for (int i=count; --i>=0; ) {
-            ClassDesc paramType = desc.parameterType(i);
+            int type = stackTypes.pop();
+            localTypes.set(entryLocalNum++, type);
 
             byte op;
             int size;
 
-            switch (paramType.descriptorString()) {
+            switch (type) {
                 default -> {
                     op = ASTORE;
                     size = 1;
                 }
-                case "B", "C", "I", "S", "Z" -> {
+                case StackMapTable.TAG_INT -> {
                     op = ISTORE;
                     size = 1;
                 }
-                case "F" -> {
+                case StackMapTable.TAG_FLOAT -> {
                     op = FSTORE;
                     size = 1;
                 }
-                case "D" -> {
+                case StackMapTable.TAG_DOUBLE -> {
                     op = DSTORE;
                     size = 2;
                 }
-                case "J" -> {
+                case StackMapTable.TAG_LONG -> {
                     op = LSTORE;
                     size = 2;
                 }
@@ -375,6 +385,7 @@ class CodeAttr implements RegionReplacement {
             encodeVarOp(encoder, op, localNum);
             stackPop(size);
             argSlots[--slotNum] = localNum;
+
             localNum += size;
 
             if (localNum > 65536) {
@@ -384,6 +395,7 @@ class CodeAttr implements RegionReplacement {
 
         if (slotNum != 0) {
             // Store the instance.
+            localTypes.set(entryLocalNum++, stackTypes.pop());
             encodeVarOp(encoder, ASTORE, localNum);
             stackPop(1);
             argSlots[--slotNum] = localNum;
@@ -395,7 +407,7 @@ class CodeAttr implements RegionReplacement {
 
         maxTempLocals = Math.max(maxTempLocals, localNum - maxLocals);
 
-        return argSlots;
+        return new StoredArgs(argSlots, new StackMapTable.Entry(localTypes, stackTypes));
     }
 
     /**
@@ -489,34 +501,6 @@ class CodeAttr implements RegionReplacement {
         maxLocals = Math.max(maxLocals, localNum);
 
         return argSlots;
-    }
-
-    /**
-     * Pop method arguments and instance (if applicable) from the operand stack.
-     *
-     * @param methodRef the denied method being called
-     */
-    void popArgs(BufferEncoder encoder, boolean hasInstance, C_MemberRef methodRef)
-        throws IOException
-    {
-        MethodTypeDesc desc = methodRef.mNameAndType.mTypeDesc.asMethodTypeDesc();
-
-        for (int i=desc.parameterCount(); --i>=0; ) {
-            String paramDesc = desc.parameterType(i).descriptorString();
-            if (paramDesc.equals("D") || paramDesc.equals("J")) {
-                encoder.write(POP2);
-                stackPop(2);
-            } else {
-                encoder.write(POP);
-                stackPop(1);
-            }
-        }
-
-        if (hasInstance) {
-            // Pop the instance.
-            encoder.write(POP);
-            stackPop(1);
-        }
     }
 
     /**

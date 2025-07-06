@@ -609,9 +609,15 @@ final class ClassFileProcessor {
 
             int checkStartAddress = encoder.length();
 
-            encodeDenyAction(encoder, denyEntry, caller, hasInstance(op), methodRef,
-                             rule.denyAction(), resumeAddress);
+            boolean hasInstance = hasInstance(op);
+            CodeAttr.StoredArgs args = caller.storeArgs(encoder, denyEntry, hasInstance, methodRef);
 
+            encodeDenyAction(encoder, caller, hasInstance, methodRef, methodRef.mClass,
+                             rule.denyAction(), resumeAddress, args.argSlots(), args.withArgs());
+
+            caller.loadArgs(encoder, hasInstance, methodRef, args.argSlots());
+
+            // Copy the original invoke operation.
             encoder.write(buffer, opOffset, opSize);
 
             caller.replaced(opAddress, checkStartAddress, encoder.length());
@@ -749,30 +755,18 @@ final class ClassFileProcessor {
     }
 
     /**
-     * @param denyEntry smt entry at the start of the deny code, which might be duplicated
      * @param caller the method being modified
      * @param methodRef the denied method being called
+     * @param targetClass can be different than methodRef.mClass if isAssignableFrom is called
      * @param resumeAddress branch to this location if a value was generated; if negative then
      * return from the caller
+     * @param withArgs smt entry with the argSlots defined as local variables
      */
-    private void encodeDenyAction(BufferEncoder encoder, StackMapTable.Entry denyEntry,
-                                  CodeAttr caller, boolean hasInstance,
-                                  C_MemberRef methodRef, DenyAction action, int resumeAddress)
-        throws IOException
-    {
-        encodeDenyAction(encoder, denyEntry, caller, hasInstance,
-                         methodRef, methodRef.mClass, action, resumeAddress, null);
-    }
-
-    /**
-     * @param targetClass can be different than methodRef.mClass if isAssignableFrom is called
-     * @param argSlots pass null if the arguments are on the operand stack
-     */
-    private void encodeDenyAction(BufferEncoder encoder, StackMapTable.Entry denyEntry,
+    private void encodeDenyAction(BufferEncoder encoder,
                                   CodeAttr caller, boolean hasInstance,
                                   C_MemberRef methodRef, C_Class targetClass,
                                   DenyAction action, int resumeAddress,
-                                  int[] argSlots)
+                                  int[] argSlots, StackMapTable.Entry withArgs)
         throws IOException
     {
         if (action instanceof DenyAction.Multi mu) {
@@ -792,10 +786,10 @@ final class ClassFileProcessor {
                 encoder.writeShort(0); // branch offset; to be filled in properly later
                 caller.stackPushPop(2);
 
-                encodeDenyAction(encoder, denyEntry, caller, hasInstance, methodRef, targetClass,
-                                 e.getValue().denyAction(), resumeAddress, argSlots);
+                encodeDenyAction(encoder, caller, hasInstance, methodRef, targetClass,
+                                 e.getValue().denyAction(), resumeAddress, argSlots, withArgs);
 
-                caller.smt.putEntry(encoder.length(), denyEntry);
+                caller.smt.putEntry(encoder.length(), withArgs);
                 encodeBranchTarget(encoder, offset);
             }
 
@@ -825,14 +819,7 @@ final class ClassFileProcessor {
         int checkedOffset = 0;
 
         if (action instanceof DenyAction.Checked checked) {
-            if (argSlots == null) {
-                argSlots = caller.storeArgs(encoder, hasInstance, methodRef);
-            }
-            // Whether the operation is allowed or denied, the args must be on the operand
-            // stack, so load them in advance.
-            caller.loadArgs(encoder, hasInstance, methodRef, argSlots);
             encodeMethodHandleInvoke(encoder, caller, argSlots, checked.predicate);
-            argSlots = null; // indicate that the args are now on the stack
             encoder.write(IFNE); // if true, then the operation is actually allowed
             caller.stackPop(1);
             checkedOffset = encoder.length();
@@ -850,9 +837,6 @@ final class ClassFileProcessor {
 
                 if (nat.mName.isConstructor()) {
                     if (action instanceof DenyAction.Custom cu) {
-                        if (argSlots == null) {
-                            argSlots = caller.storeArgs(encoder, hasInstance, methodRef);
-                        }
                         byte returnOp = encodeMethodHandleInvoke(encoder, caller, argSlots, cu.mhi);
                         // Denied constructors must always throw an exception.
                         encodeReturnPop(encoder, returnOp);
@@ -861,19 +845,10 @@ final class ClassFileProcessor {
                     byte returnOp;
 
                     if (action instanceof DenyAction.Value va) {
-                        if (argSlots == null) {
-                            caller.popArgs(encoder, hasInstance, methodRef);
-                        }
                         returnOp = encodeValue(encoder, caller, va.value, nat.mTypeDesc);
                     } else if (action instanceof DenyAction.Empty) {
-                        if (argSlots == null) {
-                            caller.popArgs(encoder, hasInstance, methodRef);
-                        }
                         returnOp = encodeEmpty(encoder, caller, nat.mTypeDesc);
                     } else if (action instanceof DenyAction.Custom cu) {
-                        if (argSlots == null) {
-                            argSlots = caller.storeArgs(encoder, hasInstance, methodRef);
-                        }
                         returnOp = encodeMethodHandleInvoke(encoder, caller, argSlots, cu.mhi);
                     } else {
                         break doReturn;
@@ -893,11 +868,11 @@ final class ClassFileProcessor {
         }
 
         if (checkedOffset != 0) {
-            caller.smt.putEntry(encoder.length(), denyEntry);
+            caller.smt.putEntry(encoder.length(), withArgs);
             encodeBranchTarget(encoder, checkedOffset);
         }
 
-        caller.smt.putEntry(encoder.length(), denyEntry);
+        caller.smt.putEntry(encoder.length(), withArgs);
         encodeBranchTarget(encoder, offset);
     }
 
@@ -1439,10 +1414,10 @@ final class ClassFileProcessor {
         BufferEncoder encoder = proxyMethod.codeEncoder;
         boolean hasInstance = hasInstance(op);
 
-        StackMapTable.Entry denyEntry = proxyMethod.smt.getEntry(0);
+        StackMapTable.Entry withArgs = proxyMethod.smt.getEntry(0);
 
-        encodeDenyAction(encoder, denyEntry, proxyMethod, hasInstance,
-                         methodRef, methodRef.mClass, action, -1, argSlots);
+        encodeDenyAction(encoder, proxyMethod, hasInstance,
+                         methodRef, methodRef.mClass, action, -1, argSlots, withArgs);
 
         if (op == NEW) {
             encoder.write(NEW);
