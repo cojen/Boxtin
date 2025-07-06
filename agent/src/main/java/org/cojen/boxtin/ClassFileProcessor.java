@@ -658,7 +658,7 @@ final class ClassFileProcessor {
         C_NameAndType nat = methodRef.mNameAndType;
         Rule rule = rulesForClass(rules, methodRef.mClass).ruleForMethod(nat.mName, nat.mTypeDesc);
 
-        if (invokingThis && !hasInheritence()) {
+        if (invokingThis && !hasInheritance()) {
             return rule;
         }
 
@@ -697,7 +697,7 @@ final class ClassFileProcessor {
             mConstantPool.findConstant(thisIndex).equals(mConstantPool.findConstant(otherIndex)));
     }
 
-    private boolean hasInheritence() {
+    private boolean hasInheritance() {
         return mNumIterfaces != 0
             || (mSuperClassIndex != 0 &&
                 !mConstantPool.findConstantClass(mSuperClassIndex)
@@ -773,7 +773,7 @@ final class ClassFileProcessor {
             int isAssignableFromIndex = mConstantPool.addMethodRef
                 ("java/lang/Class", "isAssignableFrom", "(Ljava/lang/Class;)Z").mIndex;
 
-            // FIXME: de-dup the deny action code with gotos
+            // FIXME: de-dup the deny action code with gotos; must be terminal (not checked)
 
             for (Map.Entry<String, Rule> e : mu.matches.entrySet()) {
                 targetClass = mConstantPool.addClass(e.getKey());
@@ -899,9 +899,7 @@ final class ClassFileProcessor {
      *
      * @param fromOffset offset to the branch operation to be filled in
      */
-    private static void encodeBranchTarget(BufferEncoder encoder, int fromOffset)
-        throws IOException
-    {
+    private static void encodeBranchTarget(BufferEncoder encoder, int fromOffset) {
         encodeShortBE(encoder.buffer(), fromOffset, encoder.length() - fromOffset + 1);
     }
 

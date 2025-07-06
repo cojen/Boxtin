@@ -206,7 +206,6 @@ final class Utils {
         }
 
         if (type != null) {
-            assert typeName == null;
             typeName = type.getName();
         }
 

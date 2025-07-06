@@ -16,8 +16,6 @@
 
 package org.cojen.boxtin;
 
-import java.io.IOException;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
@@ -1103,7 +1101,7 @@ public final class RulesBuilder {
         }
     }
 
-    private final class MethodScope {
+    private static final class MethodScope {
         // Can be null when empty.
         NavigableMap<CharSequence, Rule> mVariants;
 
@@ -1119,19 +1117,6 @@ public final class RulesBuilder {
 
         boolean isAllAllowed() {
             return isEmpty(mVariants) && mDefaultRule.isAllowed();
-        }
-
-        boolean isDenied(CharSequence desc) {
-            Rule rule;
-            if (mVariants == null) {
-                rule = mDefaultRule;
-            } else {
-                rule = mVariants.get(desc);
-                if (rule == null) {
-                    rule = mDefaultRule;
-                }
-            }
-            return rule.isDenied();
         }
 
         /**
@@ -1215,7 +1200,7 @@ public final class RulesBuilder {
                     continue;
                 }
 
-                Constructor ctor;
+                Constructor<?> ctor;
                 try {
                     ctor = clazz.getConstructor(paramTypes);
                 } catch (NoSuchMethodException ex) {
