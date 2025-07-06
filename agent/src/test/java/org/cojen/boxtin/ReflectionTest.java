@@ -224,13 +224,12 @@ public class ReflectionTest extends TransformTest {
     }
 
     @Test
-    @Ignore // FIXME
     public void getEnclosingMethod() throws Exception {
-        if (runTransformed()) {
-            return;
+        class Foo {
         }
 
-        class Foo {
+        if (runTransformed(Foo.class)) {
+            return;
         }
 
         Method m = Foo.class.getEnclosingMethod();

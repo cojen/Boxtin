@@ -20,6 +20,7 @@ import java.lang.reflect.InvocationTargetException;
 
 import java.io.InputStream;
 
+import java.util.List;
 import java.util.Set;
 
 import org.junit.Ignore;
@@ -37,7 +38,7 @@ public abstract class TransformTest {
         WALKER = StackWalker.getInstance(Set.of(StackWalker.Option.RETAIN_CLASS_REFERENCE), 2);
     }
 
-    private static final SoftCache<Class<?>, Class<?>> cTransformed = new SoftCache<>();
+    private static final SoftCache<Object, Class<?>> cTransformed = new SoftCache<>();
 
     protected abstract RulesBuilder builder() throws Exception;
 
@@ -68,7 +69,13 @@ public abstract class TransformTest {
 
         var frame = WALKER.walk(s -> s.skip(1).findFirst()).get();
         Class<?> original = frame.getDeclaringClass();
-        Class<?> transformed = cTransformed.get(original);
+
+        Object key = original;
+        if (dependencies.length > 0) {
+            key = List.of(original, List.of(dependencies));
+        }
+
+        Class<?> transformed = cTransformed.get(key);
 
         var agent = SecurityAgent.testActivate(module -> rules);
 
@@ -87,7 +94,7 @@ public abstract class TransformTest {
                     throw new RuntimeException(e);
                 }
 
-                cTransformed.put(original, transformed);
+                cTransformed.put(key, transformed);
             }
 
             Object instance = transformed.getConstructor().newInstance();
@@ -138,6 +145,10 @@ public abstract class TransformTest {
             }
 
             byte[] xbytes = mAgent.doTransform(getClass().getModule(), bytes);
+
+            if (xbytes == null) {
+                xbytes = bytes;
+            }
 
             return defineClass(className, xbytes, 0, xbytes.length);
         }
