@@ -483,6 +483,7 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod(DenyAction.custom(cmh4), "findStatic")
             .denyMethod(DenyAction.custom(cmh5), "findVirtual")
             .allowMethod("accessClass")
+            .allowMethod("defineClass")
             .allowMethod("dropLookupMode")
             .allowMethod("ensureInitialized")
             .allowMethod("findClass")
