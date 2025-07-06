@@ -19,14 +19,13 @@ package org.cojen.boxtin;
 import java.io.IOException;
 
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 import static org.cojen.boxtin.Utils.*;
 
@@ -129,7 +128,7 @@ final class RuleSet implements Rules {
                     firstRule = rule;
                 } else {
                     if (matches == null) {
-                        matches = new HashMap<>();
+                        matches = new LinkedHashMap<>();
                         matches.put(firstName, firstRule);
                     }
                     matches.put(scope.fullName(), rule);
@@ -159,7 +158,7 @@ final class RuleSet implements Rules {
         if (mPackages != null) {
             String subScopeIndent = scopeIndent + plusIndent;
 
-            for (Map.Entry<String, PackageScope> e : sortedEntries(mPackages)) {
+            for (Map.Entry<String, PackageScope> e : mPackages.entrySet()) {
                 a.append('\n').append(scopeIndent).append("for ").append("package").append(' ');
                 a.append(e.getKey().replace('/', '.'));
                 a.append(" {").append('\n');
@@ -173,10 +172,6 @@ final class RuleSet implements Rules {
         a.append(indent).append('}').append('\n');
 
         return true;
-    }
-
-    private static <V> Set<Map.Entry<String, V>> sortedEntries(Map<String, V> map) {
-        return (map instanceof SortedMap ? map : new TreeMap<>(map)).entrySet();
     }
 
     private static Appendable printAllowOrDenyAll(Appendable a, String indent, Rule rule)
@@ -232,7 +227,7 @@ final class RuleSet implements Rules {
             if (mClasses != null) {
                 String scopeIndent = indent + plusIndent;
 
-                for (Map.Entry<String, ClassScope> e : sortedEntries(mClasses)) {
+                for (Map.Entry<String, ClassScope> e : mClasses.entrySet()) {
                     a.append('\n').append(indent).append("for ").append("class").append(' ');
                     String name = e.getKey().replace('$', '.');
                     a.append(name).append(" {").append('\n');
@@ -356,8 +351,7 @@ final class RuleSet implements Rules {
                 .append(" methods").append('\n');
 
             if (mMethods != null) {
-                Set<Map.Entry<String, MethodScope>> entries = sortedEntries(mMethods);
-                for (Map.Entry<String, MethodScope> e : entries) {
+                for (Map.Entry<String, MethodScope> e : mMethods.entrySet()) {
                     String name = e.getKey();
                     MethodScope scope = e.getValue();
                     a.append(indent).append(scope.mDefaultRule.toString()).append(' ')
@@ -405,7 +399,7 @@ final class RuleSet implements Rules {
                     } else {
                         Set<ClassScope> set;
                         if (value instanceof ClassScope scope) {
-                            set = new HashSet<>();
+                            set = new LinkedHashSet<>();
                             set.add(scope);
                             index.put(name, set);
                         } else {

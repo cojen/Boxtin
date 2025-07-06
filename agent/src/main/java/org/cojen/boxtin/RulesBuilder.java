@@ -24,8 +24,8 @@ import java.lang.reflect.Method;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.NavigableMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -104,7 +104,7 @@ public final class RulesBuilder {
         Objects.requireNonNull(name);
         Map<String, ModuleScope> modules = mModules;
         if (modules == null) {
-            mModules = modules = new HashMap<>();
+            mModules = modules = new LinkedHashMap<>();
         }
         return modules.computeIfAbsent(name, k -> {
             return new ModuleScope(this, name).ruleForAll(mDefaultRule);
@@ -193,7 +193,7 @@ public final class RulesBuilder {
         if (isEmpty(mModules)) {
             builtPackages = null;
         } else {
-            builtPackages = new HashMap<>();
+            builtPackages = new LinkedHashMap<>();
             for (ModuleScope ms  : mModules.values()) {
                 ms.buildInto(builtPackages);
             }
@@ -418,7 +418,7 @@ public final class RulesBuilder {
             final String dottedName = name.replace('/', '.');
             Map<String, PackageScope> packages = mPackages;
             if (packages == null) {
-                mPackages = packages = new HashMap<>();
+                mPackages = packages = new LinkedHashMap<>();
             }
             return packages.computeIfAbsent(dottedName, k -> {
                 return new PackageScope(this, dottedName).ruleForAll(mDefaultRule);
@@ -583,7 +583,7 @@ public final class RulesBuilder {
             final String vmName = name.replace('.', '$');
             Map<String, ClassScope> classes = mClasses;
             if (classes == null) {
-                mClasses = classes = new HashMap<>();
+                mClasses = classes = new LinkedHashMap<>();
             }
             return classes.computeIfAbsent(vmName, k -> {
                 return new ClassScope(this, vmName).ruleForAll(mDefaultRule);
@@ -684,7 +684,7 @@ public final class RulesBuilder {
             if (isEmpty(mClasses)) {
                 builtClasses = null;
             } else {
-                builtClasses = new HashMap<>();
+                builtClasses = new LinkedHashMap<>();
                 for (Map.Entry<String, ClassScope> e : mClasses.entrySet()) {
                     RuleSet.ClassScope scope = e.getValue().build(mDefaultRule);
                     if (scope != null) {
@@ -1075,7 +1075,7 @@ public final class RulesBuilder {
             checkMethodName(name);
             Map<String, MethodScope> methods = mMethods;
             if (methods == null) {
-                mMethods = methods = new HashMap<>();
+                mMethods = methods = new LinkedHashMap<>();
             }
             return methods.computeIfAbsent(name, k -> new MethodScope());
         }
@@ -1103,7 +1103,7 @@ public final class RulesBuilder {
             if (isEmpty(mMethods)) {
                 builtMethods = null;
             } else {
-                builtMethods = new HashMap<>();
+                builtMethods = new LinkedHashMap<>();
                 for (Map.Entry<String, MethodScope> e : mMethods.entrySet()) {
                     RuleSet.MethodScope scope = e.getValue().build(mDefaultMethodRule);
                     if (scope != null) {
