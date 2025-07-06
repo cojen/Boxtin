@@ -79,7 +79,6 @@ loadScripts(document, 'script');</script>
 <li><a href="#forModule(java.lang.Module)" tabindex="0">forModule(Module)</a></li>
 <li><a href="#validate(java.lang.ModuleLayer)" tabindex="0">validate(ModuleLayer)</a></li>
 <li><a href="#validate(java.lang.ModuleLayer,java.util.function.Consumer)" tabindex="0">validate(ModuleLayer, Consumer)</a></li>
-<li><a href="#validateDeep(java.lang.ModuleLayer,java.util.function.Consumer)" tabindex="0">validateDeep(ModuleLayer, Consumer)</a></li>
 <li><a href="#build()" tabindex="0">build()</a></li>
 </ol>
 </li>
@@ -194,12 +193,6 @@ loadScripts(document, 'script');</script>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#validate(java.lang.ModuleLayer,java.util.function.Consumer)" class="member-name-link">validate</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/ModuleLayer.html" title="class or interface in java.lang" class="external-link">ModuleLayer</a>&nbsp;layer,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link">Consumer</a>&lt;<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;reporter)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Validates that all classes are loadable, and that all class members are found.</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.html" title="class in org.cojen.boxtin">RulesBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#validateDeep(java.lang.ModuleLayer,java.util.function.Consumer)" class="member-name-link">validateDeep</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/ModuleLayer.html" title="class or interface in java.lang" class="external-link">ModuleLayer</a>&nbsp;layer,
- <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link">Consumer</a>&lt;<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;reporter)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Validates that all classes are loadable, and that all class members are found.</div>
 </div>
 </div>
@@ -325,28 +318,6 @@ loadScripts(document, 'script');</script>
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link">Consumer</a>&lt;<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;reporter)</span></div>
 <div class="block">Validates that all classes are loadable, and that all class members are found. An
  exception is thrown if validation fails.</div>
-<dl class="notes">
-<dt>Parameters:</dt>
-<dd><code>layer</code> - required</dd>
-<dd><code>reporter</code> - pass non-null for reporting multiple validation failures</dd>
-<dt>Returns:</dt>
-<dd>this</dd>
-<dt>Throws:</dt>
-<dd><code><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/NullPointerException.html" title="class or interface in java.lang" class="external-link">NullPointerException</a></code> - if layer is null</dd>
-<dd><code><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/IllegalStateException.html" title="class or interface in java.lang" class="external-link">IllegalStateException</a></code> - if validation fails</dd>
-</dl>
-</div>
-</section>
-</li>
-<li>
-<section class="detail" id="validateDeep(java.lang.ModuleLayer,java.util.function.Consumer)">
-<h3>validateDeep</h3>
-<div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RulesBuilder.html" title="class in org.cojen.boxtin">RulesBuilder</a></span>&nbsp;<span class="element-name">validateDeep</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/ModuleLayer.html" title="class or interface in java.lang" class="external-link">ModuleLayer</a>&nbsp;layer,
- <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link">Consumer</a>&lt;<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;reporter)</span></div>
-<div class="block">Validates that all classes are loadable, and that all class members are found. This
- variant also examines the entire class hierarchy. An exception is thrown if validation
- fails.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>layer</code> - required</dd>
