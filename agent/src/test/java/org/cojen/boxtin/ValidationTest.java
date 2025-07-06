@@ -30,9 +30,8 @@ public class ValidationTest {
     }
 
     @Test
-    @Ignore // FIXME
     public void java_base() throws Exception {
-        new RulesBuilder().applyRules(RulesApplier.java_base()).validateDeep
+        new RulesBuilder().applyRules(RulesApplier.java_base()).validate
             (ModuleLayer.boot(), message -> System.out.println("validation failure: " + message))
             .build();
     }

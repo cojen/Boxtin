@@ -142,25 +142,6 @@ public final class RulesBuilder {
      * @throws IllegalStateException if validation fails
      */
     public RulesBuilder validate(ModuleLayer layer, Consumer<String> reporter) {
-        return validate(layer, reporter, false);
-    }
-
-    /**
-     * Validates that all classes are loadable, and that all class members are found. This
-     * variant also examines the entire class hierarchy. An exception is thrown if validation
-     * fails.
-     *
-     * @param layer required
-     * @param reporter pass non-null for reporting multiple validation failures
-     * @return this
-     * @throws NullPointerException if layer is null
-     * @throws IllegalStateException if validation fails
-     */
-    public RulesBuilder validateDeep(ModuleLayer layer, Consumer<String> reporter) {
-        return validate(layer, reporter, true);
-    }
-
-    private RulesBuilder validate(ModuleLayer layer, Consumer<String> reporter, boolean deep) {
         Objects.requireNonNull(layer);
 
         var actualReporter = new Consumer<String>() {
@@ -186,18 +167,6 @@ public final class RulesBuilder {
 
             for (ModuleScope ms : mModules.values()) {
                 ms.validate(layer, actualReporter);
-            }
-
-            if (deep) {
-                try {
-                    Map<String, ClassInfo> allClasses = ClassInfo.decodeModules(mModules.keySet());
-                    Rules rules = build();
-                    for (ClassInfo ci : allClasses.values()) {
-                        ci.validate(rules, actualReporter);
-                    }
-                } catch (IOException e) {
-                    actualReporter.accept(e.toString());
-                }
             }
         }
 

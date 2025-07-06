@@ -797,7 +797,7 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forClass("SecureClassLoader")
             .denyAllConstructors()
-            .denyMethod("defineClass") // FIXME: inherited? just deny the new variants?
+            .denyMethod("defineClass")
 
             .forClass("Security")
             .denyMethod("addProvider")
