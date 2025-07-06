@@ -107,7 +107,7 @@ public final class RulesBuilder {
             mModules = modules = new LinkedHashMap<>();
         }
         return modules.computeIfAbsent(name, k -> {
-            return new ModuleScope(this, name).ruleForAll(mDefaultRule);
+            return new ModuleScope(name).ruleForAll(mDefaultRule);
         });
     }
 
@@ -332,8 +332,7 @@ public final class RulesBuilder {
     /**
      * Builder of rules at the module level.
      */
-    public static final class ModuleScope {
-        private final RulesBuilder mParent;
+    public final class ModuleScope {
         private final String mName;
 
         // Can be null when empty.
@@ -342,8 +341,7 @@ public final class RulesBuilder {
         // Default is selected when no map entry is found.
         private Rule mDefaultRule;
 
-        private ModuleScope(RulesBuilder parent, String name) {
-            mParent = parent;
+        private ModuleScope(String name) {
             mName = name;
         }
 
@@ -438,7 +436,7 @@ public final class RulesBuilder {
          * can be added to the scope later if desired.
          */
         public RulesBuilder end() {
-            return mParent;
+            return RulesBuilder.this;
         }
 
         /**
@@ -495,10 +493,6 @@ public final class RulesBuilder {
             }
         }
 
-        void modified() {
-            mParent.modified();
-        }
-
         private void buildInto(Map<String, RuleSet.PackageScope> builtPackages) {
             if (mPackages != null) for (Map.Entry<String, PackageScope> e : mPackages.entrySet()) {
                 RuleSet.PackageScope scope = e.getValue().build(mDefaultRule);
@@ -516,7 +510,7 @@ public final class RulesBuilder {
     /**
      * Builder of rules at the package level.
      */
-    public static final class PackageScope {
+    public final class PackageScope {
         private final ModuleScope mParent;
         private final String mName;
 
@@ -667,10 +661,6 @@ public final class RulesBuilder {
             }
         }
 
-        void modified() {
-            mParent.modified();
-        }
-
         /**
          * @return null if redundant
          */
@@ -700,7 +690,7 @@ public final class RulesBuilder {
     /**
      * Builder of rules at the class level.
      */
-    public static final class ClassScope {
+    public final class ClassScope {
         private final PackageScope mParent;
         private final String mName;
 
@@ -1063,10 +1053,6 @@ public final class RulesBuilder {
             }
         }
 
-        void modified() {
-            mParent.modified();
-        }
-
         /**
          * Caller must call allowAll or denyAll on the returned MethodScope.
          */
@@ -1117,7 +1103,7 @@ public final class RulesBuilder {
         }
     }
 
-    private static final class MethodScope {
+    private final class MethodScope {
         // Can be null when empty.
         NavigableMap<CharSequence, Rule> mVariants;
 
