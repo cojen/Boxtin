@@ -773,6 +773,8 @@ final class ClassFileProcessor {
             int isAssignableFromIndex = mConstantPool.addMethodRef
                 ("java/lang/Class", "isAssignableFrom", "(Ljava/lang/Class;)Z").mIndex;
 
+            // FIXME: de-dup the deny action code with gotos
+
             for (Map.Entry<String, Rule> e : mu.matches.entrySet()) {
                 targetClass = mConstantPool.addClass(e.getKey());
                 encoder.write(LDC_W);
@@ -791,6 +793,22 @@ final class ClassFileProcessor {
 
                 caller.smt.putEntry(encoder.length(), withArgs);
                 encodeBranchTarget(encoder, offset);
+
+                if (hasInstance) {
+                    CodeAttr.encodeVarOp(encoder, ALOAD, argSlots[0]);
+                    encoder.write(INSTANCEOF);
+                    encoder.writeShort(targetClass.mIndex);
+                    encoder.write(IFEQ); // branch if false
+                    offset = encoder.length();
+                    encoder.writeShort(0); // branch offset; to be filled in properly later
+                    caller.stackPushPop(2);
+
+                    encodeDenyAction(encoder, caller, hasInstance, methodRef, targetClass,
+                                     e.getValue().denyAction(), resumeAddress, argSlots, withArgs);
+
+                    caller.smt.putEntry(encoder.length(), withArgs);
+                    encodeBranchTarget(encoder, offset);
+                }
             }
 
             return;

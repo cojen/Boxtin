@@ -47,7 +47,7 @@ public abstract class TransformTest {
      *
      * @return true if the test should simply return because it already ran
      */
-    protected boolean runTransformed() throws Exception {
+    protected boolean runTransformed(Class... dependencies) throws Exception {
         RulesBuilder b;
         try {
             b = builder();
@@ -77,6 +77,10 @@ public abstract class TransformTest {
                 try {
                     var injector = new Injector(original.getClassLoader(), agent);
                     transformed = injector.inject(original);
+
+                    for (Class c : dependencies) {
+                        injector.inject(c);
+                    }
                 } catch (RuntimeException e) {
                     throw e;
                 } catch (Throwable e) {
