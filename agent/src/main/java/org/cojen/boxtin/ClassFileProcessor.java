@@ -614,7 +614,8 @@ final class ClassFileProcessor {
             CodeAttr.StoredArgs args = caller.storeArgs(encoder, denyEntry, hasInstance, methodRef);
 
             encodeDenyAction(encoder, caller, hasInstance, methodRef, methodRef.mClass,
-                             rule.denyAction(), resumeAddress, args.argSlots(), args.withArgs());
+                             rule.denyAction(), resumeAddress,
+                             args.argSlots(), args.withArgs(), null);
 
             caller.loadArgs(encoder, hasInstance, methodRef, args.argSlots());
 
@@ -762,20 +763,27 @@ final class ClassFileProcessor {
      * @param resumeAddress branch to this location if a value was generated; if negative then
      * return from the caller
      * @param withArgs smt entry with the argSlots defined as local variables
+     * @param denyAddresses addresses where deny actions have been encoded; initially null
      */
     private void encodeDenyAction(BufferEncoder encoder,
                                   CodeAttr caller, boolean hasInstance,
                                   C_MemberRef methodRef, C_Class targetClass,
                                   DenyAction action, int resumeAddress,
-                                  int[] argSlots, StackMapTable.Entry withArgs)
+                                  int[] argSlots, StackMapTable.Entry withArgs,
+                                  Map<DenyAction, Integer> denyAddresses)
         throws IOException
     {
         if (action instanceof DenyAction.Multi mu) {
             C_MemberRef isAssignableFrom = null;
 
-            // FIXME: de-dup the deny action code with gotos; must be terminal (not checked)
+            Map<String, Rule> matches = mu.matches;
 
-            for (Map.Entry<String, Rule> e : mu.matches.entrySet()) {
+            if (matches.size() > 1 && denyAddresses == null) {
+                // Use this to reduce code duplication.
+                denyAddresses = new HashMap<>();
+            }
+
+            for (Map.Entry<String, Rule> e : matches.entrySet()) {
                 targetClass = mConstantPool.addClass(e.getKey());
 
                 if (hasInstance) {
@@ -801,7 +809,8 @@ final class ClassFileProcessor {
                 caller.stackPushPop(2);
 
                 encodeDenyAction(encoder, caller, hasInstance, methodRef, targetClass,
-                                 e.getValue().denyAction(), resumeAddress, argSlots, withArgs);
+                                 e.getValue().denyAction(), resumeAddress,
+                                 argSlots, withArgs, denyAddresses);
 
                 caller.smt.putEntry(encoder.length(), withArgs);
                 encodeBranchTarget(encoder, offset);
@@ -842,6 +851,17 @@ final class ClassFileProcessor {
         }
 
         encode: {
+            if (denyAddresses != null) {
+                // If a matching deny action has already been encoded, just jump to it instead
+                // of encoding it again.
+                Integer address = denyAddresses.putIfAbsent(action, encoder.length());
+                if (address != null) {
+                    caller.smt.putEntry(address, withArgs);
+                    encodeBranch(encoder, address);
+                    break encode;
+                }
+            }
+
             DenyAction.Exception exAction;
 
             if (action instanceof DenyAction.Exception) {
@@ -1428,8 +1448,8 @@ final class ClassFileProcessor {
 
         StackMapTable.Entry withArgs = proxyMethod.smt.getEntry(0);
 
-        encodeDenyAction(encoder, proxyMethod, hasInstance,
-                         methodRef, methodRef.mClass, action, -1, argSlots, withArgs);
+        encodeDenyAction(encoder, proxyMethod, hasInstance, methodRef, methodRef.mClass,
+                         action, -1, argSlots, withArgs, null);
 
         if (op == NEW) {
             encoder.write(NEW);
