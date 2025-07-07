@@ -613,7 +613,7 @@ final class ClassFileProcessor {
             boolean hasInstance = hasInstance(op);
             CodeAttr.StoredArgs args = caller.storeArgs(encoder, denyEntry, hasInstance, methodRef);
 
-            encodeDenyAction(encoder, caller, hasInstance, methodRef, methodRef.mClass,
+            encodeDenyAction(encoder, caller, hasInstance, true, methodRef, methodRef.mClass,
                              rule.denyAction(), resumeAddress,
                              args.argSlots(), args.withArgs(), null);
 
@@ -758,6 +758,7 @@ final class ClassFileProcessor {
 
     /**
      * @param caller the method being modified
+     * @param maybeNull only applicable if hasInstance is true
      * @param methodRef the denied method being called
      * @param targetClass can be different than methodRef.mClass if isAssignableFrom is called
      * @param resumeAddress branch to this location if a value was generated; if negative then
@@ -766,7 +767,7 @@ final class ClassFileProcessor {
      * @param denyAddresses addresses where deny actions have been encoded; initially null
      */
     private void encodeDenyAction(BufferEncoder encoder,
-                                  CodeAttr caller, boolean hasInstance,
+                                  CodeAttr caller, boolean hasInstance, boolean maybeNull,
                                   C_MemberRef methodRef, C_Class targetClass,
                                   DenyAction action, int resumeAddress,
                                   int[] argSlots, StackMapTable.Entry withArgs,
@@ -808,7 +809,9 @@ final class ClassFileProcessor {
                 encoder.writeShort(0); // branch offset; to be filled in properly later
                 caller.stackPushPop(2);
 
-                encodeDenyAction(encoder, caller, hasInstance, methodRef, targetClass,
+                // Note that maybeNull is now false because of the instanceof check.
+
+                encodeDenyAction(encoder, caller, hasInstance, false, methodRef, targetClass,
                                  e.getValue().denyAction(), resumeAddress,
                                  argSlots, withArgs, denyAddresses);
 
@@ -838,6 +841,16 @@ final class ClassFileProcessor {
         int offset = encoder.length();
         encoder.writeShort(0); // branch offset; to be filled in properly later
         caller.stackPushPop(2);
+
+        int nullCheckOffset = 0;
+
+        if (hasInstance && maybeNull) {
+            CodeAttr.encodeVarOp(encoder, ALOAD, argSlots[0]);
+            encoder.write(IFNULL);
+            caller.stackPushPop(1);
+            nullCheckOffset = encoder.length();
+            encoder.writeShort(0); // branch offset; to be filled in properly later
+        }
 
         int checkedOffset = 0;
 
@@ -899,6 +912,11 @@ final class ClassFileProcessor {
             // Note: no need to pop the arguments because an exception will always be thrown.
 
             encodeExceptionAction(encoder, caller, exAction);
+        }
+
+        if (nullCheckOffset != 0) {
+            caller.smt.putEntry(encoder.length(), withArgs);
+            encodeBranchTarget(encoder, nullCheckOffset);
         }
 
         if (checkedOffset != 0) {
@@ -1448,7 +1466,7 @@ final class ClassFileProcessor {
 
         StackMapTable.Entry withArgs = proxyMethod.smt.getEntry(0);
 
-        encodeDenyAction(encoder, proxyMethod, hasInstance, methodRef, methodRef.mClass,
+        encodeDenyAction(encoder, proxyMethod, hasInstance, true, methodRef, methodRef.mClass,
                          action, -1, argSlots, withArgs, null);
 
         if (op == NEW) {

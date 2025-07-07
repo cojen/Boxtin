@@ -124,10 +124,10 @@ public abstract sealed class DenyAction {
 
     /**
      * Returns a deny action which performs a custom operation. The parameters given to the
-     * custom method are the caller class (if specified), the instance (if applicable), and the
-     * original method parameters. The return type must exactly match the original method's
-     * return type. If the custom method type is incompatible, then a {@code LinkageError} is
-     * thrown at runtime.
+     * custom method are the caller class (if specified), the non-null instance (if
+     * applicable), and the original method parameters. The return type must exactly match the
+     * original method's return type. If the custom method type is incompatible, then a {@code
+     * LinkageError} is thrown at runtime.
      *
      * <p>Note: This action has no effect for constructors, unless the custom operation throws
      * an exception. If it doesn't throw an exception, a {@code SecurityException} is thrown
@@ -140,8 +140,8 @@ public abstract sealed class DenyAction {
     /**
      * Returns a deny action which checks a predicate to determine if the operation should
      * actually be allowed. The parameters given to the predicate are the caller class (if
-     * specified), the instance (if applicable), and the original method parameters. The return
-     * type must be boolean. If the predicate format is incompatible, then a {@code
+     * specified), the non-null instance (if applicable), and the original method parameters.
+     * The return type must be boolean. If the predicate format is incompatible, then a {@code
      * LinkageError} is thrown at runtime.
      *
      * @param predicate the predicate checking method which returns true when the operation is

@@ -155,6 +155,30 @@ public class BasicTransformTest extends TransformTest {
         }
     }
 
+    @Test
+    public void nullCheck() throws Exception {
+        if (runTransformed()) {
+            return;
+        }
+
+        Thread t = Thread.currentThread();
+
+        // Attempting to setting the name should have no effect.
+        String name = t.getName();
+        t.setName("7177f1c63024");
+        assertEquals(name, t.getName());
+
+        // Should throw a NullPointerException when the instance is null instead of having no
+        // effect.
+        try {
+            t = null;
+            t.setName("7177f1c63024");
+            fail();
+        } catch (NullPointerException e) {
+            // Expected.
+        }
+    }
+
     private static void setOut() {
         System.setOut(System.out);
     }
