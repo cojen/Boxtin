@@ -771,19 +771,30 @@ final class ClassFileProcessor {
         throws IOException
     {
         if (action instanceof DenyAction.Multi mu) {
-            int isAssignableFromIndex = mConstantPool.addMethodRef
-                ("java/lang/Class", "isAssignableFrom", "(Ljava/lang/Class;)Z").mIndex;
+            C_MemberRef isAssignableFrom = null;
 
             // FIXME: de-dup the deny action code with gotos; must be terminal (not checked)
 
             for (Map.Entry<String, Rule> e : mu.matches.entrySet()) {
                 targetClass = mConstantPool.addClass(e.getKey());
-                encoder.write(LDC_W);
-                encoder.writeShort(targetClass.mIndex);
-                encoder.write(LDC_W);
-                encoder.writeShort(methodRef.mClass.mIndex);
-                encoder.write(INVOKEVIRTUAL);
-                encoder.writeShort(isAssignableFromIndex);
+
+                if (hasInstance) {
+                    CodeAttr.encodeVarOp(encoder, ALOAD, argSlots[0]);
+                    encoder.write(INSTANCEOF);
+                    encoder.writeShort(targetClass.mIndex);
+                } else {
+                    if (isAssignableFrom == null) {
+                        isAssignableFrom = mConstantPool.addMethodRef
+                            ("java/lang/Class", "isAssignableFrom", "(Ljava/lang/Class;)Z");
+                    }
+                    encoder.write(LDC_W);
+                    encoder.writeShort(targetClass.mIndex);
+                    encoder.write(LDC_W);
+                    encoder.writeShort(methodRef.mClass.mIndex);
+                    encoder.write(INVOKEVIRTUAL);
+                    encoder.writeShort(isAssignableFrom.mIndex);
+                }
+
                 encoder.write(IFEQ); // branch if false
                 int offset = encoder.length();
                 encoder.writeShort(0); // branch offset; to be filled in properly later
@@ -794,22 +805,6 @@ final class ClassFileProcessor {
 
                 caller.smt.putEntry(encoder.length(), withArgs);
                 encodeBranchTarget(encoder, offset);
-
-                if (hasInstance) {
-                    CodeAttr.encodeVarOp(encoder, ALOAD, argSlots[0]);
-                    encoder.write(INSTANCEOF);
-                    encoder.writeShort(targetClass.mIndex);
-                    encoder.write(IFEQ); // branch if false
-                    offset = encoder.length();
-                    encoder.writeShort(0); // branch offset; to be filled in properly later
-                    caller.stackPushPop(2);
-
-                    encodeDenyAction(encoder, caller, hasInstance, methodRef, targetClass,
-                                     e.getValue().denyAction(), resumeAddress, argSlots, withArgs);
-
-                    caller.smt.putEntry(encoder.length(), withArgs);
-                    encodeBranchTarget(encoder, offset);
-                }
             }
 
             return;

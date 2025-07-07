@@ -43,43 +43,54 @@ public class ClassLoaderTest {
 
         class Loader extends ClassLoader {
             final ProtectionDomain pd;
-            final boolean useSuper;
+            final int mode;
 
-            Loader(ProtectionDomain pd, boolean useSuper) {
+            Loader(ProtectionDomain pd, int mode) {
                 super(ClassLoaderTest.class.getClassLoader());
                 this.pd = pd;
-                this.useSuper = useSuper;
+                this.mode = mode;
             }
 
             @Override
             protected Class<?> loadClass(String name, boolean resolve)
                 throws ClassNotFoundException
             {
-                if (name.equals(newName)) {
-                    if (useSuper) {
-                        return super.defineClass(newName, bytes, 0, bytes.length, pd);
-                    } else {
-                        return defineClass(newName, bytes, 0, bytes.length, pd);
-                    }
-                } else {
+                if (!name.equals(newName)) {
                     return super.loadClass(name, resolve);
                 }
+
+                return switch (mode) {
+                    default -> throw new AssertionError();
+                    case 0 -> defineClass(newName, bytes, 0, bytes.length, pd);
+                    case 1 -> super.defineClass(newName, bytes, 0, bytes.length, pd);
+                    case 2 -> {
+                        var instance = this;
+                        instance = null;
+                        yield instance.defineClass(newName, bytes, 0, bytes.length, pd);
+                    }
+                };
             }
         }
 
-        Class<?> clazz = new Loader(null, false).loadClass(newName);
+        Class<?> clazz = new Loader(null, 0).loadClass(newName);
         assertEquals("hello", clazz.getMethod("test").invoke(null));
 
         try {
-            new Loader(new ProtectionDomain(null, null), false).loadClass(newName);
+            new Loader(new ProtectionDomain(null, null), 0).loadClass(newName);
             fail();
         } catch (SecurityException e) {
         }
 
         try {
-            new Loader(new ProtectionDomain(null, null), true).loadClass(newName);
+            new Loader(new ProtectionDomain(null, null), 1).loadClass(newName);
             fail();
         } catch (SecurityException e) {
+        }
+
+        try {
+            new Loader(new ProtectionDomain(null, null), 2).loadClass(newName);
+            fail();
+        } catch (NullPointerException e) {
         }
     }
 }
