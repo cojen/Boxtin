@@ -64,8 +64,9 @@ final class ClassFileProcessor {
             int minor = decoder.readUnsignedShort();
             int major = decoder.readUnsignedShort();
 
-            // Require Java 5+ for supporting ldc of classes, require Java 6+ for the
-            // StackMapTable attribute, and require Java 7+ for CONSTANT_MethodHandle.
+            // Require Java 1.4+ for rejecting overlong UTF-8 strings, require Java 5+ for
+            // supporting ldc of classes, require Java 6+ for the StackMapTable attribute, and
+            // require Java 7+ for supporting CONSTANT_MethodHandle.
             if (major < 51) {
                 throw new ClassFormatException("" + major);
             }
