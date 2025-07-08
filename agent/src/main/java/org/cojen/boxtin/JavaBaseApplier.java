@@ -774,6 +774,9 @@ final class JavaBaseApplier implements RulesApplier {
             .forClass("KeyStore")
             .denyMethod("getInstance")
 
+            .forClass("KeyStore.Builder")
+            .denyMethod("newInstance")
+
             .forClass("Permission")
             .denyMethod("checkGuard")
 
@@ -854,6 +857,16 @@ final class JavaBaseApplier implements RulesApplier {
             .allowVariant("Ljava/lang.String;Ljava/util/Locale;")
             .allowVariant("Ljava/lang.String;Ljava/util/ResourceBundle$Control;")
             .allowVariant("Ljava/lang.String;Ljava/util/Locale;Ljava/util/ResourceBundle$Control;")
+
+            .forClass("Scanner")
+            .denyAllConstructors()
+            .allowVariant("Ljava/io/InputStream;")
+            .allowVariant("Ljava/io/InputStream;Ljava/lang.String;")
+            .allowVariant("Ljava/io/InputStream;Ljava/nio/charset/Charset;")
+            .allowVariant("Ljava/lang/Readable;")
+            .allowVariant("Ljava/nio/channels/ReadableByteChannel;")
+            .allowVariant("Ljava/nio/channels/ReadableByteChannel;Ljava/lang.String;")
+            .allowVariant("Ljava/nio/channels/ReadableByteChannel;Ljava/nio/charset/Charset;")
 
             .forClass("TimeZone")
             .denyMethod("setDefault")
