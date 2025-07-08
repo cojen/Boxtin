@@ -339,8 +339,6 @@ class CodeAttr implements RegionReplacement {
     {
         MethodTypeDesc desc = methodRef.mNameAndType.mTypeDesc.asMethodTypeDesc();
         int count = desc.parameterCount();
-        int localNum = maxLocals;
-        int entryLocalNum = localNum;
 
         int slotNum = count;
         if (hasInstance) {
@@ -351,6 +349,19 @@ class CodeAttr implements RegionReplacement {
 
         IntArray localTypes = entry.localTypes().copy();
         IntArray stackTypes = entry.stackTypes().copy();
+
+        int localNum = maxLocals;
+
+        int entryLocalNum;
+        {
+            entryLocalNum = localNum;
+            int len = localTypes.length();
+            for (int i=0; i<len; i++) {
+                if (StackMapTable.isWideType(localTypes.get(i))) {
+                    entryLocalNum--;
+                }
+            }
+        }
 
         for (int i=count; --i>=0; ) {
             int type = stackTypes.pop();
