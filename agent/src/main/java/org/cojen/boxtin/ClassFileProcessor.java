@@ -657,6 +657,10 @@ final class ClassFileProcessor {
             return Rule.allow();
         }
 
+        if (methodRef.mClass.mValue.isArray()) {
+            return Rule.allow();
+        }
+
         C_NameAndType nat = methodRef.mNameAndType;
         Rule rule = rulesForClass(rules, methodRef.mClass).ruleForMethod(nat.mName, nat.mTypeDesc);
 

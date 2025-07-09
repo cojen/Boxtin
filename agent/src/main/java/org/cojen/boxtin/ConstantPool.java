@@ -717,6 +717,13 @@ final class ConstantPool {
                 && Utils.decodeUnsignedShortBE(buffer, offset + 4) == 0x743e; // t>
         }
 
+        /**
+         * Returns true if the value starts with '['.
+         */
+        boolean isArray() {
+            return mLength > 0 && mBuffer[mOffset] == '[';
+        }
+
         String str() throws ClassFormatException {
             String str = mStr;
             return str != null ? str : decodeValue();
