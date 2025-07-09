@@ -855,12 +855,16 @@ final class ClassFileProcessor {
         int checkedOffset = 0;
 
         if (action instanceof DenyAction.Checked checked) {
-            encodeMethodHandleInvoke(encoder, caller, argSlots, checked.predicate);
-            encoder.write(IFNE); // if true, then the operation is actually allowed
-            caller.stackPop(1);
-            checkedOffset = encoder.length();
-            encoder.writeShort(0); // branch offset; to be filled in properly later
-            action = checked.action;
+            int returnOp = encodeMethodHandleInvoke(encoder, caller, argSlots, checked.predicate);
+            if (returnOp == 0) {
+                action = DenyAction.Standard.THE;
+            } else {
+                encoder.write(IFNE); // if true, then the operation is actually allowed
+                caller.stackPop(1);
+                checkedOffset = encoder.length();
+                encoder.writeShort(0); // branch offset; to be filled in properly later
+                action = checked.action;
+            }
         }
 
         encode: {
@@ -885,9 +889,11 @@ final class ClassFileProcessor {
                 if (nat.mName.isConstructor()) {
                     if (action instanceof DenyAction.Custom cu) {
                         byte returnOp = encodeMethodHandleInvoke(encoder, caller, argSlots, cu.mhi);
-                        // Denied constructors must always throw an exception.
-                        encodeReturnPop(encoder, returnOp);
+                        if (returnOp != 0) {
+                            encodeReturnPop(encoder, returnOp);
+                        }
                     }
+                    // Denied constructors must always throw an exception, so fall through.
                 } else doReturn: {
                     byte returnOp;
 
@@ -901,8 +907,10 @@ final class ClassFileProcessor {
                         break doReturn;
                     }
 
-                    encodeBranchOrReturn(encoder, caller, resumeAddress, returnOp);
-                    break encode;
+                    if (returnOp != 0) {
+                        encodeBranchOrReturn(encoder, caller, resumeAddress, returnOp);
+                        break encode;
+                    }
                 }
 
                 // Make sure an exception is always thrown.
@@ -1324,20 +1332,28 @@ final class ClassFileProcessor {
 
     /**
      * @param argSlots method arguments as local variables
-     * @return a return opcode
+     * @return a return opcode or else 0 if the method descriptor isn't compatible
      */
     private byte encodeMethodHandleInvoke(BufferEncoder encoder, CodeAttr caller,
                                           int[] argSlots, MethodHandleInfo mhi)
         throws IOException
     {
+        MethodType mt = mhi.getMethodType();
+        int count = mt.parameterCount();
+
+        int availableArgs = argSlots.length;
+        if (count > 0 && mt.parameterType(0) == Class.class) {
+            availableArgs++;
+        }
+        if (count > availableArgs) {
+            return 0;
+        }
+
         int slotNum = 0;
 
         encoder.writeByte(LDC_W);
         encoder.writeShort(mConstantPool.addMethodHandle(mhi).mIndex);
         int pushed = 1;
-
-        MethodType mt = mhi.getMethodType();
-        int count = mt.parameterCount();
 
         for (int i=0; i<count; i++) {
             Class<?> type = mt.parameterType(i);

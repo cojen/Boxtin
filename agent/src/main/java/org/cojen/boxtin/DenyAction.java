@@ -127,7 +127,7 @@ public abstract sealed class DenyAction {
      * custom method are the caller class (if specified), the non-null instance (if
      * applicable), and the original method parameters. The return type must exactly match the
      * original method's return type. If the custom method type is incompatible, then a {@code
-     * LinkageError} is thrown at runtime.
+     * SecurityException} or {@code WrongMethodTypeException} can be thrown instead.
      *
      * <p>Note: This action has no effect for constructors, unless the custom operation throws
      * an exception. If it doesn't throw an exception, a {@code SecurityException} is thrown
@@ -142,7 +142,7 @@ public abstract sealed class DenyAction {
      * actually be allowed. The parameters given to the predicate are the caller class (if
      * specified), the non-null instance (if applicable), and the original method parameters.
      * The return type must be boolean. If the predicate format is incompatible, then a {@code
-     * LinkageError} is thrown at runtime.
+     * SecurityException} or {@code WrongMethodTypeException} can be thrown instead.
      *
      * @param predicate the predicate checking method which returns true when the operation is
      * allowed
