@@ -534,18 +534,6 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod(inaccessible, "setAccessible")
             .denyMethod(DenyAction.value(false), "trySetAccessible")
 
-            .forClass("Constructor")
-            .denyMethod(inaccessible, "setAccessible")
-            .denyMethod(DenyAction.value(false), "trySetAccessible")
-
-            .forClass("Field")
-            .denyMethod(inaccessible, "setAccessible")
-            .denyMethod(DenyAction.value(false), "trySetAccessible")
-
-            .forClass("Method")
-            .denyMethod(inaccessible, "setAccessible")
-            .denyMethod(DenyAction.value(false), "trySetAccessible")
-
             .forClass("RecordComponent")
             .denyMethod("getAccessor")
 
