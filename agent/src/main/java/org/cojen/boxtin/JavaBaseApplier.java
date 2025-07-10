@@ -643,12 +643,10 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forClass("AsynchronousSocketChannel")
             .denyAllConstructors()
-            .denyMethod("bind")
             .denyMethod("connect")
 
             .forClass("DatagramChannel")
             .denyAllConstructors()
-            .denyMethod("bind")
             .denyMethod("connect")
             .denyMethod("receive")
             .denyMethod("send")
@@ -670,7 +668,6 @@ final class JavaBaseApplier implements RulesApplier {
             .forClass("SocketChannel")
             .denyAllConstructors()
             .denyMethod("open")
-            .denyMethod("bind")
             .denyMethod("connect")
 
             .forPackage("java.nio.channels.spi").denyAll()
