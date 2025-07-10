@@ -782,7 +782,7 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forPackage("java.text").allowAll()
 
-            .forPackage("java.text.spi").allowAll()
+            .forPackage("java.text.spi").denyAll()
 
             .forPackage("java.time").allowAll()
 
@@ -859,11 +859,7 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forPackage("java.util.regex").allowAll()
 
-            .forPackage("java.util.spi")
-            .allowAll()
-
-            .forClass("LocaleServiceProvider")
-            .denyAllConstructors()
+            .forPackage("java.util.spi").denyAll()
 
             .forPackage("java.util.stream").allowAll()
 
@@ -928,7 +924,7 @@ final class JavaBaseApplier implements RulesApplier {
             .forClass("Configuration")
             .denyMethod("getInstance")
 
-            .forPackage("javax.security.auth.spi").allowAll()
+            .forPackage("javax.security.auth.spi").denyAll()
 
             .forPackage("javax.security.auth.x500").allowAll()
 
