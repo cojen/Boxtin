@@ -44,15 +44,17 @@ final class ClassFileProcessor {
     /**
      * Decodes a class file up to the where the methods are defined.
      */
-    public static ClassFileProcessor begin(byte[] buffer) throws ClassFormatException {
+    public static ClassFileProcessor begin(Module module, byte[] buffer)
+        throws ClassFormatException
+    {
         try {
-            return begin(new BufferDecoder(buffer));
+            return begin(module, new BufferDecoder(buffer));
         } catch (Exception e) {
             throw ClassFormatException.from(e);
         }
     }
 
-    private static ClassFileProcessor begin(BufferDecoder decoder)
+    private static ClassFileProcessor begin(Module module, BufferDecoder decoder)
         throws IOException, ClassFormatException
     {
         try {
@@ -92,9 +94,11 @@ final class ClassFileProcessor {
             decoder.skipAttributes();
         }
 
-        return new ClassFileProcessor(cp, thisClassIndex, superClassIndex, numIfaces, decoder);
+        return new ClassFileProcessor
+            (module, cp, thisClassIndex, superClassIndex, numIfaces, decoder);
     }
 
+    private final Module mModule;
     private final ConstantPool mConstantPool;
     private final int mThisClassIndex, mSuperClassIndex;
     private final int mNumIterfaces;
@@ -114,11 +118,12 @@ final class ClassFileProcessor {
     // Work objects used by the rulesForClass method.
     private ConstantPool.C_UTF8 mPackageName, mClassName;
 
-    private ClassFileProcessor(ConstantPool cp,
+    private ClassFileProcessor(Module module, ConstantPool cp,
                                int thisClassIndex, int superClassIndex, int numIfaces,
                                BufferDecoder decoder)
         throws IOException
     {
+        mModule = module;
         mConstantPool = cp;
         mThisClassIndex = thisClassIndex;
         mSuperClassIndex = superClassIndex;
@@ -692,6 +697,12 @@ final class ClassFileProcessor {
         }
 
         target.split(packageName, className);
+
+        if (!ModulePackages.isPackageModular(mModule, packageName)) {
+            // Deny rules are only applicable to packages which are provided by named modules.
+            // If the package isn't provided this way, then allow the operation.
+            return Rule.allow();
+        }
 
         return rules.forClass(packageName, className);
     }
