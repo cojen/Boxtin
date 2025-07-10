@@ -38,6 +38,8 @@ public abstract class TransformTest {
         WALKER = StackWalker.getInstance(Set.of(StackWalker.Option.RETAIN_CLASS_REFERENCE), 2);
     }
 
+    private static final ThreadLocal<Boolean> cRunning = ThreadLocal.withInitial(() -> false);
+
     private static final SoftCache<Object, Class<?>> cTransformed = new SoftCache<>();
 
     protected abstract RulesBuilder builder() throws Exception;
@@ -49,6 +51,10 @@ public abstract class TransformTest {
      * @return true if the test should simply return because it already ran
      */
     protected boolean runTransformed(Class... dependencies) throws Exception {
+        if (cRunning.get()) {
+            return false;
+        }
+
         RulesBuilder b;
         try {
             b = builder();
@@ -97,6 +103,8 @@ public abstract class TransformTest {
                 cTransformed.put(key, transformed);
             }
 
+            cRunning.set(true);
+
             Object instance = transformed.getConstructor().newInstance();
 
             try {
@@ -114,6 +122,7 @@ public abstract class TransformTest {
 
             return true;
         } finally {
+            cRunning.set(false);
             SecurityAgent.testActivate(null);
         }
     }
