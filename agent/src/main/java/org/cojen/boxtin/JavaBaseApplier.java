@@ -558,14 +558,7 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forClass("DatagramSocket")
             .denyAllConstructors()
-            .denyMethod("bind")
-            .denyMethod("connect")
-            .denyMethod("getOption")
-            .denyMethod("joinGroup")
-            .denyMethod("leaveGroup")
-            .denyMethod("send")
             .denyMethod("setDatagramSocketImplFactory")
-            .denyMethod("setOption")
 
             .forClass("HttpURLConnection")
             .denyMethod("setFollowRedirects")
@@ -582,9 +575,6 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forClass("MulticastSocket")
             .denyAllConstructors()
-            .denyMethod("joinGroup")
-            .denyMethod("leaveGroup")
-            .denyMethod("send")
 
             .forClass("ProxySelector")
             .denyAllConstructors()
@@ -598,14 +588,10 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forClass("ServerSocket")
             .denyAllConstructors()
-            .denyMethod("accept")
-            .denyMethod("bind")
             .denyMethod("setSocketFactory")
 
             .forClass("Socket")
             .denyAllConstructors()
-            .denyMethod("bind")
-            .denyMethod("connect")
             .denyMethod("setSocketImplFactory")
 
             .forClass("URL")
@@ -638,38 +624,27 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forClass("AsynchronousServerSocketChannel")
             .denyAllConstructors()
-            .denyMethod("bind")
             .denyMethod("open")
 
             .forClass("AsynchronousSocketChannel")
             .denyAllConstructors()
-            .denyMethod("connect")
+            .denyMethod("open")
 
             .forClass("DatagramChannel")
             .denyAllConstructors()
-            .denyMethod("connect")
-            .denyMethod("receive")
-            .denyMethod("send")
+            .denyMethod("open")
 
             .forClass("FileChannel")
             .denyAllConstructors()
             .denyMethod("open")
 
-            .forClass("MulticastChannel")
-            .denyMethod("join")
-
-            .forClass("NetworkChannel")
-            .denyMethod("bind")
-
             .forClass("ServerSocketChannel")
             .denyAllConstructors()
-            .denyMethod("accept")
-            .denyMethod("bind")
+            .denyMethod("open")
 
             .forClass("SocketChannel")
             .denyAllConstructors()
             .denyMethod("open")
-            .denyMethod("connect")
 
             .forPackage("java.nio.channels.spi").denyAll()
 
@@ -908,11 +883,9 @@ final class JavaBaseApplier implements RulesApplier {
             .allowAll()
 
             .forClass("ServerSocketFactory")
-            .denyAllConstructors()
             .denyMethod("createServerSocket")
 
             .forClass("SocketFactory")
-            .denyAllConstructors()
             .denyMethod("createSocket")
 
             .forPackage("javax.net.ssl")
