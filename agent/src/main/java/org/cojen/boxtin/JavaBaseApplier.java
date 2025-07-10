@@ -652,6 +652,7 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("send")
 
             .forClass("FileChannel")
+            .denyAllConstructors()
             .denyMethod("open")
 
             .forClass("MulticastChannel")
