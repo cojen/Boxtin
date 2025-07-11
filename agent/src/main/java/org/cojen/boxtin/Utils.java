@@ -98,7 +98,9 @@ final class Utils {
     }
 
     /**
-     * @return true if the method by the given name and descriptor is declared in Object.
+     * @param name method name
+     * @param descriptor method descriptor with no parens and no return type
+     * @return true if the method by the given name and descriptor is declared in Object
      */
     static boolean isObjectMethod(CharSequence name, CharSequence descriptor) {
         // Note that the equals method is called on the descriptor, and not the String
@@ -123,28 +125,28 @@ final class Utils {
     }
 
     /**
-     * Returns a method descriptor with parens and no return type.
+     * Returns a method descriptor with no parens and no return type.
      */
     static String partialDescriptorFor(Class<?>... paramTypes) {
         if (paramTypes.length == 0) {
-            return "()";
+            return "";
         }
         return appendDescriptor(paramTypes).toString();
     }
 
     /**
-     * Returns a method descriptor with parens and no return type.
+     * Returns a method descriptor with no parens and no return type.
      */
     static String partialDescriptorFor(MethodType mt) {
         int count = mt.parameterCount();
         if (count == 0) {
-            return "()";
+            return "";
         }
-        var b = new StringBuilder().append('(');
+        var b = new StringBuilder();
         for (int i=0; i<count; i++) {
             b.append(mt.parameterType(i).descriptorString());
         }
-        return b.append(')').toString();
+        return b.toString();
     }
 
     /**

@@ -312,7 +312,7 @@ public final class SecurityAgent {
      * @param caller the class which is calling the target
      * @param target the class which has an operation which is potentially denied for the caller
      * @param name target method name, or null/"<init>" if a constructor
-     * @param desc target method or constructor descriptor
+     * @param desc partial descriptor for target method or constructor
      */
     static void check(Class<?> caller, Class<?> target, String name, String desc)
         throws SecurityException
@@ -329,7 +329,7 @@ public final class SecurityAgent {
      * @param caller the class which is calling the target
      * @param target the class which has an operation which is potentially denied for the caller
      * @param name target method name, or null/"<init>" if a constructor
-     * @param desc target method or constructor descriptor
+     * @param desc partial descriptor for target method or constructor
      */
     static boolean tryCheck(Class<?> caller, Class<?> target, String name, String desc) {
         return caller.getModule() == target.getModule() || isAllowed(caller, target, name, desc);
