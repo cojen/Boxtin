@@ -131,7 +131,11 @@ final class Utils {
         if (paramTypes.length == 0) {
             return "";
         }
-        return appendDescriptor(paramTypes).toString();
+        var b = new StringBuilder();
+        for (Class<?> c : paramTypes) {
+            b.append(c.descriptorString());
+        }
+        return b.toString();
     }
 
     /**
@@ -160,15 +164,11 @@ final class Utils {
      * Returns a method descriptor with parens and a return type.
      */
     static String fullDescriptorFor(Class<?> returnType, Class<?>... paramTypes) {
-        return appendDescriptor(paramTypes).append(returnType.descriptorString()).toString();
-    }
-
-    static StringBuilder appendDescriptor(Class<?>... paramTypes) {
         var b = new StringBuilder().append('(');
         for (Class<?> c : paramTypes) {
             b.append(c.descriptorString());
         }
-        return b.append(')');
+        return b.append(')').append(returnType.descriptorString()).toString();
     }
 
     /**
