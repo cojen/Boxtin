@@ -1131,7 +1131,7 @@ public final class RulesBuilder {
             if (mConstructors == null) {
                 builtConstructors = null;
             } else {
-                builtConstructors = mConstructors.build(mDefaultConstructorRule);
+                builtConstructors = mConstructors.buildConstructor(mDefaultConstructorRule);
             }
 
             Map<String, RuleSet.MethodScope> builtMethods;
@@ -1141,7 +1141,7 @@ public final class RulesBuilder {
             } else {
                 builtMethods = new LinkedHashMap<>();
                 for (Map.Entry<String, MethodScope> e : mMethods.entrySet()) {
-                    RuleSet.MethodScope scope = e.getValue().build(mDefaultMethodRule);
+                    RuleSet.MethodScope scope = e.getValue().buildMethod(mDefaultMethodRule);
                     if (scope != null) {
                         builtMethods.put(e.getKey().intern(), scope);
                     }
@@ -1328,8 +1328,21 @@ public final class RulesBuilder {
         /**
          * @return null if redundant
          */
-        private RuleSet.MethodScope build(Rule parentRule) {
+        private RuleSet.MethodScope buildConstructor(Rule parentRule) {
             if (isEmpty(mVariants) && mDefaultRule.equals(parentRule)) {
+                return null;
+            }
+            return new RuleSet.MethodScope(mVariants, mDefaultRule);
+        }
+
+        /**
+         * @return null if redundant
+         */
+        private RuleSet.MethodScope buildMethod(Rule parentRule) {
+            // Note that an explicit deny rule is never considered redundant, even if the rule
+            // is the same as the parent rule. This is because RuleSet.denialsForMethod
+            // requires explcit denials, and so they cannot be dropped.
+            if (mDefaultRule.isAllowed() && parentRule.isAllowed() && isEmpty(mVariants)) {
                 return null;
             }
             return new RuleSet.MethodScope(mVariants, mDefaultRule);
