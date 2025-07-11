@@ -183,7 +183,6 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod(DenyAction.value(false), "canWrite")
             .denyMethod(DenyAction.value(false), "delete")
             .denyMethod(DenyAction.value(false), "exists")
-            .denyMethod(DenyAction.value(false), "isAbsolute")
             .denyMethod(DenyAction.value(false), "isDirectory")
             .denyMethod(DenyAction.value(false), "isFile")
             .denyMethod(DenyAction.value(false), "isHidden")
