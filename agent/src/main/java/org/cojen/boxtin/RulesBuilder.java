@@ -303,6 +303,25 @@ public final class RulesBuilder {
         return null;
     }
 
+    private static void forAllMethods(Class<?> clazz, Consumer<Method> consumer) {
+        for (Method m : clazz.getDeclaredMethods()) {
+            if (isAccessible(m)) {
+                consumer.accept(m);
+            }
+        }
+
+        // Now do the inherited methods.
+
+        Class<?> superclass = clazz.getSuperclass();
+        if (superclass != null) {
+            forAllMethods(superclass, consumer);
+        }
+
+        for (Class<?> iface : clazz.getInterfaces()) {
+            forAllMethods(iface, consumer);
+        }
+    }
+
     private static int forAllMethods(Class<?> clazz, String name, Consumer<Method> consumer) {
         int count = 0;
 
@@ -1048,6 +1067,39 @@ public final class RulesBuilder {
                 for (Map.Entry<String, MethodScope> e : mMethods.entrySet()) {
                     e.getValue().validateMethod(loader, clazz, e.getKey(), reporter);
                 }
+            }
+
+            if (mDefaultMethodRule.isDenied()) {
+                forAllMethods(clazz, method -> {
+                    Class<?> declaringClass = method.getDeclaringClass();
+
+                    if (declaringClass == Object.class || declaringClass == clazz) {
+                        return;
+                    }
+
+                    String name = method.getName();
+
+                    if (!isEmpty(mMethods) && mMethods.containsKey(name)) {
+                        return;
+                    }
+
+                    String desc = partialDescriptorFor(method);
+
+                    if (isObjectMethod(name, desc)) {
+                        return;
+                    }
+
+                    Rule rule = RulesBuilder.this.build().forClass(declaringClass)
+                        .ruleForMethod(method.getName(), method.getParameterTypes());
+
+                    if (rule.isAllowed()) {
+                        reporter.accept
+                            ("Method " + clazz.getName() + "::" + name + " is denied via denyAll, "
+                             + "but when the instance is cast to " +
+                             method.getDeclaringClass().getName() + ", the method becomes allowed. "
+                             + "An explicit allow or deny rule is required.");
+                    }
+                });
             }
         }
 

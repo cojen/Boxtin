@@ -27,6 +27,7 @@ import java.lang.reflect.Modifier;
 import java.nio.ByteOrder;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -154,6 +155,13 @@ final class Utils {
     }
 
     /**
+     * Returns a method descriptor with no parens and no return type.
+     */
+    static String partialDescriptorFor(Method m) {
+        return partialDescriptorFor(m.getParameterTypes());
+    }
+
+    /**
      * Returns a method descriptor with parens and a return type.
      */
     static String fullDescriptorFor(Method m) {
@@ -251,6 +259,10 @@ final class Utils {
 
     static boolean isEmpty(Map<?, ?> map) {
         return map == null || map.isEmpty();
+    }
+
+    static boolean isEmpty(Collection<?> c) {
+        return c == null || c.isEmpty();
     }
 
     /**

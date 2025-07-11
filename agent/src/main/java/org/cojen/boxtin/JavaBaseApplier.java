@@ -673,6 +673,10 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forClass("SecureDirectoryStream")
             .denyAll()
+            .allowMethod("close")
+            .allowMethod("forEach")
+            .allowMethod("iterator")
+            .allowMethod("spliterator")
 
             .forClass("Watchable")
             .denyMethod("register")
@@ -728,9 +732,13 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forClass("Identity") // deprecated
             .denyAll()
+            .allowMethod("getName")
+            .allowMethod("implies")
 
             .forClass("IdentityScope") // deprecated
             .denyAll()
+            .allowMethod("getName")
+            .allowMethod("implies")
 
             .forClass("KeyStore")
             .denyMethod("getInstance")
@@ -773,6 +781,8 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forClass("Signer") // deprecated
             .denyAll()
+            .allowMethod("getName")
+            .allowMethod("implies")
 
             .forPackage("java.security.cert").allowAll()
 

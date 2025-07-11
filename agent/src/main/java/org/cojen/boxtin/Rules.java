@@ -113,9 +113,7 @@ public interface Rules {
          */
         public Rule ruleForMethod(CharSequence name, CharSequence descriptor);
 
-        public default Rule ruleForMethod(Class<?> returnType,
-                                          CharSequence name, Class<?>... paramTypes)
-        {
+        public default Rule ruleForMethod(CharSequence name, Class<?>... paramTypes) {
             return ruleForMethod(name, Utils.partialDescriptorFor(paramTypes));
         }
     }

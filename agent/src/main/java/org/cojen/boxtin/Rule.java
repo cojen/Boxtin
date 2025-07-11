@@ -129,9 +129,7 @@ public sealed class Rule implements Rules, Rules.ForClass {
      * Returns {@code this}.
      */
     @Override
-    public final Rule ruleForMethod(Class<?> returnType, CharSequence name,
-                                    Class<?>... paramTypes)
-    {
+    public final Rule ruleForMethod(CharSequence name, Class<?>... paramTypes) {
         return this;
     }
 
