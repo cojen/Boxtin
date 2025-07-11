@@ -98,6 +98,31 @@ final class Utils {
     }
 
     /**
+     * @return true if the method by the given name and descriptor is declared in Object.
+     */
+    static boolean isObjectMethod(CharSequence name, CharSequence descriptor) {
+        // Note that the equals method is called on the descriptor, and not the String
+        // constants. This is because the equals method as implemented by ConstantPool.C_UTF8
+        // supports more type of objects, but the String equals method only supports Strings.
+        // This is a violation of the symmetric property, but it means that UTF8 constants
+        // don't need to be fully decoded into Strings.
+
+        return switch (name.charAt(0)) {
+            default -> false;
+            case 'c' -> name.equals("clone") && descriptor.equals("");
+            case 'e' -> name.equals("equals") && descriptor.equals("Ljava/lang/Object;");
+            case 'f' -> name.equals("finalize") && descriptor.equals("");
+            case 'g' -> name.equals("getClass") && descriptor.equals("");
+            case 'h' -> name.equals("hashCode") && descriptor.equals("");
+            case 'n' -> (name.equals("notify") || name.equals("notifyAll"))
+                && descriptor.equals("");
+            case 't' -> name.equals("toString") && descriptor.equals("");
+            case 'w' -> name.equals("wait")
+                && (descriptor.equals("") || descriptor.equals("J") || descriptor.equals("JI"));
+        };
+    }
+
+    /**
      * Returns a method descriptor with parens and no return type.
      */
     static String partialDescriptorFor(Class<?>... paramTypes) {

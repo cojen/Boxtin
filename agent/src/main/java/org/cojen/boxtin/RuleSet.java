@@ -326,7 +326,7 @@ final class RuleSet implements Rules {
             } else {
                 rule = scope.ruleForMethod(descriptor);
             }
-            if (!rule.isAllowed() && isAlwaysAllowed(name, descriptor)) {
+            if (!rule.isAllowed() && isObjectMethod(name, descriptor)) {
                 rule = Rule.allow();
             }
             return rule;
@@ -361,28 +361,6 @@ final class RuleSet implements Rules {
                     }
                 }
             }
-        }
-
-        private static boolean isAlwaysAllowed(CharSequence name, CharSequence descriptor) {
-            // The common hashCode, equals, and toString methods cannot be denied, even when
-            // done so explicitly. This makes it easier to deny all methods in a class without
-            // breaking these fundamental operations.
-
-            // Note that the equals method is called on the descriptor, and not the String
-            // constants. This is because the equals method as implemented by
-            // ConstantPool.C_UTF8 supports more type of objects, but the String equals method
-            // only supports Strings. This is a violation of the symmetric property, but it
-            // means that UTF8 constants don't need to be fully decoded into Strings.
-
-            if (name.equals("hashCode")) {
-                return descriptor.equals("");
-            } else if (name.equals("equals")) {
-                return descriptor.equals("Ljava/lang/Object;");
-            } else if (name.equals("toString")) {
-                return descriptor.equals("");
-            }
-
-            return false;
         }
 
         @SuppressWarnings("unchecked")
