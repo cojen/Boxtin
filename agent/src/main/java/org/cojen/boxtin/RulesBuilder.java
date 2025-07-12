@@ -19,6 +19,7 @@ package org.cojen.boxtin;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -304,8 +305,14 @@ public final class RulesBuilder {
     }
 
     private static void forAllMethods(Class<?> clazz, Consumer<Method> consumer) {
+        forAllMethods(clazz, true, consumer);
+    }
+
+    private static void forAllMethods(Class<?> clazz, boolean includeStatics,
+                                      Consumer<Method> consumer)
+    {
         for (Method m : clazz.getDeclaredMethods()) {
-            if (isAccessible(m)) {
+            if ((includeStatics || !Modifier.isStatic(m.getModifiers())) && isAccessible(m)) {
                 consumer.accept(m);
             }
         }
@@ -314,19 +321,29 @@ public final class RulesBuilder {
 
         Class<?> superclass = clazz.getSuperclass();
         if (superclass != null) {
-            forAllMethods(superclass, consumer);
+            forAllMethods(superclass, true, consumer);
         }
 
         for (Class<?> iface : clazz.getInterfaces()) {
-            forAllMethods(iface, consumer);
+            // Note that inherited statics are ignored, because static interface methods aren't
+            // really inherited.
+            forAllMethods(iface, false, consumer);
         }
     }
 
     private static int forAllMethods(Class<?> clazz, String name, Consumer<Method> consumer) {
+        return forAllMethods(clazz, name, true, consumer);
+    }
+
+    private static int forAllMethods(Class<?> clazz, String name, boolean includeStatics,
+                                     Consumer<Method> consumer)
+    {
         int count = 0;
 
         for (Method m : clazz.getDeclaredMethods()) {
-            if (isAccessible(m) && m.getName().equals(name)) {
+            if ((includeStatics || !Modifier.isStatic(m.getModifiers())) &&
+                isAccessible(m) && m.getName().equals(name))
+            {
                 count++;
                 consumer.accept(m);
             }
@@ -336,11 +353,13 @@ public final class RulesBuilder {
 
         Class<?> superclass = clazz.getSuperclass();
         if (superclass != null) {
-            count += forAllMethods(superclass, name, consumer);
+            count += forAllMethods(superclass, name, true, consumer);
         }
 
         for (Class<?> iface : clazz.getInterfaces()) {
-            count += forAllMethods(iface, name, consumer);
+            // Note that inherited statics are ignored, because static interface methods aren't
+            // really inherited.
+            count += forAllMethods(iface, name, false, consumer);
         }
 
         return count;
