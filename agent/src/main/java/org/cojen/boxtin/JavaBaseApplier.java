@@ -405,6 +405,7 @@ final class JavaBaseApplier implements RulesApplier {
             .allowMethod("getId")
             .allowMethod("getName")
             .allowMethod("getPriority")
+            .allowMethod("getStackTrace")
             .allowMethod("getState")
             .allowMethod("getThreadGroup")
             .allowMethod("getUncaughtExceptionHandler")
