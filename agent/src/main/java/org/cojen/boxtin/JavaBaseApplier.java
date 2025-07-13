@@ -517,10 +517,6 @@ final class JavaBaseApplier implements RulesApplier {
             .forClass("ModuleFinder")
             .denyAll()
 
-            .forClass("ModuleReader")
-            .denyAll()
-            .allowMethod("close")
-
             .forClass("ModuleReference")
             .allowAll()
             .denyMethod("open")
@@ -671,42 +667,11 @@ final class JavaBaseApplier implements RulesApplier {
             .forClass("Paths")
             .denyAll()
 
-            .forClass("SecureDirectoryStream")
-            .denyAll()
-            .allowMethod("close")
-            .allowMethod("forEach")
-            .allowMethod("iterator")
-            .allowMethod("spliterator")
-
             .forClass("Watchable")
             .denyMethod("register")
 
             .forPackage("java.nio.file.attribute")
             .allowAll()
-
-            .forClass("AclFileAttributeView")
-            .denyAll()
-            .allowMethod("name")
-
-            .forClass("BasicFileAttributeView")
-            .denyAll()
-            .allowMethod("name")
-
-            .forClass("DosFileAttributeView")
-            .denyAll()
-            .allowMethod("name")
-
-            .forClass("FileOwnerAttributeView")
-            .denyAll()
-            .allowMethod("name")
-
-            .forClass("PosixFileAttributeView")
-            .denyAll()
-            .allowMethod("name")
-
-            .forClass("UserDefinedFileAttributeView")
-            .denyAll()
-            .allowMethod("name")
 
             .forClass("UserPrincipalLookupService")
             .denyAll()
