@@ -44,6 +44,8 @@ import static org.cojen.boxtin.Utils.*;
  * @author Brian S. O'Neill
  */
 public final class RulesBuilder {
+    private final ModuleLayer mLayer;
+
     // Can be null when empty.
     private Map<String, ModuleScope> mModules;
 
@@ -53,6 +55,11 @@ public final class RulesBuilder {
     private Rules mBuiltRules;
 
     public RulesBuilder() {
+        this(ModuleLayer.boot());
+    }
+
+    public RulesBuilder(ModuleLayer layer) {
+        mLayer = Objects.requireNonNull(layer);
         denyAll();
     }
 
@@ -111,38 +118,27 @@ public final class RulesBuilder {
     }
 
     /**
-     * Define specific rules against the given module, which can supersede all previous rules.
-     */
-    public ModuleScope forModule(Module module) {
-        return forModule(module.getName());
-    }
-
-    /**
      * Validates that all classes are loadable, and that all class members are found. An
      * exception is thrown if validation fails.
      *
-     * @param layer required
      * @return this
      * @throws NullPointerException if layer is null
      * @throws IllegalStateException if validation fails
      */
-    public RulesBuilder validate(ModuleLayer layer) {
-        return validate(layer, null);
+    public RulesBuilder validate() {
+        return validate(null);
     }
 
     /**
      * Validates that all classes are loadable, and that all class members are found. An
      * exception is thrown if validation fails.
      *
-     * @param layer required
      * @param reporter pass non-null for reporting multiple validation failures
      * @return this
      * @throws NullPointerException if layer is null
      * @throws IllegalStateException if validation fails
      */
-    public RulesBuilder validate(ModuleLayer layer, Consumer<String> reporter) {
-        Objects.requireNonNull(layer);
-
+    public RulesBuilder validate(Consumer<String> reporter) {
         var actualReporter = new Consumer<String>() {
             String firstMessage;
 
@@ -165,7 +161,7 @@ public final class RulesBuilder {
             }
 
             for (ModuleScope ms : mModules.values()) {
-                ms.validate(layer, actualReporter);
+                ms.validate(actualReporter);
             }
         }
 
@@ -412,13 +408,7 @@ public final class RulesBuilder {
             // Need to expand all the packages, given that the module associations aren't known
             // when classes are transformed.
 
-            ModuleLayer layer = getClass().getModule().getLayer();
-
-            if (layer == null) {
-                layer = ModuleLayer.boot();
-            }
-
-            Module module = layer.findModule(mName).get();
+            Module module = mLayer.findModule(mName).get();
 
             denyAll();
 
@@ -460,14 +450,6 @@ public final class RulesBuilder {
         }
 
         /**
-         * Define specific rules against the given module, which can supersede all previous
-         * rules.
-         */
-        public PackageScope forPackage(Package p) {
-            return forPackage(p.getName());
-        }
-
-        /**
          * End the current rules for this module and return to the outermost scope. More rules
          * can be added to the scope later if desired.
          */
@@ -483,14 +465,6 @@ public final class RulesBuilder {
             return end().forModule(name);
         }
 
-        /**
-         * End the current rules for this module and begin a new module scope. More rules can
-         * be added to the scope later if desired.
-         */
-        public ModuleScope forModule(Module module) {
-            return end().forModule(module);
-        }
-
         void preValidate(Set<String> packageNames, Consumer<String> reporter) {
             for (String name : mPackages.keySet()) {
                 if (!packageNames.add(name)) {
@@ -504,8 +478,8 @@ public final class RulesBuilder {
          *
          * @param layer required
          */
-        void validate(ModuleLayer layer, Consumer<String> reporter) {
-            Module module = layer.findModule(mName).orElse(null);
+        void validate(Consumer<String> reporter) {
+            Module module = mLayer.findModule(mName).orElse(null);
 
             if (module == null) {
                 reporter.accept("Module isn't found: " + mName);
@@ -514,7 +488,7 @@ public final class RulesBuilder {
 
             ClassLoader loader;
             try {
-                loader = layer.findLoader(mName);
+                loader = mLayer.findLoader(mName);
             } catch (IllegalArgumentException e) {
                 reporter.accept("Module isn't found: " + mName);
                 return;
@@ -658,27 +632,11 @@ public final class RulesBuilder {
         }
 
         /**
-         * End the current rules for this package and begin a new package scope. More rules can
-         * be added to the scope later if desired.
-         */
-        public PackageScope forPackage(Package p) {
-            return end().forPackage(p);
-        }
-
-        /**
          * End the current rules for this package and module, and begin a new module scope.
          * More rules can be added to the scope later if desired.
          */
         public ModuleScope forModule(String name) {
             return end().forModule(name);
-        }
-
-        /**
-         * End the current rules for this package and module, and begin a new module scope.
-         * More rules can be added to the scope later if desired.
-         */
-        public ModuleScope forModule(Module module) {
-            return end().forModule(module);
         }
 
         /**
@@ -1037,27 +995,11 @@ public final class RulesBuilder {
         }
 
         /**
-         * End the current rules for this class and package, and begin a new package scope.
-         * More rules can be added to the scope later if desired.
-         */
-        public PackageScope forPackage(Package p) {
-            return end().forPackage(p);
-        }
-
-        /**
          * End the current rules for this class, package and module, and begin a new module
          * scope. More rules can be added to the scope later if desired.
          */
         public ModuleScope forModule(String name) {
             return end().forModule(name);
-        }
-
-        /**
-         * End the current rules for this class, package and module, and begin a new module
-         * scope. More rules can be added to the scope later if desired.
-         */
-        public ModuleScope forModule(Module module) {
-            return end().forModule(module);
         }
 
         /**
