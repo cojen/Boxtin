@@ -232,7 +232,11 @@ final class RuleSet implements Rules {
         public int hashCode() {
             int hash = mHashCode;
             if (hash == 0) {
-                mHashCode = hash = mClassScopes.hashCode() * 31 + mDefaultRule.hashCode();
+                hash = mModuleName.hashCode();
+                hash = hash * 31 + mPackageName.hashCode();
+                hash = hash * 31 + mClassScopes.hashCode();
+                hash = hash * 31 + mDefaultRule.hashCode();
+                mHashCode = hash;
             }
             return hash;
         }
@@ -240,6 +244,8 @@ final class RuleSet implements Rules {
         @Override
         public boolean equals(Object obj) {
             return this == obj || obj instanceof PackageScope other
+                && mModuleName.equals(other.mModuleName)
+                && mPackageName.equals(other.mPackageName)
                 && mDefaultRule == other.mDefaultRule
                 && mClassScopes.equals(other.mClassScopes);
         }
@@ -318,7 +324,9 @@ final class RuleSet implements Rules {
         public int hashCode() {
             int hash = mHashCode;
             if (hash == 0) {
-                hash = Objects.hashCode(mConstructors);
+                hash = mPackageName.hashCode();
+                hash = hash * 31 + mClassName.hashCode();
+                hash = hash * 31 + Objects.hashCode(mConstructors);
                 hash = hash * 31 + mDefaultConstructorRule.hashCode();
                 hash = hash * 31 + mMethodScopes.hashCode();
                 hash = hash * 31 + mDefaultMethodRule.hashCode();
@@ -330,6 +338,8 @@ final class RuleSet implements Rules {
         @Override
         public boolean equals(Object obj) {
             return this == obj || obj instanceof ClassScope other
+                && mPackageName.equals(other.mPackageName)
+                && mClassName.equals(other.mClassName)
                 && mDefaultConstructorRule == other.mDefaultConstructorRule
                 && mDefaultMethodRule == other.mDefaultMethodRule
                 && Objects.equals(mConstructors, other.mConstructors)
