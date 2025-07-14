@@ -199,6 +199,7 @@ final class JavaBaseApplier implements RulesApplier {
             .allowMethod("getParent")
             .allowMethod("getParentFile")
             .allowMethod("getPath")
+            .allowMethod("isAbsolute")
             .allowMethod("toPath")
 
             .forClass("FileInputStream")
