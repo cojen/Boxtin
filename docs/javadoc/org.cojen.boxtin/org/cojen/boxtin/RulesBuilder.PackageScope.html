@@ -73,9 +73,7 @@ loadScripts(document, 'script');</script>
 <li><a href="#forClass(java.lang.Class)" tabindex="0">forClass(Class)</a></li>
 <li><a href="#end()" tabindex="0">end()</a></li>
 <li><a href="#forPackage(java.lang.String)" tabindex="0">forPackage(String)</a></li>
-<li><a href="#forPackage(java.lang.Package)" tabindex="0">forPackage(Package)</a></li>
 <li><a href="#forModule(java.lang.String)" tabindex="0">forModule(String)</a></li>
-<li><a href="#forModule(java.lang.Module)" tabindex="0">forModule(Module)</a></li>
 </ol>
 </li>
 </ol>
@@ -146,19 +144,9 @@ loadScripts(document, 'script');</script>
  rules.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.ModuleScope.html" title="class in org.cojen.boxtin">RulesBuilder.ModuleScope</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#forModule(java.lang.Module)" class="member-name-link">forModule</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Module.html" title="class or interface in java.lang" class="external-link">Module</a>&nbsp;module)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#forModule(java.lang.String)" class="member-name-link">forModule</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">End the current rules for this package and module, and begin a new module scope.</div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.ModuleScope.html" title="class in org.cojen.boxtin">RulesBuilder.ModuleScope</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#forModule(java.lang.String)" class="member-name-link">forModule</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">End the current rules for this package and module, and begin a new module scope.</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.PackageScope.html" title="class in org.cojen.boxtin">RulesBuilder.PackageScope</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#forPackage(java.lang.Package)" class="member-name-link">forPackage</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Package.html" title="class or interface in java.lang" class="external-link">Package</a>&nbsp;p)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">End the current rules for this package and begin a new package scope.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.PackageScope.html" title="class in org.cojen.boxtin">RulesBuilder.PackageScope</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#forPackage(java.lang.String)" class="member-name-link">forPackage</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name)</code></div>
@@ -280,30 +268,10 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="forPackage(java.lang.Package)">
-<h3>forPackage</h3>
-<div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RulesBuilder.PackageScope.html" title="class in org.cojen.boxtin">RulesBuilder.PackageScope</a></span>&nbsp;<span class="element-name">forPackage</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Package.html" title="class or interface in java.lang" class="external-link">Package</a>&nbsp;p)</span></div>
-<div class="block">End the current rules for this package and begin a new package scope. More rules can
- be added to the scope later if desired.</div>
-</div>
-</section>
-</li>
-<li>
 <section class="detail" id="forModule(java.lang.String)">
 <h3>forModule</h3>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RulesBuilder.ModuleScope.html" title="class in org.cojen.boxtin">RulesBuilder.ModuleScope</a></span>&nbsp;<span class="element-name">forModule</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name)</span></div>
-<div class="block">End the current rules for this package and module, and begin a new module scope.
- More rules can be added to the scope later if desired.</div>
-</div>
-</section>
-</li>
-<li>
-<section class="detail" id="forModule(java.lang.Module)">
-<h3>forModule</h3>
-<div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RulesBuilder.ModuleScope.html" title="class in org.cojen.boxtin">RulesBuilder.ModuleScope</a></span>&nbsp;<span class="element-name">forModule</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Module.html" title="class or interface in java.lang" class="external-link">Module</a>&nbsp;module)</span></div>
 <div class="block">End the current rules for this package and module, and begin a new module scope.
  More rules can be added to the scope later if desired.</div>
 </div>
