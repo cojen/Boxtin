@@ -43,11 +43,11 @@ final class RuleSet implements Rules {
     // Default is selected when no map entry is found.
     private final Rule mDefaultRule;
 
-    // Maps method names to one or more ClassScope instances which have denials.
-    private final Map<String, Object> mDeniedMethodsIndex;
-
     // Set of all named packages available in the ModuleLayer.
     private final Set<String> mModularPackages;
+
+    // Maps method names to one or more ClassScope instances which have explcit denials.
+    private final Map<String, Object> mDeniedMethodsIndex;
 
     private int mHashCode;
 
@@ -59,16 +59,17 @@ final class RuleSet implements Rules {
         mPackageScopes = Objects.requireNonNull(packageScopes);
         mDefaultRule = Objects.requireNonNull(defaultRule);
 
-        var index = new HashMap<String, Object>();
+        addModularPackages(layer, mModularPackages = new HashSet<String>());
 
-        for (Map.Entry<String, PackageScope> e : packageScopes.entrySet()) {
-            e.getValue().fillDeniedIndex(index, e.getKey());
+        {
+            var index = new HashMap<String, Object>();
+
+            for (PackageScope scope : packageScopes.values()) {
+                scope.fillDeniedIndex(index);
+            }
+
+            mDeniedMethodsIndex = index;
         }
-
-        mDeniedMethodsIndex = index;
-
-        mModularPackages = new HashSet<String>();
-        addModularPackages(layer, mModularPackages);
     }
 
     private static void addModularPackages(ModuleLayer layer, Set<String> modularPackages) {
@@ -102,8 +103,8 @@ final class RuleSet implements Rules {
     @Override
     public ForClass forClass(CharSequence packageName, CharSequence className) {
         if (!mModularPackages.contains(packageName)) {
-            // Deny rules are only applicable to packages which are provided by named modules.
-            // If the package isn't provided this way, then allow the operation.
+            // Denial rules are only applicable to packages which are provided by named
+            // modules. If the package isn't provided this way, then allow the operation.
             return Rule.allow();
         }
         PackageScope scope = mPackageScopes.get(packageName);
@@ -202,7 +203,7 @@ final class RuleSet implements Rules {
     }
 
     static final class PackageScope {
-        private final String mModuleName;
+        private final String mModuleName, mPackageName;
 
         private final Map<String, ClassScope> mClassScopes;
 
@@ -211,10 +212,20 @@ final class RuleSet implements Rules {
 
         private int mHashCode;
 
-        PackageScope(String moduleName, Map<String, ClassScope> classScopes, Rule defaultRule) {
+        /**
+         * @param packageName must have '/' characters as separators 
+         */
+        PackageScope(String moduleName, String packageName,
+                     Map<String, ClassScope> classScopes, Rule defaultRule)
+        {
             mModuleName = Objects.requireNonNull(moduleName);
+            mPackageName = Objects.requireNonNull(packageName);
             mClassScopes = Objects.requireNonNull(classScopes);
             mDefaultRule = Objects.requireNonNull(defaultRule);
+        }
+
+        String name() {
+            return mPackageName;
         }
 
         @Override
@@ -256,14 +267,16 @@ final class RuleSet implements Rules {
             }
         }
 
-        private void fillDeniedIndex(Map<String, Object> index, String pkgName) {
-            for (Map.Entry<String, ClassScope> e : mClassScopes.entrySet()) {
-                e.getValue().fillDeniedIndex(index, pkgName, e.getKey());
+        private void fillDeniedIndex(Map<String, Object> index) {
+            for (ClassScope scope : mClassScopes.values()) {
+                scope.fillDeniedIndex(index);
             }
         }
     }
 
     static final class ClassScope implements Rules.ForClass {
+        private final String mPackageName, mClassName;
+
         // Is null when empty.
         private final MethodScope mConstructors;
 
@@ -277,15 +290,23 @@ final class RuleSet implements Rules {
 
         private int mHashCode;
 
-        private String mPackageName, mClassName;
-
-        ClassScope(MethodScope constructors, Rule defaultConstructorRule,
+        /**
+         * @param packageName must have '/' characters as separators 
+         */
+        ClassScope(String packageName, String className,
+                   MethodScope constructors, Rule defaultConstructorRule,
                    Map<String, MethodScope> methodScopes, Rule defaultMethodRule)
         {
+            mPackageName = Objects.requireNonNull(packageName);
+            mClassName = Objects.requireNonNull(className);
             mConstructors = constructors;
             mDefaultConstructorRule = Objects.requireNonNull(defaultConstructorRule);
             mMethodScopes = Objects.requireNonNull(methodScopes);
             mDefaultMethodRule = Objects.requireNonNull(defaultMethodRule);
+        }
+
+        String name() {
+            return mClassName;
         }
 
         String fullName() {
@@ -370,10 +391,7 @@ final class RuleSet implements Rules {
         }
 
         @SuppressWarnings("unchecked")
-        private void fillDeniedIndex(Map<String, Object> index, String pkgName, String className) {
-            mPackageName = pkgName;
-            mClassName = className;
-            
+        private void fillDeniedIndex(Map<String, Object> index) {
             for (Map.Entry<String, MethodScope> e : mMethodScopes.entrySet()) {
                 if (e.getValue().isAnyVariantDenied()) {
                     String name = e.getKey();

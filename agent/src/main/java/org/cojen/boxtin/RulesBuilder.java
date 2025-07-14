@@ -507,12 +507,9 @@ public final class RulesBuilder {
         private void buildInto(Map<String, RuleSet.PackageScope> builtPackages) {
             if (mPackages != null) for (Map.Entry<String, PackageScope> e : mPackages.entrySet()) {
                 RuleSet.PackageScope scope = e.getValue().build(mName, mDefaultRule);
-                if (scope != null) {
-                    String key = e.getKey().replace('.', '/').intern();
-                    if (builtPackages.putIfAbsent(key, scope) != null) {
-                        throw new IllegalStateException
-                            ("Package is defined in multiple modules: " + e.getKey());
-                    }
+                if (scope != null && builtPackages.putIfAbsent(scope.name(), scope) != null) {
+                    throw new IllegalStateException
+                        ("Package is defined in multiple modules: " + e.getKey());
                 }
             }
         }
@@ -664,6 +661,8 @@ public final class RulesBuilder {
                 return null;
             }
 
+            String packageName = mName.replace('.', '/').intern();
+
             Map<String, RuleSet.ClassScope> builtClasses;
 
             if (isEmpty(mClasses)) {
@@ -671,14 +670,14 @@ public final class RulesBuilder {
             } else {
                 builtClasses = new LinkedHashMap<>();
                 for (Map.Entry<String, ClassScope> e : mClasses.entrySet()) {
-                    RuleSet.ClassScope scope = e.getValue().build(mDefaultRule);
+                    RuleSet.ClassScope scope = e.getValue().build(packageName, mDefaultRule);
                     if (scope != null) {
                         builtClasses.put(e.getKey().intern(), scope);
                     }
                 }
             }
 
-            return new RuleSet.PackageScope(moduleName, builtClasses, mDefaultRule);
+            return new RuleSet.PackageScope(moduleName, packageName, builtClasses, mDefaultRule);
         }
     }
 
@@ -1081,7 +1080,7 @@ public final class RulesBuilder {
         /**
          * @return null if redundant
          */
-        private RuleSet.ClassScope build(Rule parentRule) {
+        private RuleSet.ClassScope build(String packageName, Rule parentRule) {
             if (mConstructors == null && isEmpty(mMethods) &&
                 parentRule.equals(mDefaultConstructorRule) && parentRule.equals(mDefaultMethodRule))
             {
@@ -1110,7 +1109,8 @@ public final class RulesBuilder {
                 }
             }
 
-            return new RuleSet.ClassScope(builtConstructors, mDefaultConstructorRule,
+            return new RuleSet.ClassScope(packageName, mName,
+                                          builtConstructors, mDefaultConstructorRule,
                                           builtMethods, mDefaultMethodRule); 
         }
     }
