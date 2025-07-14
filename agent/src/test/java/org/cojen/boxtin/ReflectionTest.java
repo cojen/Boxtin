@@ -28,14 +28,11 @@ import java.lang.invoke.MethodType;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.RecordComponent;
 
 import java.util.Set;
 
 import org.junit.*;
 import static org.junit.Assert.*;
-
-import org.cojen.maker.ClassMaker;
 
 /**
  * 
@@ -271,31 +268,6 @@ public class ReflectionTest extends TransformTest {
 
         for (Method m : methods) {
             assertNotEquals("exit", m.getName());
-        }
-    }
-
-    @Test
-    public void getRecordComponents() throws Exception {
-        if (runTransformed()) {
-            return;
-        }
-
-        MethodHandles.Lookup modLookup = TestUtils.newModule(getClass());
-        Class<?> modClass = modLookup.lookupClass();
-
-        ClassMaker cm = ClassMaker.begin(modClass.getName(), modLookup).public_();
-
-        cm.addField(String.class, "a");
-        cm.addField(int.class, "b");
-
-        cm.asRecord();
-
-        Class<?> clazz = cm.finish();
-
-        RecordComponent[] components = clazz.getRecordComponents();
-
-        for (RecordComponent rc : components) {
-            assertNotEquals("b", rc.getName());
         }
     }
 

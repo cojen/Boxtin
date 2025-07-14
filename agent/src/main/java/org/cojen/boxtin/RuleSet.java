@@ -19,6 +19,7 @@ package org.cojen.boxtin;
 import java.io.IOException;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -35,8 +36,9 @@ import static org.cojen.boxtin.Utils.*;
  * @author Brian S. O'Neill
  */
 final class RuleSet implements Rules {
-    // Is null when empty.
-    private final Map<String, PackageScope> mPackages;
+    private final ModuleLayer mLayer;
+
+    private final Map<String, PackageScope> mPackageScopes;
 
     // Default is selected when no map entry is found.
     private final Rule mDefaultRule;
@@ -44,32 +46,48 @@ final class RuleSet implements Rules {
     // Maps method names to one or more ClassScope instances which have denials.
     private final Map<String, Object> mDeniedMethodsIndex;
 
+    // Set of all named packages available in the ModuleLayer.
+    private final Set<String> mModularPackages;
+
     private int mHashCode;
 
     /**
-     * @param packages package names must have '/' characters as separators
+     * @param packageScopes package names must have '/' characters as separators
      */
-    RuleSet(Map<String, PackageScope> packages, Rule defaultRule) {
-        if (packages != null && packages.isEmpty()) {
-            packages = null;
-        }
-        mPackages = packages;
-        mDefaultRule = defaultRule;
+    RuleSet(ModuleLayer layer, Map<String, PackageScope> packageScopes, Rule defaultRule) {
+        mLayer = Objects.requireNonNull(layer);
+        mPackageScopes = Objects.requireNonNull(packageScopes);
+        mDefaultRule = Objects.requireNonNull(defaultRule);
 
         var index = new HashMap<String, Object>();
 
-        for (Map.Entry<String, PackageScope> e : packages.entrySet()) {
+        for (Map.Entry<String, PackageScope> e : packageScopes.entrySet()) {
             e.getValue().fillDeniedIndex(index, e.getKey());
         }
 
         mDeniedMethodsIndex = index;
+
+        mModularPackages = new HashSet<String>();
+        addModularPackages(layer, mModularPackages);
+    }
+
+    private static void addModularPackages(ModuleLayer layer, Set<String> modularPackages) {
+        for (Module mod : layer.modules()) {
+            if (mod.isNamed()) {
+                for (String pname : mod.getPackages()) {
+                    modularPackages.add(pname.replace('.', '/').intern());
+                }
+            }
+        }
+
+        layer.parents().forEach(parentLayer -> addModularPackages(parentLayer, modularPackages));
     }
 
     @Override
     public int hashCode() {
         int hash = mHashCode;
         if (hash == 0) {
-            mHashCode = hash = Objects.hashCode(mPackages) * 31 + mDefaultRule.hashCode();
+            mHashCode = hash = mPackageScopes.hashCode() * 31 + mDefaultRule.hashCode();
         }
         return hash;
     }
@@ -78,26 +96,18 @@ final class RuleSet implements Rules {
     public boolean equals(Object obj) {
         return this == obj || obj instanceof RuleSet other
             && mDefaultRule == other.mDefaultRule
-            && Objects.equals(mPackages, other.mPackages);
+            && mPackageScopes.equals(other.mPackageScopes);
     }
 
     @Override
     public ForClass forClass(CharSequence packageName, CharSequence className) {
-        PackageScope scope;
-        if (mPackages == null || (scope = mPackages.get(packageName)) == null) {
-            return mDefaultRule;
+        if (!mModularPackages.contains(packageName)) {
+            // Deny rules are only applicable to packages which are provided by named modules.
+            // If the package isn't provided this way, then allow the operation.
+            return Rule.allow();
         }
-        return scope.forClass(className);
-    }
-
-    @Override
-    public ForClass forClass(Class<?> clazz) {
-        String packageName = clazz.getPackageName();
-        PackageScope scope;
-        if (mPackages == null || (scope = mPackages.get(packageName.replace('.', '/'))) == null) {
-            return mDefaultRule;
-        }
-        return scope.forClass(className(packageName, clazz));
+        PackageScope scope = mPackageScopes.get(packageName);
+        return scope == null ? mDefaultRule : scope.forClass(className);
     }
 
     @Override
@@ -147,6 +157,17 @@ final class RuleSet implements Rules {
         return Map.of();
     }
 
+    /**
+     * Returns the module name which provides the given package, or else returns null if
+     * unknown.
+     *
+     * @param packageName package name must have '/' characters as separators
+     */
+    String moduleForPackage(CharSequence packageName) {
+        PackageScope scope = mPackageScopes.get(packageName);
+        return scope == null ? null : scope.mModuleName;
+    }
+
     @Override
     public boolean printTo(Appendable a, String indent, String plusIndent) throws IOException {
         a.append(indent).append("rules").append(" {").append('\n');
@@ -155,10 +176,10 @@ final class RuleSet implements Rules {
 
         printAllowOrDenyAll(a, scopeIndent, mDefaultRule).append('\n');
 
-        if (mPackages != null) {
+        if (!mPackageScopes.isEmpty()) {
             String subScopeIndent = scopeIndent + plusIndent;
 
-            for (Map.Entry<String, PackageScope> e : mPackages.entrySet()) {
+            for (Map.Entry<String, PackageScope> e : mPackageScopes.entrySet()) {
                 a.append('\n').append(scopeIndent).append("for ").append("package").append(' ');
                 a.append(e.getKey().replace('/', '.'));
                 a.append(" {").append('\n');
@@ -181,27 +202,26 @@ final class RuleSet implements Rules {
     }
 
     static final class PackageScope {
-        // Is null when empty.
-        private final Map<String, ClassScope> mClasses;
+        private final String mModuleName;
+
+        private final Map<String, ClassScope> mClassScopes;
 
         // Default is selected when no map entry is found.
         private final Rule mDefaultRule;
 
         private int mHashCode;
 
-        PackageScope(Map<String, ClassScope> classes, Rule defaultRule) {
-            if (classes != null && classes.isEmpty()) {
-                classes = null;
-            }
-            mClasses = classes;
-            mDefaultRule = defaultRule;
+        PackageScope(String moduleName, Map<String, ClassScope> classScopes, Rule defaultRule) {
+            mModuleName = Objects.requireNonNull(moduleName);
+            mClassScopes = Objects.requireNonNull(classScopes);
+            mDefaultRule = Objects.requireNonNull(defaultRule);
         }
 
         @Override
         public int hashCode() {
             int hash = mHashCode;
             if (hash == 0) {
-                mHashCode = hash = Objects.hashCode(mClasses) * 31 + mDefaultRule.hashCode();
+                mHashCode = hash = mClassScopes.hashCode() * 31 + mDefaultRule.hashCode();
             }
             return hash;
         }
@@ -210,24 +230,21 @@ final class RuleSet implements Rules {
         public boolean equals(Object obj) {
             return this == obj || obj instanceof PackageScope other
                 && mDefaultRule == other.mDefaultRule
-                && Objects.equals(mClasses, other.mClasses);
+                && mClassScopes.equals(other.mClassScopes);
         }
 
         ForClass forClass(CharSequence className) {
-            ClassScope scope;
-            if (mClasses == null || (scope = mClasses.get(className)) == null) {
-                return mDefaultRule;
-            }
-            return scope;
+            ClassScope scope = mClassScopes.get(className);
+            return scope == null ? mDefaultRule : scope;
         }
 
         void printTo(Appendable a, String indent, String plusIndent) throws IOException {
             printAllowOrDenyAll(a, indent, mDefaultRule).append('\n');
 
-            if (mClasses != null) {
+            if (!mClassScopes.isEmpty()) {
                 String scopeIndent = indent + plusIndent;
 
-                for (Map.Entry<String, ClassScope> e : mClasses.entrySet()) {
+                for (Map.Entry<String, ClassScope> e : mClassScopes.entrySet()) {
                     a.append('\n').append(indent).append("for ").append("class").append(' ');
                     String name = e.getKey().replace('$', '.');
                     a.append(name).append(" {").append('\n');
@@ -240,7 +257,7 @@ final class RuleSet implements Rules {
         }
 
         private void fillDeniedIndex(Map<String, Object> index, String pkgName) {
-            if (mClasses != null) for (Map.Entry<String, ClassScope> e : mClasses.entrySet()) {
+            for (Map.Entry<String, ClassScope> e : mClassScopes.entrySet()) {
                 e.getValue().fillDeniedIndex(index, pkgName, e.getKey());
             }
         }
@@ -253,8 +270,7 @@ final class RuleSet implements Rules {
         // Default is selected when constructors is empty.
         private final Rule mDefaultConstructorRule;
 
-        // Is null when empty.
-        private final Map<String, MethodScope> mMethods;
+        private final Map<String, MethodScope> mMethodScopes;
 
         // Default is selected when no method map entry is found.
         private final Rule mDefaultMethodRule;
@@ -264,15 +280,12 @@ final class RuleSet implements Rules {
         private String mPackageName, mClassName;
 
         ClassScope(MethodScope constructors, Rule defaultConstructorRule,
-                   Map<String, MethodScope> methods, Rule defaultMethodRule)
+                   Map<String, MethodScope> methodScopes, Rule defaultMethodRule)
         {
             mConstructors = constructors;
-            mDefaultConstructorRule = defaultConstructorRule;
-            if (methods != null && methods.isEmpty()) {
-                methods = null;
-            }
-            mMethods = methods;
-            mDefaultMethodRule = defaultMethodRule;
+            mDefaultConstructorRule = Objects.requireNonNull(defaultConstructorRule);
+            mMethodScopes = Objects.requireNonNull(methodScopes);
+            mDefaultMethodRule = Objects.requireNonNull(defaultMethodRule);
         }
 
         String fullName() {
@@ -286,7 +299,7 @@ final class RuleSet implements Rules {
             if (hash == 0) {
                 hash = Objects.hashCode(mConstructors);
                 hash = hash * 31 + mDefaultConstructorRule.hashCode();
-                hash = hash * 31 + Objects.hashCode(mMethods);
+                hash = hash * 31 + mMethodScopes.hashCode();
                 hash = hash * 31 + mDefaultMethodRule.hashCode();
                 mHashCode = hash;
             }
@@ -299,13 +312,13 @@ final class RuleSet implements Rules {
                 && mDefaultConstructorRule == other.mDefaultConstructorRule
                 && mDefaultMethodRule == other.mDefaultMethodRule
                 && Objects.equals(mConstructors, other.mConstructors)
-                && Objects.equals(mMethods, other.mMethods);
+                && mMethodScopes.equals(other.mMethodScopes);
         }
 
         @Override
         public boolean isAllAllowed() {
             return mConstructors == null && mDefaultConstructorRule == Rule.allow()
-                && mMethods == null && mDefaultMethodRule == Rule.allow();
+                && mMethodScopes.isEmpty() && mDefaultMethodRule == Rule.allow();
         }
 
         @Override
@@ -319,13 +332,8 @@ final class RuleSet implements Rules {
 
         @Override
         public Rule ruleForMethod(CharSequence name, CharSequence descriptor) {
-            Rule rule;
-            MethodScope scope;
-            if (mMethods == null || (scope = mMethods.get(name)) == null) {
-                rule = mDefaultMethodRule;
-            } else {
-                rule = scope.ruleForMethod(descriptor);
-            }
+            MethodScope scope = mMethodScopes.get(name);
+            Rule rule = scope == null ? mDefaultMethodRule : scope.ruleForMethod(descriptor);
             if (!rule.isAllowed() && isObjectMethod(name, descriptor)) {
                 rule = Rule.allow();
             }
@@ -334,7 +342,7 @@ final class RuleSet implements Rules {
 
         void printTo(Appendable a, String indent, String plusIndent) throws IOException {
             if (mDefaultConstructorRule == mDefaultMethodRule &&
-                mConstructors == null && mMethods == null)
+                mConstructors == null && mMethodScopes.isEmpty())
             {
                 printAllowOrDenyAll(a, indent, mDefaultConstructorRule).append('\n');
                 return;
@@ -350,15 +358,13 @@ final class RuleSet implements Rules {
             printAllowOrDenyAll(a, indent, mDefaultMethodRule)
                 .append(" methods").append('\n');
 
-            if (mMethods != null) {
-                for (Map.Entry<String, MethodScope> e : mMethods.entrySet()) {
-                    String name = e.getKey();
-                    MethodScope scope = e.getValue();
-                    a.append(indent).append(scope.mDefaultRule.toString()).append(' ')
-                        .append("method").append(' ').append(name).append('\n');
-                    if (scope.mVariants != null) {
-                        scope.printTo(a, indent + plusIndent);
-                    }
+            for (Map.Entry<String, MethodScope> e : mMethodScopes.entrySet()) {
+                String name = e.getKey();
+                MethodScope scope = e.getValue();
+                a.append(indent).append(scope.mDefaultRule.toString()).append(' ')
+                    .append("method").append(' ').append(name).append('\n');
+                if (scope.mVariants != null) {
+                    scope.printTo(a, indent + plusIndent);
                 }
             }
         }
@@ -368,7 +374,7 @@ final class RuleSet implements Rules {
             mPackageName = pkgName;
             mClassName = className;
             
-            if (mMethods != null) for (Map.Entry<String, MethodScope> e : mMethods.entrySet()) {
+            for (Map.Entry<String, MethodScope> e : mMethodScopes.entrySet()) {
                 if (e.getValue().isAnyVariantDenied()) {
                     String name = e.getKey();
                     Object value = index.get(name);
@@ -391,7 +397,6 @@ final class RuleSet implements Rules {
     }
 
     static final class MethodScope {
-        // Is null when empty.
         private final NavigableMap<CharSequence, Rule> mVariants;
 
         // Default is selected when no map entry is found.
@@ -400,18 +405,15 @@ final class RuleSet implements Rules {
         private int mHashCode;
 
         MethodScope(NavigableMap<CharSequence, Rule> variants, Rule defaultRule) {
-            if (variants != null && variants.isEmpty()) {
-                variants = null;
-            }
-            mVariants = variants;
-            mDefaultRule = defaultRule;
+            mVariants = Objects.requireNonNull(variants);
+            mDefaultRule = Objects.requireNonNull(defaultRule);
         }
 
         @Override
         public int hashCode() {
             int hash = mHashCode;
             if (hash == 0) {
-                mHashCode = hash = Objects.hashCode(mVariants) * 31 + mDefaultRule.hashCode();
+                mHashCode = hash = mVariants.hashCode() * 31 + mDefaultRule.hashCode();
             }
             return hash;
         }
@@ -420,7 +422,7 @@ final class RuleSet implements Rules {
         public boolean equals(Object obj) {
             return this == obj || obj instanceof MethodScope other
                 && mDefaultRule == other.mDefaultRule
-                && Objects.equals(mVariants, other.mVariants);
+                && mVariants.equals(other.mVariants);
         }
 
         boolean isAnyVariantDenied() {
@@ -428,11 +430,9 @@ final class RuleSet implements Rules {
                 return true;
             }
 
-            if (mVariants != null) {
-                for (Rule rule : mVariants.values()) {
-                    if (rule.isDenied()) {
-                        return true;
-                    }
+            for (Rule rule : mVariants.values()) {
+                if (rule.isDenied()) {
+                    return true;
                 }
             }
 
@@ -440,11 +440,8 @@ final class RuleSet implements Rules {
         }
 
         Rule ruleForMethod(CharSequence descriptor) {
-            Rule rule;
-            if (mVariants == null || (rule = findRule(descriptor)) == null) {
-                return mDefaultRule;
-            }
-            return rule;
+            Rule rule = findRule(descriptor);
+            return rule == null ? mDefaultRule : rule;
         }
 
         private Rule findRule(CharSequence descriptor) {
@@ -453,27 +450,25 @@ final class RuleSet implements Rules {
         }
 
         void printTo(Appendable a, String indent) throws IOException {
-            if (mVariants != null) {
-                for (Map.Entry<CharSequence, Rule> e : mVariants.entrySet()) {
-                    a.append(indent).append(e.getValue().toString());
-                    a.append(" variant ");
+            for (Map.Entry<CharSequence, Rule> e : mVariants.entrySet()) {
+                a.append(indent).append(e.getValue().toString());
+                a.append(" variant ");
 
-                    String descriptor = e.getKey().toString();
-                    List<String> paramTypes = tryParseParameters(descriptor);
-                    if (paramTypes == null) {
-                        a.append(descriptor);
-                    } else {
-                        int num = 0;
-                        for (String type : paramTypes) {
-                            if (num++ > 0) {
-                                a.append(", ");
-                            }
-                            a.append(type);
+                String descriptor = e.getKey().toString();
+                List<String> paramTypes = tryParseParameters(descriptor);
+                if (paramTypes == null) {
+                    a.append(descriptor);
+                } else {
+                    int num = 0;
+                    for (String type : paramTypes) {
+                        if (num++ > 0) {
+                            a.append(", ");
                         }
+                        a.append(type);
                     }
-
-                    a.append('\n');
                 }
+
+                a.append('\n');
             }
         }
     }

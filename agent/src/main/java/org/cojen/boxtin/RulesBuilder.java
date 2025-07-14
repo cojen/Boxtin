@@ -23,6 +23,7 @@ import java.lang.reflect.Modifier;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.NavigableMap;
@@ -113,7 +114,7 @@ public final class RulesBuilder {
             mModules = modules = new LinkedHashMap<>();
         }
         return modules.computeIfAbsent(name, k -> {
-            return new ModuleScope(name).ruleForAll(mDefaultRule);
+            return new ModuleScope(name.intern()).ruleForAll(mDefaultRule);
         });
     }
 
@@ -186,7 +187,7 @@ public final class RulesBuilder {
         Map<String, RuleSet.PackageScope> builtPackages;
 
         if (isEmpty(mModules)) {
-            builtPackages = null;
+            builtPackages = Map.of();
         } else {
             builtPackages = new LinkedHashMap<>();
             for (ModuleScope ms  : mModules.values()) {
@@ -194,7 +195,7 @@ public final class RulesBuilder {
             }
         }
 
-        return mBuiltRules = new RuleSet(builtPackages, mDefaultRule);
+        return mBuiltRules = new RuleSet(mLayer, builtPackages, mDefaultRule);
     }
 
     void modified() {
@@ -505,7 +506,7 @@ public final class RulesBuilder {
 
         private void buildInto(Map<String, RuleSet.PackageScope> builtPackages) {
             if (mPackages != null) for (Map.Entry<String, PackageScope> e : mPackages.entrySet()) {
-                RuleSet.PackageScope scope = e.getValue().build(mDefaultRule);
+                RuleSet.PackageScope scope = e.getValue().build(mName, mDefaultRule);
                 if (scope != null) {
                     String key = e.getKey().replace('.', '/').intern();
                     if (builtPackages.putIfAbsent(key, scope) != null) {
@@ -658,7 +659,7 @@ public final class RulesBuilder {
         /**
          * @return null if redundant
          */
-        private RuleSet.PackageScope build(Rule parentRule) {
+        private RuleSet.PackageScope build(String moduleName, Rule parentRule) {
             if (isEmpty(mClasses) && parentRule.equals(mDefaultRule)) {
                 return null;
             }
@@ -666,7 +667,7 @@ public final class RulesBuilder {
             Map<String, RuleSet.ClassScope> builtClasses;
 
             if (isEmpty(mClasses)) {
-                builtClasses = null;
+                builtClasses = Map.of();
             } else {
                 builtClasses = new LinkedHashMap<>();
                 for (Map.Entry<String, ClassScope> e : mClasses.entrySet()) {
@@ -677,7 +678,7 @@ public final class RulesBuilder {
                 }
             }
 
-            return new RuleSet.PackageScope(builtClasses, mDefaultRule);
+            return new RuleSet.PackageScope(moduleName, builtClasses, mDefaultRule);
         }
     }
 
@@ -1055,7 +1056,7 @@ public final class RulesBuilder {
 
                     if (rule.isAllowed()) {
                         reporter.accept
-                            ("Method " + clazz.getName() + "::" + name + " is denied via denyAll, "
+                            ("Method " + clazz.getName() + "::" + name + " is implicitly denied, "
                              + "but when the instance is cast to " +
                              method.getDeclaringClass().getName() + ", the method becomes allowed. "
                              + "An explicit allow or deny rule is required.");
@@ -1098,7 +1099,7 @@ public final class RulesBuilder {
             Map<String, RuleSet.MethodScope> builtMethods;
 
             if (isEmpty(mMethods)) {
-                builtMethods = null;
+                builtMethods = Map.of();
             } else {
                 builtMethods = new LinkedHashMap<>();
                 for (Map.Entry<String, MethodScope> e : mMethods.entrySet()) {
@@ -1290,23 +1291,31 @@ public final class RulesBuilder {
          * @return null if redundant
          */
         private RuleSet.MethodScope buildConstructor(Rule parentRule) {
-            if (isEmpty(mVariants) && mDefaultRule.equals(parentRule)) {
+            NavigableMap<CharSequence, Rule> variants = mVariants;
+            if (isEmpty(variants) && mDefaultRule.equals(parentRule)) {
                 return null;
             }
-            return new RuleSet.MethodScope(mVariants, mDefaultRule);
+            if (variants == null) {
+                variants = Collections.emptyNavigableMap();
+            }
+            return new RuleSet.MethodScope(variants, mDefaultRule);
         }
 
         /**
          * @return null if redundant
          */
         private RuleSet.MethodScope buildMethod(Rule parentRule) {
+            NavigableMap<CharSequence, Rule> variants = mVariants;
             // Note that an explicit deny rule is never considered redundant, even if the rule
             // is the same as the parent rule. This is because RuleSet.denialsForMethod
             // requires explcit denials, and so they cannot be dropped.
-            if (mDefaultRule.isAllowed() && parentRule.isAllowed() && isEmpty(mVariants)) {
+            if (mDefaultRule.isAllowed() && parentRule.isAllowed() && isEmpty(variants)) {
                 return null;
             }
-            return new RuleSet.MethodScope(mVariants, mDefaultRule);
+            if (variants == null) {
+                variants = Collections.emptyNavigableMap();
+            }
+            return new RuleSet.MethodScope(variants, mDefaultRule);
         }
     }
 }

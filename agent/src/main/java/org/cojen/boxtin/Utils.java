@@ -85,7 +85,7 @@ final class Utils {
     }
 
     /**
-     * @return true if the given member is public or protected
+     * @return true if the given flags are public or protected
      */
     static boolean isAccessible(int flags) {
         return (flags & (Modifier.PUBLIC | Modifier.PROTECTED)) != 0;
@@ -250,10 +250,24 @@ final class Utils {
     }
 
     /**
+     * @param className name must have '/' characters as separators
+     */
+    static String packageName(String className) {
+        int ix = className.lastIndexOf('/');
+        return ix <= 0 ? "" :className.substring(0, ix);
+    }
+
+    /**
      * Returns the class name with the package name stripped off.
      */
     static String className(String packageName, Class<?> clazz) {
-        String className = clazz.getName();
+        return className(packageName, clazz.getName());
+    }
+
+    /**
+     * Returns the class name with the package name stripped off.
+     */
+    static String className(String packageName, String className) {
         return packageName.isEmpty() ? className : className.substring(packageName.length() + 1);
     }
 

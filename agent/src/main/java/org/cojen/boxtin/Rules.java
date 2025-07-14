@@ -39,8 +39,9 @@ public interface Rules {
      * @return a non-null ForClass instance
      */
     public default ForClass forClass(Class<?> clazz) {
-        String packageName = clazz.getPackageName();
-        return forClass(packageName.replace('.', '/'), Utils.className(packageName, clazz));
+        String fullName = clazz.getName().replace('.', '/');
+        String packageName = Utils.packageName(fullName);
+        return forClass(packageName, Utils.className(packageName, fullName));
     }
 
     /**

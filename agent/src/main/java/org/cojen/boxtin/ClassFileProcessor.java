@@ -698,12 +698,6 @@ final class ClassFileProcessor {
 
         target.split(packageName, className);
 
-        if (!ModulePackages.isPackageModular(mModule, packageName)) {
-            // Deny rules are only applicable to packages which are provided by named modules.
-            // If the package isn't provided this way, then allow the operation.
-            return Rule.allow();
-        }
-
         return rules.forClass(packageName, className);
     }
 
