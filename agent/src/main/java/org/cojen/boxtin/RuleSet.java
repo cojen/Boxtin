@@ -17,7 +17,9 @@
 package org.cojen.boxtin;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -60,6 +62,14 @@ final class RuleSet implements Rules {
         mDefaultRule = Objects.requireNonNull(defaultRule);
 
         addModularPackages(layer, mModularPackages = new HashSet<String>());
+
+        for (PackageScope scope : packageScopes.values()) {
+            try {
+                scope.addExplicitDenials(this, layer);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
 
         {
             var index = new HashMap<String, Object>();
@@ -203,6 +213,10 @@ final class RuleSet implements Rules {
     }
 
     static final class PackageScope {
+        // FIXME: If package is deny by default, then unspecified classes should disallow
+        // subclassing. Do this by removing them from class file interfaces and superclass. Go
+        // up a level for superclass, until an allowed one is found.
+
         private final String mModuleName, mPackageName;
 
         private final Map<String, ClassScope> mClassScopes;
@@ -273,6 +287,25 @@ final class RuleSet implements Rules {
             }
         }
 
+        /**
+         * Adds explicit denials for class methods if necessary. It's necessary when the
+         * default method rule for the class is to deny access, and the class isn't subtype
+         * safe. See ClassInfo.isSubtypeSafe.
+         */
+        void addExplicitDenials(RuleSet rules, ModuleLayer layer)
+            throws IOException, ClassFormatException
+        {
+            Module module = layer.findModule(mModuleName).orElse(null);
+
+            if (module == null) {
+                return;
+            }
+
+            for (ClassScope scope : mClassScopes.values()) {
+                scope.addExplicitDenials(rules, module);
+            }
+        }
+
         private void fillDeniedIndex(Map<String, Object> index) {
             for (ClassScope scope : mClassScopes.values()) {
                 scope.fillDeniedIndex(index);
@@ -289,7 +322,7 @@ final class RuleSet implements Rules {
         // Default is selected when constructors is empty.
         private final Rule mDefaultConstructorRule;
 
-        private final Map<String, MethodScope> mMethodScopes;
+        private Map<String, MethodScope> mMethodScopes;
 
         // Default is selected when no method map entry is found.
         private final Rule mDefaultMethodRule;
@@ -398,6 +431,34 @@ final class RuleSet implements Rules {
                     scope.printTo(a, indent + plusIndent);
                 }
             }
+        }
+
+        /**
+         * Adds explicit denials for methods if necessary.
+         */
+        void addExplicitDenials(RuleSet rules, Module module)
+            throws IOException, ClassFormatException
+        {
+            if (mDefaultMethodRule.isAllowed()) {
+                return;
+            }
+
+            ClassInfo info = ClassInfo.find(fullName(), mPackageName, module);
+
+            if (info == null || info.isSubtypeSafe(rules)) {
+                return;
+            }
+
+            Map<String, MethodScope> newMethodScopes = new LinkedHashMap<>(mMethodScopes);
+
+            info.forAllDeclaredMethods(method -> {
+                newMethodScopes.computeIfAbsent(method.getKey(), name -> {
+                    return new MethodScope(Collections.emptyNavigableMap(), mDefaultMethodRule);
+                });
+                return true;
+            });
+
+            mMethodScopes = newMethodScopes;
         }
 
         @SuppressWarnings("unchecked")

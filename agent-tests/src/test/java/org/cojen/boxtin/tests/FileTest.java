@@ -66,5 +66,20 @@ public class FileTest {
         assertFalse(f.delete());
 
         assertEquals(0, File.listRoots().length);
+
+        class Sub extends File {
+            Sub(String path) {
+                super(path);
+            }
+        }
+
+        var sub = new Sub("huu0bPbwCFxTYOshL2Oh");
+
+        try {
+            sub.deleteOnExit();
+            fail();
+        } catch (SecurityException e) {
+            // Expected.
+        }
     }
 }
