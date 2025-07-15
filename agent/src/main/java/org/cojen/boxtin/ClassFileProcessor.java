@@ -839,21 +839,27 @@ final class ClassFileProcessor {
         // if (thisClass.getModule() != targetClass.getModule()) {
         //     perform the deny action...
 
-        int getModuleIndex = mConstantPool.addMethodRef
-            ("java/lang/Class", "getModule", "()Ljava/lang/Module;").mIndex;
+        int offset;
+        if (targetClass.mValue.isProhibitedPackage()) {
+            // Module check will always yield false, so always deny the action.
+            offset = 0;
+        } else {
+            int getModuleIndex = mConstantPool.addMethodRef
+                ("java/lang/Class", "getModule", "()Ljava/lang/Module;").mIndex;
 
-        encoder.writeByte(LDC_W);
-        encoder.writeShort(mThisClassIndex);
-        encoder.writeByte(INVOKEVIRTUAL);
-        encoder.writeShort(getModuleIndex);
-        encoder.writeByte(LDC_W);
-        encoder.writeShort(targetClass.mIndex);
-        encoder.writeByte(INVOKEVIRTUAL);
-        encoder.writeShort(getModuleIndex);
-        encoder.writeByte(IF_ACMPEQ);
-        int offset = encoder.length();
-        encoder.writeShort(0); // branch offset; to be filled in properly later
-        caller.stackPushPop(2);
+            encoder.writeByte(LDC_W);
+            encoder.writeShort(mThisClassIndex);
+            encoder.writeByte(INVOKEVIRTUAL);
+            encoder.writeShort(getModuleIndex);
+            encoder.writeByte(LDC_W);
+            encoder.writeShort(targetClass.mIndex);
+            encoder.writeByte(INVOKEVIRTUAL);
+            encoder.writeShort(getModuleIndex);
+            encoder.writeByte(IF_ACMPEQ);
+            offset = encoder.length();
+            encoder.writeShort(0); // branch offset; to be filled in properly later
+            caller.stackPushPop(2);
+        }
 
         int nullCheckOffset = 0;
 
@@ -945,8 +951,14 @@ final class ClassFileProcessor {
             encodeBranchTarget(encoder, checkedOffset);
         }
 
+        // When the module check isn't generated (the result would always be true), dead code
+        // might be still generated for handling the allowed case. Regardless, a stack map
+        // table is entry is required to make the verifier happy.
         caller.smt.putEntry(encoder.length(), withArgs);
-        encodeBranchTarget(encoder, offset);
+
+        if (offset != 0) {
+            encodeBranchTarget(encoder, offset);
+        }
     }
 
     /**

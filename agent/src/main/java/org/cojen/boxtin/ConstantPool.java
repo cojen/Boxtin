@@ -718,6 +718,20 @@ final class ConstantPool {
         }
 
         /**
+         * Returns true if the value starts the "java/".
+         */
+        boolean isProhibitedPackage() {
+            int length = mLength;
+            if (length < 5) {
+                return false;
+            }
+            byte[] buffer = mBuffer;
+            int offset = mOffset;
+            return Utils.decodeIntBE(buffer, offset) == 0x6a617661 // java
+                && buffer[offset + 4] == '/';
+        }
+
+        /**
          * Returns true if the value starts with '['.
          */
         boolean isArray() {
