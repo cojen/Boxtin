@@ -48,7 +48,7 @@ final class RuleSet implements Rules {
     // Set of all named packages available in the ModuleLayer.
     private final Set<String> mModularPackages;
 
-    // Maps method names to one or more ClassScope instances which have explcit denials.
+    // Maps method names to one or more ClassScope instances which have explicit denials.
     private final Map<String, Object> mDeniedMethodsIndex;
 
     private int mHashCode;

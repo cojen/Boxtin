@@ -1308,7 +1308,7 @@ public final class RulesBuilder {
             NavigableMap<CharSequence, Rule> variants = mVariants;
             // Note that an explicit deny rule is never considered redundant, even if the rule
             // is the same as the parent rule. This is because RuleSet.denialsForMethod
-            // requires explcit denials, and so they cannot be dropped.
+            // requires explicit denials, and so they cannot be dropped.
             if (mDefaultRule.isAllowed() && parentRule.isAllowed() && isEmpty(variants)) {
                 return null;
             }
