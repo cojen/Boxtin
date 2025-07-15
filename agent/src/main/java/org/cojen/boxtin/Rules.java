@@ -49,8 +49,8 @@ public interface Rules {
      * deny rule against a matching method. If none match, the returned map is empty.
      *
      * @param name method name
-     * @param descriptor descriptor for the parameters, not including parenthesis or the return
-     * type
+     * @param descriptor descriptor for the parameters, including parenthesis, but the return
+     * type is optional
      * @return a non-null map of fully qualified class names to deny rules; '/' characters are
      * used as separators
      */
@@ -99,8 +99,8 @@ public interface Rules {
         public boolean isAllAllowed();
 
         /**
-         * @param descriptor descriptor for the parameters, not including parenthesis or the
-         * return type
+         * @param descriptor descriptor for the parameters, including parenthesis, but the
+         * return type is optional
          */
         public Rule ruleForConstructor(CharSequence descriptor);
 
@@ -109,8 +109,8 @@ public interface Rules {
         }
 
         /**
-         * @param descriptor descriptor for the parameters, not including parenthesis or the
-         * return type
+         * @param descriptor descriptor for the parameters, including parenthesis, but the
+         * return type is optional
          */
         public Rule ruleForMethod(CharSequence name, CharSequence descriptor);
 
