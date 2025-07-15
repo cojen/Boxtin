@@ -98,7 +98,10 @@ final class RuleSet implements Rules {
     public int hashCode() {
         int hash = mHashCode;
         if (hash == 0) {
-            mHashCode = hash = mPackageScopes.hashCode() * 31 + mDefaultRule.hashCode();
+            hash = mLayer.hashCode();
+            hash = hash * 31 + mPackageScopes.hashCode();
+            hash = hash * 31 + mDefaultRule.hashCode();
+            mHashCode = hash;
         }
         return hash;
     }
@@ -106,7 +109,8 @@ final class RuleSet implements Rules {
     @Override
     public boolean equals(Object obj) {
         return this == obj || obj instanceof RuleSet other
-            && mDefaultRule == other.mDefaultRule
+            && mLayer.equals(other.mLayer)
+            && mDefaultRule.equals(other.mDefaultRule)
             && mPackageScopes.equals(other.mPackageScopes);
     }
 
@@ -260,7 +264,7 @@ final class RuleSet implements Rules {
             return this == obj || obj instanceof PackageScope other
                 && mModuleName.equals(other.mModuleName)
                 && mPackageName.equals(other.mPackageName)
-                && mDefaultRule == other.mDefaultRule
+                && mDefaultRule.equals(other.mDefaultRule)
                 && mClassScopes.equals(other.mClassScopes);
         }
 
@@ -373,16 +377,16 @@ final class RuleSet implements Rules {
             return this == obj || obj instanceof ClassScope other
                 && mPackageName.equals(other.mPackageName)
                 && mClassName.equals(other.mClassName)
-                && mDefaultConstructorRule == other.mDefaultConstructorRule
-                && mDefaultMethodRule == other.mDefaultMethodRule
+                && mDefaultConstructorRule.equals(other.mDefaultConstructorRule)
+                && mDefaultMethodRule.equals(other.mDefaultMethodRule)
                 && Objects.equals(mConstructors, other.mConstructors)
                 && mMethodScopes.equals(other.mMethodScopes);
         }
 
         @Override
         public boolean isAllAllowed() {
-            return mConstructors == null && mDefaultConstructorRule == Rule.allow()
-                && mMethodScopes.isEmpty() && mDefaultMethodRule == Rule.allow();
+            return mConstructors == null && mDefaultConstructorRule.isAllowed()
+                && mMethodScopes.isEmpty() && mDefaultMethodRule.isAllowed();
         }
 
         @Override
@@ -405,7 +409,7 @@ final class RuleSet implements Rules {
         }
 
         void printTo(Appendable a, String indent, String plusIndent) throws IOException {
-            if (mDefaultConstructorRule == mDefaultMethodRule &&
+            if (mDefaultConstructorRule.equals(mDefaultMethodRule) &&
                 mConstructors == null && mMethodScopes.isEmpty())
             {
                 printAllowOrDenyAll(a, indent, mDefaultConstructorRule).append('\n');
@@ -510,7 +514,7 @@ final class RuleSet implements Rules {
         @Override
         public boolean equals(Object obj) {
             return this == obj || obj instanceof MethodScope other
-                && mDefaultRule == other.mDefaultRule
+                && mDefaultRule.equals(other.mDefaultRule)
                 && mVariants.equals(other.mVariants);
         }
 
