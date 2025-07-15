@@ -56,6 +56,8 @@ import java.security.ProtectionDomain;
  * @author Brian S. O'Neill
  */
 public final class SecurityAgent {
+    static final boolean DEBUG = Boolean.getBoolean(SecurityAgent.class.getName() + ".DEBUG");
+
     private static final ClassLoader ALT_LOADER;
 
     private static Instrumentation cInst;

@@ -372,6 +372,10 @@ final class ClassFileProcessor {
             }
         }
 
+        if (SecurityAgent.DEBUG) {
+            DebugWriter.write(mConstantPool, mThisClassIndex, buffer);
+        }
+
         return buffer;
     }
 
