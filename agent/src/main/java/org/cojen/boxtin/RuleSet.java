@@ -17,7 +17,6 @@
 package org.cojen.boxtin;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -63,23 +62,13 @@ final class RuleSet implements Rules {
 
         addModularPackages(layer, mModularPackages = new HashSet<String>());
 
+        var index = new HashMap<String, Object>();
+
         for (PackageScope scope : packageScopes.values()) {
-            try {
-                scope.addExplicitDenials(this, layer);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
+            scope.fillDeniedIndex(index);
         }
 
-        {
-            var index = new HashMap<String, Object>();
-
-            for (PackageScope scope : packageScopes.values()) {
-                scope.fillDeniedIndex(index);
-            }
-
-            mDeniedMethodsIndex = index;
-        }
+        mDeniedMethodsIndex = index;
     }
 
     private static void addModularPackages(ModuleLayer layer, Set<String> modularPackages) {
@@ -172,17 +161,6 @@ final class RuleSet implements Rules {
         return Map.of();
     }
 
-    /**
-     * Returns the module name which provides the given package, or else returns null if
-     * unknown.
-     *
-     * @param packageName package name must have '/' characters as separators
-     */
-    String moduleForPackage(CharSequence packageName) {
-        PackageScope scope = mPackageScopes.get(packageName);
-        return scope == null ? null : scope.mModuleName;
-    }
-
     @Override
     public boolean printTo(Appendable a, String indent, String plusIndent) throws IOException {
         a.append(indent).append("rules").append(" {").append('\n');
@@ -242,6 +220,10 @@ final class RuleSet implements Rules {
             mDefaultRule = Objects.requireNonNull(defaultRule);
         }
 
+        String moduleName() {
+            return mModuleName;
+        }
+
         String name() {
             return mPackageName;
         }
@@ -291,25 +273,6 @@ final class RuleSet implements Rules {
             }
         }
 
-        /**
-         * Adds explicit denials for class methods if necessary. It's necessary when the
-         * default method rule for the class is to deny access, and the class isn't subtype
-         * safe. See ClassInfo.isSubtypeSafe.
-         */
-        void addExplicitDenials(RuleSet rules, ModuleLayer layer)
-            throws IOException, ClassFormatException
-        {
-            Module module = layer.findModule(mModuleName).orElse(null);
-
-            if (module == null) {
-                return;
-            }
-
-            for (ClassScope scope : mClassScopes.values()) {
-                scope.addExplicitDenials(rules, module);
-            }
-        }
-
         private void fillDeniedIndex(Map<String, Object> index) {
             for (ClassScope scope : mClassScopes.values()) {
                 scope.fillDeniedIndex(index);
@@ -321,12 +284,12 @@ final class RuleSet implements Rules {
         private final String mPackageName, mClassName;
 
         // Is null when empty.
-        private final MethodScope mConstructors;
+        private final ConstructorScope mConstructors;
 
         // Default is selected when constructors is empty.
         private final Rule mDefaultConstructorRule;
 
-        private Map<String, MethodScope> mMethodScopes;
+        private final Map<String, MethodScope> mMethodScopes;
 
         // Default is selected when no method map entry is found.
         private final Rule mDefaultMethodRule;
@@ -337,7 +300,7 @@ final class RuleSet implements Rules {
          * @param packageName must have '/' characters as separators 
          */
         ClassScope(String packageName, String className,
-                   MethodScope constructors, Rule defaultConstructorRule,
+                   ConstructorScope constructors, Rule defaultConstructorRule,
                    Map<String, MethodScope> methodScopes, Rule defaultMethodRule)
         {
             mPackageName = Objects.requireNonNull(packageName);
@@ -353,8 +316,7 @@ final class RuleSet implements Rules {
         }
 
         String fullName() {
-            String pkgName = mPackageName;
-            return pkgName.isEmpty() ? mClassName : (pkgName + '/' + mClassName);
+            return Utils.fullName(mPackageName, mClassName);
         }
 
         @Override
@@ -391,17 +353,17 @@ final class RuleSet implements Rules {
 
         @Override
         public Rule ruleForConstructor(CharSequence descriptor) {
-            MethodScope scope = mConstructors;
+            ConstructorScope scope = mConstructors;
             if (scope == null) {
                 return mDefaultConstructorRule;
             }
-            return scope.ruleForMethod(descriptor);
+            return scope.ruleForVariant(descriptor);
         }
 
         @Override
         public Rule ruleForMethod(CharSequence name, CharSequence descriptor) {
             MethodScope scope = mMethodScopes.get(name);
-            Rule rule = scope == null ? mDefaultMethodRule : scope.ruleForMethod(descriptor);
+            Rule rule = scope == null ? mDefaultMethodRule : scope.ruleForVariant(descriptor);
             if (!rule.isAllowed() && isObjectMethod(name, descriptor)) {
                 rule = Rule.allow();
             }
@@ -419,7 +381,7 @@ final class RuleSet implements Rules {
             printAllowOrDenyAll(a, indent, mDefaultConstructorRule)
                 .append(" constructors").append('\n');
 
-            if (mConstructors != null && mConstructors.mVariants != null) {
+            if (mConstructors != null && !mConstructors.mVariants.isEmpty()) {
                 mConstructors.printTo(a, indent + plusIndent);
             }
 
@@ -429,40 +391,10 @@ final class RuleSet implements Rules {
             for (Map.Entry<String, MethodScope> e : mMethodScopes.entrySet()) {
                 String name = e.getKey();
                 MethodScope scope = e.getValue();
-                a.append(indent).append(scope.mDefaultRule.toString()).append(' ')
+                a.append(indent).append(scope.defaultRule().toString()).append(' ')
                     .append("method").append(' ').append(name).append('\n');
-                if (scope.mVariants != null) {
-                    scope.printTo(a, indent + plusIndent);
-                }
+                scope.printTo(a, indent + plusIndent);
             }
-        }
-
-        /**
-         * Adds explicit denials for methods if necessary.
-         */
-        void addExplicitDenials(RuleSet rules, Module module)
-            throws IOException, ClassFormatException
-        {
-            if (mDefaultMethodRule.isAllowed()) {
-                return;
-            }
-
-            ClassInfo info = ClassInfo.find(fullName(), mPackageName, module);
-
-            if (info == null || info.isSubtypeSafe(rules)) {
-                return;
-            }
-
-            Map<String, MethodScope> newMethodScopes = new LinkedHashMap<>(mMethodScopes);
-
-            info.forAllDeclaredMethods(method -> {
-                newMethodScopes.computeIfAbsent(method.getKey(), name -> {
-                    return new MethodScope(Collections.emptyNavigableMap(), mDefaultMethodRule);
-                });
-                return true;
-            });
-
-            mMethodScopes = newMethodScopes;
         }
 
         @SuppressWarnings("unchecked")
@@ -489,52 +421,36 @@ final class RuleSet implements Rules {
         }
     }
 
-    static final class MethodScope {
-        private final NavigableMap<CharSequence, Rule> mVariants;
-
-        // Default is selected when no map entry is found.
-        private final Rule mDefaultRule;
+    static abstract class ExecutableScope {
+        protected final NavigableMap<CharSequence, Rule> mVariants;
 
         private int mHashCode;
 
-        MethodScope(NavigableMap<CharSequence, Rule> variants, Rule defaultRule) {
+        ExecutableScope(NavigableMap<CharSequence, Rule> variants) {
             mVariants = Objects.requireNonNull(variants);
-            mDefaultRule = Objects.requireNonNull(defaultRule);
         }
 
         @Override
         public int hashCode() {
             int hash = mHashCode;
             if (hash == 0) {
-                mHashCode = hash = mVariants.hashCode() * 31 + mDefaultRule.hashCode();
+                hash = mVariants.hashCode() * 31 + defaultRule().hashCode();
+                mHashCode = hash ^ 1395528771;
             }
             return hash;
         }
 
         @Override
         public boolean equals(Object obj) {
-            return this == obj || obj instanceof MethodScope other
-                && mDefaultRule.equals(other.mDefaultRule)
+            return this == obj || obj instanceof ExecutableScope other
+                && getClass() == other.getClass()
+                && defaultRule().equals(other.defaultRule())
                 && mVariants.equals(other.mVariants);
         }
 
-        boolean isAnyVariantDenied() {
-            if (mDefaultRule.isDenied()) {
-                return true;
-            }
-
-            for (Rule rule : mVariants.values()) {
-                if (rule.isDenied()) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        Rule ruleForMethod(CharSequence descriptor) {
+        Rule ruleForVariant(CharSequence descriptor) {
             Rule rule = findRule(descriptor);
-            return rule == null ? mDefaultRule : rule;
+            return rule == null ? defaultRule() : rule;
         }
 
         private Rule findRule(CharSequence descriptor) {
@@ -542,7 +458,11 @@ final class RuleSet implements Rules {
             return (e != null && startsWith(descriptor, e.getKey())) ? e.getValue() : null;
         }
 
+        protected abstract Rule defaultRule();
+
         void printTo(Appendable a, String indent) throws IOException {
+            // FIXME: If method is denied and the variant is denied with the same rule, then
+            // omit printing the variant.
             for (Map.Entry<CharSequence, Rule> e : mVariants.entrySet()) {
                 a.append(indent).append(e.getValue().toString());
                 a.append(" variant ");
@@ -563,6 +483,36 @@ final class RuleSet implements Rules {
 
                 a.append('\n');
             }
+        }
+    }
+
+    static final class ConstructorScope extends ExecutableScope {
+        // Default is selected when no map entry is found.
+        private final Rule mDefaultRule;
+
+        ConstructorScope(NavigableMap<CharSequence, Rule> variants, Rule defaultRule) {
+            super(variants);
+            mDefaultRule = Objects.requireNonNull(defaultRule);
+        }
+
+        @Override
+        protected Rule defaultRule() {
+            return mDefaultRule;
+        }
+    }
+
+    static final class MethodScope extends ExecutableScope {
+        MethodScope(NavigableMap<CharSequence, Rule> deniedVariants) {
+            super(deniedVariants);
+        }
+
+        @Override
+        protected Rule defaultRule() {
+            return Rule.allow();
+        }
+
+        boolean isAnyVariantDenied() {
+            return !mVariants.isEmpty();
         }
     }
 }

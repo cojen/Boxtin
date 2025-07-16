@@ -126,9 +126,9 @@ final class Utils {
     }
 
     /**
-     * Returns a method descriptor with no parens and no return type.
+     * Returns a method parameter descriptor with no parens and no return type.
      */
-    static String partialDescriptorFor(Class<?>... paramTypes) {
+    static String paramDescriptorFor(Class<?>... paramTypes) {
         if (paramTypes.length == 0) {
             return "";
         }
@@ -140,22 +140,36 @@ final class Utils {
     }
 
     /**
-     * Returns a method descriptor with no parens and no return type.
+     * Returns a method descriptor with parens but no return type.
+     */
+    static String partialDescriptorFor(Class<?>... paramTypes) {
+        if (paramTypes.length == 0) {
+            return "()";
+        }
+        var b = new StringBuilder().append('(');
+        for (Class<?> c : paramTypes) {
+            b.append(c.descriptorString());
+        }
+        return b.append(')').toString();
+    }
+
+    /**
+     * Returns a method descriptor with parens but no return type.
      */
     static String partialDescriptorFor(MethodType mt) {
         int count = mt.parameterCount();
         if (count == 0) {
-            return "";
+            return "()";
         }
-        var b = new StringBuilder();
+        var b = new StringBuilder().append('(');
         for (int i=0; i<count; i++) {
             b.append(mt.parameterType(i).descriptorString());
         }
-        return b.toString();
+        return b.append(')').toString();
     }
 
     /**
-     * Returns a method descriptor with no parens and no return type.
+     * Returns a method descriptor with parens but no return type.
      */
     static String partialDescriptorFor(Method m) {
         return partialDescriptorFor(m.getParameterTypes());
@@ -269,6 +283,14 @@ final class Utils {
      */
     static String className(String packageName, String className) {
         return packageName.isEmpty() ? className : className.substring(packageName.length() + 1);
+    }
+
+    /**
+     * Returns a fully qualified name with a '/' separator. The given packageName must already
+     * have '/' characters as separators.
+     */
+    static String fullName(String packageName, String className) {
+        return packageName.isEmpty() ? className : (packageName + '/' + className);
     }
 
     static boolean isEmpty(Map<?, ?> map) {

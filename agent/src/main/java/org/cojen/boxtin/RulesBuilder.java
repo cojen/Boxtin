@@ -24,6 +24,7 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.NavigableMap;
@@ -52,8 +53,6 @@ public final class RulesBuilder {
 
     // Default is selected when no map entry is found.
     private Rule mDefaultRule;
-
-    private Rules mBuiltRules;
 
     public RulesBuilder() {
         this(ModuleLayer.boot());
@@ -95,7 +94,6 @@ public final class RulesBuilder {
     }
 
     RulesBuilder ruleForAll(Rule rule) {
-        modified();
         mModules = null;
         mDefaultRule = rule;
         return this;
@@ -107,7 +105,6 @@ public final class RulesBuilder {
      * @param name fully qualified module name
      */
     public ModuleScope forModule(String name) {
-        modified();
         Objects.requireNonNull(name);
         Map<String, ModuleScope> modules = mModules;
         if (modules == null) {
@@ -180,26 +177,22 @@ public final class RulesBuilder {
      * @throws IllegalStateException if a package is defined in multiple modules
      */
     public Rules build() {
-        if (mBuiltRules != null) {
-            return mBuiltRules;
-        }
-
-        Map<String, RuleSet.PackageScope> builtPackages;
+        Map<String, RuleSet.PackageScope> packageScopes;
 
         if (isEmpty(mModules)) {
-            builtPackages = Map.of();
+            packageScopes = Map.of();
         } else {
-            builtPackages = new LinkedHashMap<>();
-            for (ModuleScope ms  : mModules.values()) {
-                ms.buildInto(builtPackages);
+            var packageToModuleMap = new HashMap<String, String>();
+            for (ModuleScope ms : mModules.values()) {
+                ms.buildIntoPackageToModuleMap(packageToModuleMap);
+            }
+            packageScopes = new LinkedHashMap<>();
+            for (ModuleScope ms : mModules.values()) {
+                ms.buildIntoPackageScopes(packageScopes, packageToModuleMap);
             }
         }
 
-        return mBuiltRules = new RuleSet(mLayer, builtPackages, mDefaultRule);
-    }
-
-    void modified() {
-        mBuiltRules = null;
+        return new RuleSet(mLayer, packageScopes, mDefaultRule);
     }
 
     private static String nameFor(Class<?> clazz) {
@@ -301,33 +294,6 @@ public final class RulesBuilder {
         return null;
     }
 
-    private static void forAllMethods(Class<?> clazz, Consumer<Method> consumer) {
-        forAllMethods(clazz, true, consumer);
-    }
-
-    private static void forAllMethods(Class<?> clazz, boolean includeStatics,
-                                      Consumer<Method> consumer)
-    {
-        for (Method m : clazz.getDeclaredMethods()) {
-            if ((includeStatics || !Modifier.isStatic(m.getModifiers())) && isAccessible(m)) {
-                consumer.accept(m);
-            }
-        }
-
-        // Now do the inherited methods.
-
-        Class<?> superclass = clazz.getSuperclass();
-        if (superclass != null) {
-            forAllMethods(superclass, true, consumer);
-        }
-
-        for (Class<?> iface : clazz.getInterfaces()) {
-            // Note that inherited statics are ignored, because static interface methods aren't
-            // really inherited.
-            forAllMethods(iface, false, consumer);
-        }
-    }
-
     private static int forAllMethods(Class<?> clazz, String name, Consumer<Method> consumer) {
         return forAllMethods(clazz, name, true, consumer);
     }
@@ -426,7 +392,6 @@ public final class RulesBuilder {
          * @return this
          */
         ModuleScope ruleForAll(Rule rule) {
-            modified();
             mPackages = null;
             mDefaultRule = rule;
             return this;
@@ -439,14 +404,13 @@ public final class RulesBuilder {
          * @param name fully qualified package name
          */
         public PackageScope forPackage(String name) {
-            modified();
-            final String dottedName = name.replace('/', '.');
+            final String slashName = name.replace('.', '/').intern();
             Map<String, PackageScope> packages = mPackages;
             if (packages == null) {
                 mPackages = packages = new LinkedHashMap<>();
             }
-            return packages.computeIfAbsent(dottedName, k -> {
-                return new PackageScope(this, dottedName).ruleForAll(mDefaultRule);
+            return packages.computeIfAbsent(slashName, k -> {
+                return new PackageScope(this, slashName).ruleForAll(mDefaultRule);
             });
         }
 
@@ -504,12 +468,23 @@ public final class RulesBuilder {
             }
         }
 
-        private void buildInto(Map<String, RuleSet.PackageScope> builtPackages) {
-            if (mPackages != null) for (Map.Entry<String, PackageScope> e : mPackages.entrySet()) {
-                RuleSet.PackageScope scope = e.getValue().build(mName, mDefaultRule);
-                if (scope != null && builtPackages.putIfAbsent(scope.name(), scope) != null) {
+        private void buildIntoPackageToModuleMap(Map<String, String> packageToModuleMap) {
+            if (mPackages != null) for (String packageName : mPackages.keySet()) {
+                if (packageToModuleMap.putIfAbsent(packageName, mName) != null) {
                     throw new IllegalStateException
-                        ("Package is defined in multiple modules: " + e.getKey());
+                        ("Package is defined in multiple modules: " + packageName);
+                }
+            }
+        }
+
+        private void buildIntoPackageScopes(Map<String, RuleSet.PackageScope> packageScopes,
+                                            Map<String, String> packageToModuleMap)
+        {
+            if (mPackages != null) for (Map.Entry<String, PackageScope> e : mPackages.entrySet()) {
+                RuleSet.PackageScope scope = e.getValue()
+                    .build(mName, mDefaultRule, packageToModuleMap);
+                if (scope != null) {
+                    packageScopes.put(scope.name(), scope);
                 }
             }
         }
@@ -567,7 +542,6 @@ public final class RulesBuilder {
          * @return this
          */
         PackageScope ruleForAll(Rule rule) {
-            modified();
             mClasses = null;
             mDefaultRule = rule;
             return this;
@@ -581,7 +555,6 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope forClass(String name) {
-            modified();
             final String vmName = name.replace('.', '$');
             Map<String, ClassScope> classes = mClasses;
             if (classes == null) {
@@ -641,8 +614,10 @@ public final class RulesBuilder {
          * Validates that all classes are loadable, and that all class members are found.
          */
         void validate(Set<String> packages, ClassLoader loader, Consumer<String> reporter) {
-            if (!packages.contains(mName)) {
-                reporter.accept("Package isn't found: " + mParent.mName + '/' + mName);
+            String dottedName = mName.replace('/', '.');
+
+            if (!packages.contains(dottedName)) {
+                reporter.accept("Package isn't found: " + mParent.mName + '/' + dottedName);
                 return;
             }
 
@@ -656,12 +631,12 @@ public final class RulesBuilder {
         /**
          * @return null if redundant
          */
-        private RuleSet.PackageScope build(String moduleName, Rule parentRule) {
+        private RuleSet.PackageScope build(String moduleName, Rule parentRule,
+                                           Map<String, String> packageToModuleMap)
+        {
             if (isEmpty(mClasses) && parentRule.equals(mDefaultRule)) {
                 return null;
             }
-
-            String packageName = mName.replace('.', '/').intern();
 
             Map<String, RuleSet.ClassScope> builtClasses;
 
@@ -670,14 +645,15 @@ public final class RulesBuilder {
             } else {
                 builtClasses = new LinkedHashMap<>();
                 for (Map.Entry<String, ClassScope> e : mClasses.entrySet()) {
-                    RuleSet.ClassScope scope = e.getValue().build(packageName, mDefaultRule);
+                    RuleSet.ClassScope scope = e.getValue()
+                        .build(mName, mDefaultRule, packageToModuleMap);
                     if (scope != null) {
                         builtClasses.put(e.getKey().intern(), scope);
                     }
                 }
             }
 
-            return new RuleSet.PackageScope(moduleName, packageName, builtClasses, mDefaultRule);
+            return new RuleSet.PackageScope(moduleName, mName, builtClasses, mDefaultRule);
         }
     }
 
@@ -734,7 +710,6 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope denyAllConstructors() {
-            modified();
             mConstructors = null;
             mDefaultConstructorRule = deny();
             mVariantScope = mConstructors = new MethodScope().ruleForAll(deny());
@@ -747,7 +722,6 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope denyAllConstructors(DenyAction action) {
-            modified();
             mConstructors = null;
             Rule rule = deny(action);
             mDefaultConstructorRule = rule;
@@ -761,7 +735,6 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope denyAllMethods() {
-            modified();
             mMethods = null;
             mDefaultMethodRule = deny();
             mVariantScope = null;
@@ -774,7 +747,6 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope denyAllMethods(DenyAction action) {
-            modified();
             mMethods = null;
             mDefaultMethodRule = deny(action);
             mVariantScope = null;
@@ -814,7 +786,6 @@ public final class RulesBuilder {
          * variants are explicitly allowed
          */
         public ClassScope allowVariant(String descriptor) {
-            modified();
             if (mVariantScope == null) {
                 throw new IllegalStateException("No current constructor or method");
             }
@@ -834,7 +805,7 @@ public final class RulesBuilder {
          * variants are explicitly allowed
          */
         public ClassScope allowVariant(Class<?>... paramTypes) {
-            return allowVariant(partialDescriptorFor(paramTypes));
+            return allowVariant(paramDescriptorFor(paramTypes));
         }
 
         /**
@@ -851,7 +822,6 @@ public final class RulesBuilder {
          * @return this
          */
         ClassScope ruleForAll(Rule rule) {
-            modified();
             mConstructors = null;
             mDefaultConstructorRule = rule;
             mMethods = null;
@@ -866,7 +836,6 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope allowAllConstructors() {
-            modified();
             mConstructors = null;
             mDefaultConstructorRule = allow();
             mVariantScope = mConstructors = new MethodScope().allowAll();
@@ -879,7 +848,6 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope allowAllMethods() {
-            modified();
             mMethods = null;
             mDefaultMethodRule = allow();
             mVariantScope = null;
@@ -908,7 +876,6 @@ public final class RulesBuilder {
          * variants are explicitly denied
          */
         public ClassScope denyVariant(String descriptor) {
-            modified();
             if (mVariantScope == null) {
                 throw new IllegalStateException("No current constructor or method");
             }
@@ -929,7 +896,6 @@ public final class RulesBuilder {
          * @throws IllegalStateException if no current constructor or method
          */
         public ClassScope denyVariant(DenyAction action, String descriptor) {
-            modified();
             if (mVariantScope == null) {
                 throw new IllegalStateException("No current constructor or method");
             }
@@ -946,7 +912,7 @@ public final class RulesBuilder {
          * variants are explicitly denied
          */
         public ClassScope denyVariant(Class<?>... paramTypes) {
-            return denyVariant(partialDescriptorFor(paramTypes));
+            return denyVariant(paramDescriptorFor(paramTypes));
         }
 
         /**
@@ -958,7 +924,7 @@ public final class RulesBuilder {
          * variants are explicitly denied
          */
         public ClassScope denyVariant(DenyAction action, Class<?>... paramTypes) {
-            return denyVariant(action, partialDescriptorFor(paramTypes));
+            return denyVariant(action, paramDescriptorFor(paramTypes));
         }
 
         /**
@@ -1029,46 +995,12 @@ public final class RulesBuilder {
                     e.getValue().validateMethod(loader, clazz, e.getKey(), reporter);
                 }
             }
-
-            if (mDefaultMethodRule.isDenied()) {
-                forAllMethods(clazz, method -> {
-                    Class<?> declaringClass = method.getDeclaringClass();
-
-                    if (declaringClass == Object.class || declaringClass == clazz) {
-                        return;
-                    }
-
-                    String name = method.getName();
-
-                    if (!isEmpty(mMethods) && mMethods.containsKey(name)) {
-                        return;
-                    }
-
-                    String desc = partialDescriptorFor(method);
-
-                    if (isObjectMethod(name, desc)) {
-                        return;
-                    }
-
-                    Rule rule = RulesBuilder.this.build().forClass(declaringClass)
-                        .ruleForMethod(method.getName(), method.getParameterTypes());
-
-                    if (rule.isAllowed()) {
-                        reporter.accept
-                            ("Method " + clazz.getName() + "::" + name + " is implicitly denied, "
-                             + "but when the instance is cast to " +
-                             method.getDeclaringClass().getName() + ", the method becomes allowed. "
-                             + "An explicit allow or deny rule is required.");
-                    }
-                });
-            }
         }
 
         /**
-         * Caller must call allowAll or denyAll on the returned MethodScope.
+         * Caller must call allowAll or ruleForAll on the returned MethodScope.
          */
         private MethodScope forMethod(String name) {
-            modified();
             checkMethodName(name);
             Map<String, MethodScope> methods = mMethods;
             if (methods == null) {
@@ -1080,14 +1012,17 @@ public final class RulesBuilder {
         /**
          * @return null if redundant
          */
-        private RuleSet.ClassScope build(String packageName, Rule parentRule) {
+        private RuleSet.ClassScope build(String packageName, Rule parentRule,
+                                         Map<String, String> packageToModuleMap)
+        {
             if (mConstructors == null && isEmpty(mMethods) &&
-                parentRule.equals(mDefaultConstructorRule) && parentRule.equals(mDefaultMethodRule))
+                parentRule.equals(mDefaultConstructorRule) &&
+                parentRule.isAllowed() && mDefaultMethodRule.isAllowed())
             {
                 return null;
             }
 
-            RuleSet.MethodScope builtConstructors;
+            RuleSet.ConstructorScope builtConstructors;
 
             if (mConstructors == null) {
                 builtConstructors = null;
@@ -1095,13 +1030,45 @@ public final class RulesBuilder {
                 builtConstructors = mConstructors.buildConstructor(mDefaultConstructorRule);
             }
 
+            Map<String, MethodScope> methods = mMethods;
+
+            // Add explicit deny rules for all denied method variants which actually exist.
+            {
+                methods = methods == null ? new HashMap<>() : new LinkedHashMap<>(methods);
+                final var fmethods = methods;
+
+                String fullClassName = fullName(packageName, mName);
+                ClassInfo info = ClassInfo.find
+                    (fullClassName, packageName, packageToModuleMap, mLayer);
+
+                if (info != null) info.forAllMethods(packageToModuleMap, mdesc -> {
+                    String name = mdesc.getKey();
+
+                    MethodScope scope = fmethods.get(name);
+
+                    if (scope == null) {
+                        if (mDefaultMethodRule.isAllowed()) {
+                            return true;
+                        }
+                        scope = new MethodScope().ruleForAll(mDefaultMethodRule);
+                        fmethods.put(name, scope);
+                    } else if (scope.mDefaultRule.isAllowed()) {
+                        return true;
+                    }
+
+                    scope.explicitRuleForVariant(mdesc.getValue());
+
+                    return true;
+                });
+            }
+
             Map<String, RuleSet.MethodScope> builtMethods;
 
-            if (isEmpty(mMethods)) {
+            if (isEmpty(methods)) {
                 builtMethods = Map.of();
             } else {
                 builtMethods = new LinkedHashMap<>();
-                for (Map.Entry<String, MethodScope> e : mMethods.entrySet()) {
+                for (Map.Entry<String, MethodScope> e : methods.entrySet()) {
                     RuleSet.MethodScope scope = e.getValue().buildMethod(mDefaultMethodRule);
                     if (scope != null) {
                         builtMethods.put(e.getKey().intern(), scope);
@@ -1157,17 +1124,7 @@ public final class RulesBuilder {
          * @return this
          */
         MethodScope ruleForVariant(Rule rule, String descriptor) {
-            if (descriptor.isEmpty()) {
-                descriptor = "()";
-            } else {
-                descriptor = descriptor.replace('.', '/');
-                if (descriptor.charAt(0) != '(' &&
-                    descriptor.charAt(descriptor.length() - 1) != ')')
-                {
-                    descriptor = '(' + descriptor + ')';
-                }
-            }
-
+            descriptor = toPartialDescriptor(descriptor);
             NavigableMap<CharSequence, Rule> variants = mVariants;
 
             if (variants == null) {
@@ -1184,6 +1141,36 @@ public final class RulesBuilder {
             }
 
             return this;
+        }
+
+        void explicitRuleForVariant(String descriptor) {
+            descriptor = toPartialDescriptor(descriptor);
+            NavigableMap<CharSequence, Rule> variants = mVariants;
+
+            if (variants == null) {
+                mVariants = variants = new TreeMap<>(CharSequence::compare);
+            } else if (variants.containsKey(descriptor)) {
+                return;
+            }
+
+            variants.put(descriptor.intern(), mDefaultRule);
+        }
+
+        /**
+         * Converts a param descriptor (no parens) to a partial descriptor which has parens.
+         */
+        private static String toPartialDescriptor(String descriptor) {
+            if (descriptor.isEmpty()) {
+                descriptor = "()";
+            } else {
+                descriptor = descriptor.replace('.', '/');
+                if (descriptor.charAt(0) != '(' &&
+                    descriptor.charAt(descriptor.length() - 1) != ')')
+                {
+                    descriptor = '(' + descriptor + ')';
+                }
+            }
+            return descriptor;
         }
 
         void validateConstructor(ClassLoader loader, Class<?> clazz, Consumer<String> reporter) {
@@ -1241,7 +1228,7 @@ public final class RulesBuilder {
                 });
             } else {
                 count = forAllMethods(clazz, name, method -> {
-                    String desc = partialDescriptorFor(method.getParameterTypes());
+                    String desc = paramDescriptorFor(method.getParameterTypes());
                     Rule rule = mVariants.get(desc);
                     if (rule == null) {
                         rule = mDefaultRule;
@@ -1290,7 +1277,7 @@ public final class RulesBuilder {
         /**
          * @return null if redundant
          */
-        private RuleSet.MethodScope buildConstructor(Rule parentRule) {
+        private RuleSet.ConstructorScope buildConstructor(Rule parentRule) {
             NavigableMap<CharSequence, Rule> variants = mVariants;
             if (isEmpty(variants) && mDefaultRule.equals(parentRule)) {
                 return null;
@@ -1298,10 +1285,13 @@ public final class RulesBuilder {
             if (variants == null) {
                 variants = Collections.emptyNavigableMap();
             }
-            return new RuleSet.MethodScope(variants, mDefaultRule);
+            return new RuleSet.ConstructorScope(variants, mDefaultRule);
         }
 
         /**
+         * This method should only be called on instances which have all denied variants
+         * explicitly specified. Those which are unspecified will be allowed.
+         *
          * @return null if redundant
          */
         private RuleSet.MethodScope buildMethod(Rule parentRule) {
@@ -1315,7 +1305,7 @@ public final class RulesBuilder {
             if (variants == null) {
                 variants = Collections.emptyNavigableMap();
             }
-            return new RuleSet.MethodScope(variants, mDefaultRule);
+            return new RuleSet.MethodScope(variants);
         }
     }
 }

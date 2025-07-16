@@ -17,6 +17,7 @@
 package org.cojen.boxtin;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 
 import java.lang.reflect.Modifier;
 
@@ -41,15 +42,28 @@ final class ClassInfo {
 
     /**
      * @param fullClassName name must have '/' characters as separators
-     * @param rules used to find the module name which provides the class
+     * @param packageToModule maps package names to module names
      * @param layer finds the module for providing the class data
      * @return null if not found
      */
-    static ClassInfo find(String fullClassName, RuleSet rules, ModuleLayer layer)
-        throws IOException, ClassFormatException
+    static ClassInfo find(String fullClassName,
+                          Map<String, String> packageToModule, ModuleLayer layer)
+        throws UncheckedIOException, ClassFormatException
     {
-        String packageName = packageName(fullClassName);
-        String moduleName = rules.moduleForPackage(packageName);
+        return find(fullClassName, packageName(fullClassName), packageToModule, layer);
+    }
+
+    /**
+     * @param fullClassName name must have '/' characters as separators
+     * @param packageToModule maps package names to module names
+     * @param layer finds the module for providing the class data
+     * @return null if not found
+     */
+    static ClassInfo find(String fullClassName, String packageName,
+                          Map<String, String> packageToModule, ModuleLayer layer)
+        throws UncheckedIOException, ClassFormatException
+    {
+        String moduleName = packageToModule.get(packageName);
 
         if (moduleName == null) {
             return null;
@@ -66,7 +80,7 @@ final class ClassInfo {
      * @return null if not found
      */
     static ClassInfo find(String fullClassName, String packageName, Module module)
-        throws IOException, ClassFormatException
+        throws UncheckedIOException, ClassFormatException
     {
         SoftCache<String, ClassInfo> infos = cCache.get(module);
 
@@ -83,19 +97,23 @@ final class ClassInfo {
         ClassInfo info = infos.get(fullClassName);
 
         if (info == null) {
-            byte[] classFile;
-            String path = fullClassName + ".class";
-            try (var in = module.getResourceAsStream(path)) {
-                if (in == null) {
-                    return null;
+            try {
+                byte[] classFile;
+                String path = fullClassName + ".class";
+                try (var in = module.getResourceAsStream(path)) {
+                    if (in == null) {
+                        return null;
+                    }
+                    classFile = in.readAllBytes();
                 }
-                classFile = in.readAllBytes();
+                if (packageName == null) {
+                    packageName = packageName(fullClassName);
+                }
+                info = new ClassInfo(module.getLayer(), fullClassName, classFile);
+                infos.put(fullClassName.intern(), info);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
-            if (packageName == null) {
-                packageName = packageName(fullClassName);
-            }
-            info = new ClassInfo(module.getLayer(), packageName, fullClassName, classFile);
-            infos.put(fullClassName.intern(), info);
         }
 
         return info;
@@ -103,21 +121,15 @@ final class ClassInfo {
 
     private final ModuleLayer mLayer;
 
-    private final String mPackageName, mClassName;
-
-    private final int mClassFlags;
-
-    private final boolean mSealed;
-
     private final String mSuperClassName;
 
     private final Set<String> mInterfaceNames;
 
-    // Maps names of accessible methods to descriptor sets. The descriptors are partial
+    // Maps names of accessible methods to descriptor sets. The descriptors are parameter
     // descriptors, in that they omit parenthesis and the return type.
     private final Map<String, Object> mInstanceMethods, mStaticMethods;
 
-    ClassInfo(ModuleLayer layer, String packageName, String fullClassName, byte[] classFile)
+    ClassInfo(ModuleLayer layer, String fullClassName, byte[] classFile)
         throws IOException, ClassFormatException
     {
         mLayer = layer;
@@ -133,16 +145,13 @@ final class ClassInfo {
 
         var cp = ConstantPool.decode(decoder);
 
-        mClassFlags = decoder.readUnsignedShort();
+        int classFlags = decoder.readUnsignedShort();
 
         int thisClassIndex = decoder.readUnsignedShort();
 
         if (!cp.findConstant(thisClassIndex, C_Class.class).mValue.equals(fullClassName)) {
             throw new ClassFormatException(fullClassName);
         }
-
-        mPackageName = packageName;
-        mClassName = className(packageName, fullClassName);
 
         int superClassIndex = decoder.readUnsignedShort();
 
@@ -198,21 +207,6 @@ final class ClassInfo {
 
         mInstanceMethods = instanceMethods == null ? Map.of() : instanceMethods;
         mStaticMethods = staticMethods == null ? Map.of() : staticMethods;
-
-        boolean sealed = false;
-
-        int attrsCount = decoder.readUnsignedShort();
-        for (int i=0; i<attrsCount; i++) {
-            int nameIndex = decoder.readUnsignedShort();
-            long attrLength = decoder.readUnsignedInt();
-            decoder.skipNBytes(attrLength);
-            if (cp.findConstantUTF8(nameIndex).equals("PermittedSubclasses")) {
-                sealed = true;
-                break;
-            }
-        }
-
-        mSealed = sealed;
     }
 
     /**
@@ -260,132 +254,14 @@ final class ClassInfo {
     }
 
     /**
-     * @param consumer receives all accessible locally declared method name/desc pairs; the
-     * consumer can return false to stop the iteration
-     */
-    void forAllDeclaredMethods(Predicate<Map.Entry<String, String>> consumer) {
-        if (forAllMethods(mStaticMethods, consumer)) {
-            forAllMethods(mInstanceMethods, consumer);
-        }
-    }
-
-    /**
-     * A class or interface is subtype safe if it cannot be subtyped by an external module, or
-     * if subtyping doesn't gain access to denied methods.
-     */
-    boolean isSubtypeSafe(RuleSet rules) throws IOException, ClassFormatException {
-        if (!isAccessible(mClassFlags) || Modifier.isFinal(mClassFlags) || mSealed) {
-            return true;
-        }
-
-        if (Modifier.isInterface(mClassFlags)) {
-            // Interfaces are subtype safe if they don't provide any instance methods. Static
-            // interface methods aren't inherited, and they can only be invoked by specifying
-            // the name of the interface they're defined in. This is enforced by the JVM.
-            return forAllMethods(rules, false, true, method -> {
-                return isObjectMethod(method.getKey(), method.getValue());
-            });
-        }
-
-        Rules.ForClass forClass = rules.forClass(mPackageName, mClassName);
-
-        boolean hasDeniedStatics = !forAllMethods(rules, true, false, method -> {
-            return forClass.ruleForMethod(method.getKey(), method.getValue()).isAllowed();
-        });
-
-        if (hasDeniedStatics) {
-            // Accessible denied static methods exist. Even if the class has no accessible
-            // constructors, subclassing is still possible at the JVM level, providing access
-            // to the denied static methods via inheritance.
-            return false;
-        }
-
-        // If any accessible constructors are allowed, return false, because subclassing is
-        // possible outside the module.
-
-        return forAllConstructors(desc -> forClass.ruleForConstructor(desc).isDenied());
-    }
-
-    /**
-     * @param consumer receives all accessible method name/desc pairs for methods which might
-     * impact subtype safety; the consumer can return false to stop the iteration
-     */
-    private boolean forAllMethods(RuleSet rules, boolean staticMethods, boolean instanceMethods,
-                                  Predicate<Map.Entry<String, String>> consumer)
-        throws IOException, ClassFormatException
-    {
-        String superName = mSuperClassName;
-        if (superName == null) {
-            // Skip methods defined in java.lang.Object.
-            return true;
-        }
-
-        if (staticMethods && !forAllMethods(mStaticMethods, consumer)) {
-            return false;
-        }
-
-        if (instanceMethods && !forAllMethods(mInstanceMethods, consumer)) {
-            return false;
-        }
-
-        // Now do the inherited methods.
-
-        ClassInfo superInfo = find(superName, rules, mLayer);
-        if (superInfo != null) {
-            if (!superInfo.forAllMethods(rules, staticMethods, instanceMethods, consumer)) {
-                return false;
-            }
-        }
-
-        for (String ifaceName : mInterfaceNames) {
-            ClassInfo ifaceInfo = find(ifaceName, rules, mLayer);
-            if (ifaceInfo != null) {
-                // Note that inherited statics are ignored, because static interface methods
-                // aren't really inherited.
-                if (!ifaceInfo.forAllMethods(rules, false, instanceMethods, consumer)) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static boolean forAllMethods(Map<String, Object> methods,
-                                         Predicate<Map.Entry<String, String>> consumer)
-    {
-        Iterator<Map.Entry<String, Object>> it = methods.entrySet().iterator();
-
-        while (it.hasNext()) {
-            Map.Entry entry = it.next();
-            var name = (String) entry.getKey();
-            if (name.equals("<init>")) {
-                continue;
-            }
-            Object value = entry.getValue();
-            if (value instanceof String) {
-                if (!consumer.test((Map.Entry<String, String>) entry)) {
-                    return false;
-                }
-            } else {
-                for (String desc : ((Set<String>) value)) {
-                    if (!consumer.test(Map.entry(name, desc))) {
-                        return false;
-                    }
-                }
-            }
-        }
-
-        return true;
-    }
-
-    /**
+     * Iterates over all constructors and passes to them to the given consumer as descriptors.
+     *
      * @param consumer receives all accessible constructor descriptors; the consumer can return
      * false to stop the iteration
      */
+    /*
     @SuppressWarnings("unchecked")
-    private boolean forAllConstructors(Predicate<String> consumer) {
+    boolean forAllConstructors(Predicate<String> consumer) {
         Iterator<Map.Entry<String, Object>> it = mInstanceMethods.entrySet().iterator();
 
         while (it.hasNext()) {
@@ -402,6 +278,97 @@ final class ClassInfo {
             } else {
                 for (String desc : ((Set<String>) value)) {
                     if (!consumer.test(desc)) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+    */
+
+    /**
+     * Iterates over all methods and passes to them to the given consumer as name/desc pairs,
+     * including all inherited methods, but exluding methods declared in java.lang.Object.
+     *
+     * @param packageToModule maps package names to module names
+     * @param consumer receives all accessible method name/desc pairs for methods, including
+     * inherited ones; the consumer can return false to stop the iteration
+     */
+    boolean forAllMethods(Map<String, String> packageToModule,
+                          Predicate<Map.Entry<String, String>> consumer)
+        throws UncheckedIOException, ClassFormatException
+    {
+        return forAllMethods(packageToModule, true, true, consumer);
+    }
+
+    private boolean forAllMethods(Map<String, String> packageToModule,
+                                  boolean staticMethods, boolean instanceMethods,
+                                  Predicate<Map.Entry<String, String>> consumer)
+        throws UncheckedIOException, ClassFormatException
+    {
+        String superName = mSuperClassName;
+        if (superName == null) {
+            // Skip the methods defined in java.lang.Object.
+            return true;
+        }
+
+        if (staticMethods && !doForAllMethods(mStaticMethods, consumer)) {
+            return false;
+        }
+
+        if (instanceMethods && !doForAllMethods(mInstanceMethods, consumer)) {
+            return false;
+        }
+
+        // Now do the inherited methods.
+
+        ClassInfo superInfo = find(superName, packageToModule, mLayer);
+        if (superInfo != null) {
+            if (!superInfo.forAllMethods
+                (packageToModule, staticMethods, instanceMethods, consumer))
+            {
+                return false;
+            }
+        }
+
+        for (String ifaceName : mInterfaceNames) {
+            ClassInfo ifaceInfo = find(ifaceName, packageToModule, mLayer);
+            if (ifaceInfo != null) {
+                // Note that inherited statics are ignored, because static interface methods
+                // aren't really inherited.
+                if (!ifaceInfo.forAllMethods(packageToModule, false, instanceMethods, consumer)) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static boolean doForAllMethods(Map<String, Object> methods,
+                                           Predicate<Map.Entry<String, String>> consumer)
+    {
+        Iterator<Map.Entry<String, Object>> it = methods.entrySet().iterator();
+
+        while (it.hasNext()) {
+            Map.Entry entry = it.next();
+            var name = (String) entry.getKey();
+            if (name.equals("<init>")) {
+                continue;
+            }
+            Object value = entry.getValue();
+            if (value instanceof String desc) {
+                if (!isObjectMethod(name, desc) &&
+                    !consumer.test((Map.Entry<String, String>) entry))
+                {
+                    return false;
+                }
+            } else {
+                for (String desc : ((Set<String>) value)) {
+                    if (!isObjectMethod(name, desc) && !consumer.test(Map.entry(name, desc))) {
                         return false;
                     }
                 }
