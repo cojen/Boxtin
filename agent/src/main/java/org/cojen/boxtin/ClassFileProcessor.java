@@ -624,7 +624,7 @@ final class ClassFileProcessor {
 
             encodeDenyAction(encoder, caller, hasInstance, true, methodRef, methodRef.mClass,
                              rule.denyAction(), resumeAddress,
-                             args.argSlots(), args.withArgs(), null);
+                             args.argSlots(), 0, args.withArgs(), null);
 
             caller.loadArgs(encoder, hasInstance, methodRef, args.argSlots());
 
@@ -776,6 +776,8 @@ final class ClassFileProcessor {
      * @param targetClass can be different than methodRef.mClass if isAssignableFrom is called
      * @param resumeAddress branch to this location if a value was generated; if negative then
      * return from the caller
+     * @param castArg0 when non-zero, the first argument should be cast to the type represented
+     * by this index when passed to a checked or custom method handle
      * @param withArgs smt entry with the argSlots defined as local variables
      * @param denyAddresses addresses where deny actions have been encoded; initially null
      */
@@ -783,7 +785,7 @@ final class ClassFileProcessor {
                                   CodeAttr caller, boolean hasInstance, boolean maybeNull,
                                   C_MemberRef methodRef, C_Class targetClass,
                                   DenyAction action, int resumeAddress,
-                                  int[] argSlots, StackMapTable.Entry withArgs,
+                                  int[] argSlots, int castArg0, StackMapTable.Entry withArgs,
                                   Map<DenyAction, Integer> denyAddresses)
         throws IOException
     {
@@ -799,11 +801,13 @@ final class ClassFileProcessor {
 
             for (Map.Entry<String, Rule> e : matches.entrySet()) {
                 targetClass = mConstantPool.addClass(e.getKey());
+                int doCastArg0 = castArg0;
 
                 if (hasInstance) {
                     CodeAttr.encodeVarOp(encoder, ALOAD, argSlots[0]);
                     encoder.write(INSTANCEOF);
                     encoder.writeShort(targetClass.mIndex);
+                    doCastArg0 = targetClass.mIndex;
                 } else {
                     if (isAssignableFrom == null) {
                         isAssignableFrom = mConstantPool.addMethodRef
@@ -826,7 +830,7 @@ final class ClassFileProcessor {
 
                 encodeDenyAction(encoder, caller, hasInstance, false, methodRef, targetClass,
                                  e.getValue().denyAction(), resumeAddress,
-                                 argSlots, withArgs, denyAddresses);
+                                 argSlots, doCastArg0, withArgs, denyAddresses);
 
                 caller.smt.putEntry(encoder.length(), withArgs);
                 encodeBranchTarget(encoder, offset);
@@ -874,7 +878,8 @@ final class ClassFileProcessor {
         int checkedOffset = 0;
 
         if (action instanceof DenyAction.Checked checked) {
-            int returnOp = encodeMethodHandleInvoke(encoder, caller, argSlots, checked.predicate);
+            int returnOp = encodeMethodHandleInvoke
+                (encoder, caller, argSlots, castArg0, checked.predicate);
             if (returnOp == 0) {
                 action = DenyAction.Standard.THE;
             } else {
@@ -907,7 +912,8 @@ final class ClassFileProcessor {
 
                 if (nat.mName.isConstructor()) {
                     if (action instanceof DenyAction.Custom cu) {
-                        byte returnOp = encodeMethodHandleInvoke(encoder, caller, argSlots, cu.mhi);
+                        byte returnOp = encodeMethodHandleInvoke
+                            (encoder, caller, argSlots, castArg0, cu.mhi);
                         if (returnOp != 0) {
                             encodeReturnPop(encoder, returnOp);
                         }
@@ -921,7 +927,8 @@ final class ClassFileProcessor {
                     } else if (action instanceof DenyAction.Empty) {
                         returnOp = encodeEmpty(encoder, caller, nat.mTypeDesc);
                     } else if (action instanceof DenyAction.Custom cu) {
-                        returnOp = encodeMethodHandleInvoke(encoder, caller, argSlots, cu.mhi);
+                        returnOp = encodeMethodHandleInvoke
+                            (encoder, caller, argSlots, castArg0, cu.mhi);
                     } else {
                         break doReturn;
                     }
@@ -1360,7 +1367,7 @@ final class ClassFileProcessor {
      * @return a return opcode or else 0 if the method descriptor isn't compatible
      */
     private byte encodeMethodHandleInvoke(BufferEncoder encoder, CodeAttr caller,
-                                          int[] argSlots, MethodHandleInfo mhi)
+                                          int[] argSlots, int castArg0, MethodHandleInfo mhi)
         throws IOException
     {
         MethodType mt = mhi.getMethodType();
@@ -1410,6 +1417,10 @@ final class ClassFileProcessor {
                     encoder.writeShort(mThisClassIndex);
                 } else {
                     CodeAttr.encodeVarOp(encoder, ALOAD, argSlots[slotNum++]);
+                    if (i == 0 && castArg0 != 0) {
+                        encoder.writeByte(CHECKCAST);
+                        encoder.writeShort(castArg0);
+                    }
                 }
                 pushed++;
             }
@@ -1508,7 +1519,7 @@ final class ClassFileProcessor {
         StackMapTable.Entry withArgs = proxyMethod.smt.getEntry(0);
 
         encodeDenyAction(encoder, proxyMethod, hasInstance, true, methodRef, methodRef.mClass,
-                         action, -1, argSlots, withArgs, null);
+                         action, -1, argSlots, 0, withArgs, null);
 
         if (op == NEW) {
             encoder.write(NEW);
