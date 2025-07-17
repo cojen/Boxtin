@@ -631,10 +631,10 @@ final class ClassFileProcessor {
             // Copy the original invoke operation.
             encoder.write(buffer, opOffset, opSize);
 
-            caller.replaced(opAddress, checkStartAddress, encoder.length());
-
             // Branch back to the resumeAddress.
             encodeBranch(encoder, resumeAddress);
+
+            caller.replaced(opAddress, checkStartAddress, encoder.length());
 
             storeReplacement(caller.attrOffset, caller);
         }

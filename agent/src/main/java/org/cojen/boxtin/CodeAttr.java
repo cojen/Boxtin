@@ -91,12 +91,9 @@ class CodeAttr implements RegionReplacement {
 
             var exTable = new long[exCount];
             for (int i=0; i<exCount; i++) {
-                // Read start_pc, end_pc, handler_pc, and catch_type. Flip the highest bit such
-                // that the sort will work with signed types.
-                exTable[i] = decoder.readLong() ^ (1L << 63);
+                // Read start_pc, end_pc, handler_pc, and catch_type.
+                exTable[i] = decoder.readLong();
             }
-
-            Arrays.sort(exTable);
 
             IntArray replaced = mReplacedOpAddresses;
             int numReplaced = replaced.length() / 3;
@@ -106,31 +103,22 @@ class CodeAttr implements RegionReplacement {
             for (int i=0; i<numReplaced; i++) {
                 int opAddress = replaced.get(i * 3);
 
-                long key = (((long) opAddress) << 48) ^ 0x8000_ffff_ffff_ffffL;
-                int ix = Arrays.binarySearch(exTable, key);
-                if (ix < 0) {
-                    ix = ~ix;
-                }
-                ix--;
-
-                if (ix >= 0) do {
-                    long entry = exTable[ix] ^ (1L << 63);
+                for (int ix = 0; ix < exTable.length; ix++) {
+                    long entry = exTable[ix];
                     int start_pc = (int) (entry >>> 48);
-                    if (start_pc > opAddress) {
-                        break;
-                    }
-                    int end_pc = ((int) (entry >>> 32)) & 0xffff;
-                    if (opAddress < end_pc) {
-                        if (newEntries == null) {
-                            newEntries = new IntArray(numReplaced * 2);
+                    if (start_pc <= opAddress) {
+                        int end_pc = ((int) (entry >>> 32)) & 0xffff;
+                        if (opAddress < end_pc) {
+                            if (newEntries == null) {
+                                newEntries = new IntArray(numReplaced * 2);
+                            }
+                            int newStartPc = replaced.get(i * 3 + 1);
+                            int newEndPc = replaced.get(i * 3 + 2);
+                            newEntries.push(newStartPc << 16 | newEndPc);
+                            newEntries.push((int) entry);
                         }
-                        int newStartPc = replaced.get(i * 3 + 1);
-                        int newEndPc = replaced.get(i * 3 + 2);
-                        newEntries.push(newStartPc << 16 | newEndPc);
-                        newEntries.push((int) entry);
                     }
-                    ix++;
-                } while (ix < exTable.length);
+                }
             }
 
             int newLen = exTable.length;
@@ -142,7 +130,7 @@ class CodeAttr implements RegionReplacement {
             codeEncoder.writeShort(newLen);
 
             for (long entry : exTable) {
-                codeEncoder.writeLong(entry ^ (1L << 63));
+                codeEncoder.writeLong(entry);
             }
 
             if (newEntries != null) {
