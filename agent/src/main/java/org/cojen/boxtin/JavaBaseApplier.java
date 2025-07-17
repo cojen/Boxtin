@@ -53,6 +53,7 @@ final class JavaBaseApplier implements RulesApplier {
     public void applyRulesTo(RulesBuilder b) {
         MethodHandleInfo iv1, iv2, lv1, lv2;
         MethodHandleInfo fp1, fp2, fp3, fp4, fp5, fp6;
+        MethodHandleInfo ctn;
         MethodHandleInfo cdc1, cdc2;
         MethodHandleInfo cfn1;
         MethodHandleInfo cgr1, cgr2, cgr3;
@@ -85,6 +86,8 @@ final class JavaBaseApplier implements RulesApplier {
             fp5 = findMethod(lookup, "setProperty",
                              mt(String.class, Class.class, String.class, String.class));
             fp6 = findMethod(lookup, "clearProperty", mt(String.class, Class.class, String.class));
+
+            ctn = findMethod(lookup, "checkThreadNew", mt(boolean.class, Thread.class));
 
             cdc1 = findMethod(lookup, "checkDefineClass",
                               mt(boolean.class, Class.class, ClassLoader.class, String.class,
@@ -397,12 +400,17 @@ final class JavaBaseApplier implements RulesApplier {
             .forClass("Thread")
             .denyAll()
             .denyMethod(DenyAction.value(1), "activeCount")
-            .denyMethod(DenyAction.value(null), "getContextClassLoader")
             .denyMethod(DenyAction.value(0), "enumerate")  // do nothing
-            .denyMethod(DenyAction.empty(), "setDaemon")   // do nothing
-            .denyMethod(DenyAction.empty(), "setName")     // do nothing
+            .denyMethod(DenyAction.checked(ctn, DenyAction.value(null)), "getContextClassLoader")
+            .denyMethod(DenyAction.checked(ctn, DenyAction.standard()), "interrupt")
+            .denyMethod(DenyAction.checked(ctn, DenyAction.standard()), "setContextClassLoader")
+            .denyMethod(DenyAction.checked(ctn, DenyAction.empty()), "setDaemon")
+            .denyMethod(DenyAction.checked(ctn, DenyAction.empty()), "setName")
             .denyMethod(DenyAction.empty(), "setPriority") // do nothing
+            .denyMethod(DenyAction.checked(ctn, DenyAction.standard()),
+                        "setUncaughtExceptionHandler")
             .allowAllConstructors()
+            .allowMethod("checkAccess")
             .allowMethod("clone") // always throws an exception anyhow
             .allowMethod("currentThread")
             .allowMethod("dumpStack")

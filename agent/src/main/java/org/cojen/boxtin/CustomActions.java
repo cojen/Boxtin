@@ -91,6 +91,12 @@ public final class CustomActions {
         return FilteredProperties.clearProperty(caller.getModule(), name);
     }
 
+    // Check for various Thread operations.
+    public static boolean checkThreadNew(Thread thread) {
+        // Allowed when the thread is new and hasn't started yet.
+        return thread.getState() == Thread.State.NEW;
+    }
+
     // Check for ClassLoader.defineClass.
     public static boolean checkDefineClass(Class<?> caller, ClassLoader loader,
                                            String name, byte[] b, int off, int len,
