@@ -1503,7 +1503,7 @@ final class ClassFileProcessor {
 
         C_Class thisClass = cp.findConstant(mThisClassIndex, C_Class.class);
         proxyMethod = new ProxyMethod(cp.addUniqueMethod(thisClass, proxyDesc));
-        proxyMethod.prepareForModification(mConstantPool, mThisClassIndex, null);
+        proxyMethod.prepareForModification(cp, mThisClassIndex, null);
         mProxyMethods.put(key, proxyMethod);
 
         int[] argSlots = proxyMethod.staticParamArgs(proxyDesc.asMethodTypeDesc());
