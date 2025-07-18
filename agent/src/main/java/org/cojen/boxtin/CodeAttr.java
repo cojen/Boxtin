@@ -103,8 +103,7 @@ class CodeAttr implements RegionReplacement {
             for (int i=0; i<numReplaced; i++) {
                 int opAddress = replaced.get(i * 3);
 
-                for (int ix = 0; ix < exTable.length; ix++) {
-                    long entry = exTable[ix];
+                for (long entry : exTable) {
                     int start_pc = (int) (entry >>> 48);
                     if (start_pc <= opAddress) {
                         int end_pc = ((int) (entry >>> 32)) & 0xffff;

@@ -303,8 +303,7 @@ public final class SecurityAgent {
             return null;
         }
         Rules rules = mController.rulesForCaller(module);
-        return rules == null ? null
-            : ClassFileProcessor.begin(module, classBuffer).transform(rules);
+        return rules == null ? null : ClassFileProcessor.begin(classBuffer).transform(rules);
     }
 
     /**

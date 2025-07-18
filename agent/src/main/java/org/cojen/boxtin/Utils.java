@@ -27,7 +27,6 @@ import java.lang.reflect.Modifier;
 import java.nio.ByteOrder;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -169,13 +168,6 @@ final class Utils {
     }
 
     /**
-     * Returns a method descriptor with parens but no return type.
-     */
-    static String partialDescriptorFor(Method m) {
-        return partialDescriptorFor(m.getParameterTypes());
-    }
-
-    /**
      * Returns a method descriptor with parens and a return type.
      */
     static String fullDescriptorFor(Method m) {
@@ -274,13 +266,6 @@ final class Utils {
     /**
      * Returns the class name with the package name stripped off.
      */
-    static String className(String packageName, Class<?> clazz) {
-        return className(packageName, clazz.getName());
-    }
-
-    /**
-     * Returns the class name with the package name stripped off.
-     */
     static String className(String packageName, String className) {
         return packageName.isEmpty() ? className : className.substring(packageName.length() + 1);
     }
@@ -295,10 +280,6 @@ final class Utils {
 
     static boolean isEmpty(Map<?, ?> map) {
         return map == null || map.isEmpty();
-    }
-
-    static boolean isEmpty(Collection<?> c) {
-        return c == null || c.isEmpty();
     }
 
     /**
@@ -318,18 +299,5 @@ final class Utils {
             }
         }
         return true;
-    }
-
-    /**
-     * Rethrows the given exception without the compiler complaining about it being checked or
-     * not. Use as follows: {@code throw rethrow(e)}
-     */
-    public static RuntimeException rethrow(Throwable e) {
-        throw Utils.<RuntimeException>castAndThrow(e);
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <T extends Throwable> RuntimeException castAndThrow(Throwable e) throws T {
-        throw (T) e;
     }
 }

@@ -440,8 +440,6 @@ public final class RulesBuilder {
 
         /**
          * Validates that all classes are loadable, and that all class members are found.
-         *
-         * @param layer required
          */
         void validate(Consumer<String> reporter) {
             Module module = mLayer.findModule(mName).orElse(null);
@@ -1255,23 +1253,6 @@ public final class RulesBuilder {
                     reporter.accept(e.toString());
                 }
             }
-        }
-
-        private static String fullMessage(String message, Method method) {
-            var b = new StringBuilder(message).append(": ");
-
-            b.append(method.getDeclaringClass().getName())
-                .append('.').append(method.getName()).append('(');
-
-            Class<?>[] paramTypes = method.getParameterTypes();
-            for (int i=0; i<paramTypes.length; i++) {
-                if (i > 0) {
-                    b.append(", ");
-                }
-                b.append(paramTypes[i].getSimpleName());
-            }
-
-            return b.append(')').toString();
         }
 
         /**

@@ -18,7 +18,6 @@ package org.cojen.boxtin;
 
 import java.io.IOException;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -218,10 +217,6 @@ final class RuleSet implements Rules {
             mPackageName = Objects.requireNonNull(packageName);
             mClassScopes = Objects.requireNonNull(classScopes);
             mDefaultRule = Objects.requireNonNull(defaultRule);
-        }
-
-        String moduleName() {
-            return mModuleName;
         }
 
         String name() {

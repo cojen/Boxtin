@@ -23,7 +23,6 @@ import java.lang.reflect.Modifier;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -71,15 +70,14 @@ final class ClassInfo {
 
         Module module = layer.findModule(moduleName).orElse(null);
 
-        return module == null ? null : find(fullClassName, packageName, module);
+        return module == null ? null : find(fullClassName, module);
     }
 
     /**
-     * @param packageName can be null to derive from fullClassName
      * @param module provides the class data
      * @return null if not found
      */
-    static ClassInfo find(String fullClassName, String packageName, Module module)
+    static ClassInfo find(String fullClassName, Module module)
         throws UncheckedIOException, ClassFormatException
     {
         SoftCache<String, ClassInfo> infos = cCache.get(module);
@@ -105,9 +103,6 @@ final class ClassInfo {
                         return null;
                     }
                     classFile = in.readAllBytes();
-                }
-                if (packageName == null) {
-                    packageName = packageName(fullClassName);
                 }
                 info = new ClassInfo(module.getLayer(), fullClassName, classFile);
                 infos.put(fullClassName.intern(), info);
@@ -290,7 +285,7 @@ final class ClassInfo {
 
     /**
      * Iterates over all methods and passes to them to the given consumer as name/desc pairs,
-     * including all inherited methods, but exluding methods declared in java.lang.Object.
+     * including all inherited methods, but excluding methods declared in java.lang.Object.
      *
      * @param packageToModule maps package names to module names
      * @param consumer receives all accessible method name/desc pairs for methods, including
@@ -351,10 +346,8 @@ final class ClassInfo {
     private static boolean doForAllMethods(Map<String, Object> methods,
                                            Predicate<Map.Entry<String, String>> consumer)
     {
-        Iterator<Map.Entry<String, Object>> it = methods.entrySet().iterator();
 
-        while (it.hasNext()) {
-            Map.Entry entry = it.next();
+        for (Map.Entry entry : methods.entrySet()) {
             var name = (String) entry.getKey();
             if (name.equals("<init>")) {
                 continue;
