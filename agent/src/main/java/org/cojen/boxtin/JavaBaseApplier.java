@@ -402,7 +402,6 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod(DenyAction.value(1), "activeCount")
             .denyMethod(DenyAction.value(0), "enumerate")  // do nothing
             .denyMethod(DenyAction.checked(ctn, DenyAction.value(null)), "getContextClassLoader")
-            .denyMethod(DenyAction.checked(ctn, DenyAction.standard()), "interrupt")
             .denyMethod(DenyAction.checked(ctn, DenyAction.standard()), "setContextClassLoader")
             .denyMethod(DenyAction.checked(ctn, DenyAction.empty()), "setDaemon")
             .denyMethod(DenyAction.checked(ctn, DenyAction.empty()), "setName")
@@ -423,6 +422,7 @@ final class JavaBaseApplier implements RulesApplier {
             .allowMethod("getThreadGroup")
             .allowMethod("getUncaughtExceptionHandler")
             .allowMethod("holdsLock")
+            .allowMethod("interrupt")
             .allowMethod("interrupted")
             .allowMethod("isAlive")
             .allowMethod("isDaemon")
