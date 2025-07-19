@@ -160,7 +160,6 @@
               <Premain-Class>org.cojen.boxtin.SecurityAgent</Premain-Class>
               <Can-Redefine-Classes>true</Can-Redefine-Classes>
               <Can-Retransform-Classes>true</Can-Retransform-Classes>
-              <Can-Set-Native-Method-Prefix>true</Can-Set-Native-Method-Prefix>
               <Boot-Class-Path>Boxtin.jar</Boot-Class-Path>
             </manifestEntries>
           </archive>
