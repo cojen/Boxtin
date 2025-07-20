@@ -72,7 +72,7 @@ The following methods in `java.lang.Class` have custom deny actions:
 - `getMethods`- can filter the results
 - `getRecordComponents`- can filter the results
 
-Methods which return `MethodHandle` instances are checked using the same strategy as for reflection. Custom deny actions are defined for the following `Lookup` methods, which can throw a `SecurityException`:
+Methods which return `MethodHandle` instances are checked using the same strategy as for reflection. Custom deny actions are defined for the following `Lookup` methods, which can throw a `NoSuchMethodException`:
 
 - `bind`
 - `findConstructor`
