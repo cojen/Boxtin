@@ -98,13 +98,15 @@ public class ReflectionTest extends TransformTest {
             fail();
         } catch (NoSuchMethodException e) {
             // Expected.
+            assertNotThrownByCustomCheck(e);
         }
 
         try {
             FileInputStream.class.getConstructor(String.class);
             fail();
-        } catch (SecurityException e) {
+        } catch (NoSuchMethodException e) {
             // Expected.
+            assertThrownByCustomCheck(e);
         }
     }
 
@@ -137,13 +139,15 @@ public class ReflectionTest extends TransformTest {
             fail();
         } catch (NoSuchMethodException e) {
             // Expected.
+            assertNotThrownByCustomCheck(e);
         }
 
         try {
             FileInputStream.class.getDeclaredConstructor(String.class);
             fail();
-        } catch (SecurityException e) {
+        } catch (NoSuchMethodException e) {
             // Expected.
+            assertThrownByCustomCheck(e);
         }
     }
 
@@ -176,13 +180,15 @@ public class ReflectionTest extends TransformTest {
             fail();
         } catch (NoSuchMethodException e) {
             // Expected.
+            assertNotThrownByCustomCheck(e);
         }
 
         try {
             Class.class.getDeclaredMethod("getConstructors");
             fail();
-        } catch (SecurityException e) {
+        } catch (NoSuchMethodException e) {
             // Expected.
+            assertThrownByCustomCheck(e);
         }
     }
 
@@ -251,13 +257,15 @@ public class ReflectionTest extends TransformTest {
             fail();
         } catch (NoSuchMethodException e) {
             // Expected.
+            assertNotThrownByCustomCheck(e);
         }
 
         try {
             Class.class.getMethod("getDeclaredMethods");
             fail();
-        } catch (SecurityException e) {
+        } catch (NoSuchMethodException e) {
             // Expected.
+            assertThrownByCustomCheck(e);
         }
     }
 
@@ -290,14 +298,16 @@ public class ReflectionTest extends TransformTest {
             fail();
         } catch (NoSuchMethodException e) {
             // Expected.
+            assertNotThrownByCustomCheck(e);
         }
 
         try {
             mt = MethodType.methodType(Method[].class);
             lookup.bind(String.class, "getDeclaredMethods", mt);
             fail();
-        } catch (SecurityException e) {
+        } catch (NoSuchMethodException e) {
             // Expected.
+            assertThrownByCustomCheck(e);
         }
     }
 
@@ -317,14 +327,16 @@ public class ReflectionTest extends TransformTest {
             fail();
         } catch (NoSuchMethodException e) {
             // Expected.
+            assertNotThrownByCustomCheck(e);
         }
 
         try {
             mt = MethodType.methodType(void.class, String.class);
             lookup.findConstructor(FileInputStream.class, mt);
             fail();
-        } catch (SecurityException e) {
+        } catch (NoSuchMethodException e) {
             // Expected.
+            assertThrownByCustomCheck(e);
         }
     }
 
@@ -341,8 +353,9 @@ public class ReflectionTest extends TransformTest {
         try {
             lookup.findSpecial(File.class, "delete", mt, SubFile.class);
             fail();
-        } catch (SecurityException e) {
+        } catch (NoSuchMethodException e) {
             // Expected.
+            assertThrownByCustomCheck(e);
         }
 
         MethodHandle mh = lookup.findSpecial(SubFile.class, "delete", mt, SubFile.class);
@@ -380,14 +393,16 @@ public class ReflectionTest extends TransformTest {
             fail();
         } catch (NoSuchMethodException e) {
             // Expected.
+            assertNotThrownByCustomCheck(e);
         }
 
         try {
             mt = MethodType.methodType(String.class, String.class);
             lookup.findStatic(System.class, "getProperty", mt);
             fail();
-        } catch (SecurityException e) {
+        } catch (NoSuchMethodException e) {
             // Expected.
+            assertThrownByCustomCheck(e);
         }
     }
 
@@ -407,14 +422,24 @@ public class ReflectionTest extends TransformTest {
             fail();
         } catch (NoSuchMethodException e) {
             // Expected.
+            assertNotThrownByCustomCheck(e);
         }
 
         try {
             mt = MethodType.methodType(Method[].class);
             lookup.findVirtual(Class.class, "getDeclaredMethods", mt);
             fail();
-        } catch (SecurityException e) {
+        } catch (NoSuchMethodException e) {
             // Expected.
+            assertThrownByCustomCheck(e);
         }
+    }
+
+    private static void assertNotThrownByCustomCheck(NoSuchMethodException e) {
+        assertNotEquals("org.cojen.boxtin.CustomActions", e.getStackTrace()[0].getClassName());
+    }
+
+    private static void assertThrownByCustomCheck(NoSuchMethodException e) {
+        assertEquals("org.cojen.boxtin.CustomActions", e.getStackTrace()[0].getClassName());
     }
 }

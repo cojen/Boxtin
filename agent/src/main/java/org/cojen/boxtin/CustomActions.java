@@ -22,6 +22,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Executable;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.RecordComponent;
@@ -175,8 +176,7 @@ public final class CustomActions {
         throws NoSuchMethodException
     {
         Constructor<T> ctor = clazz.getConstructor(paramTypes);
-        String desc = Utils.partialDescriptorFor(ctor.getParameterTypes());
-        SecurityAgent.check(caller, clazz, null, desc);
+        checkEx(caller, ctor, null);
         return ctor;
     }
 
@@ -191,8 +191,7 @@ public final class CustomActions {
         throws NoSuchMethodException
     {
         Constructor<T> ctor = clazz.getDeclaredConstructor(paramTypes);
-        String desc = Utils.partialDescriptorFor(ctor.getParameterTypes());
-        SecurityAgent.check(caller, clazz, null, desc);
+        checkEx(caller, ctor, null);
         return ctor;
     }
 
@@ -207,8 +206,7 @@ public final class CustomActions {
         throws NoSuchMethodException
     {
         Method method = clazz.getDeclaredMethod(name, paramTypes);
-        String desc = Utils.partialDescriptorFor(method.getParameterTypes());
-        SecurityAgent.check(caller, clazz, name, desc);
+        checkEx(caller, method, name);
         return method;
     }
 
@@ -221,8 +219,8 @@ public final class CustomActions {
     public static Constructor<?> getEnclosingConstructor(Class<?> caller, Class<?> clazz) {
         Constructor<?> ctor = clazz.getEnclosingConstructor();
         if (ctor != null) {
-            String desc = Utils.partialDescriptorFor(ctor.getParameterTypes());
-            SecurityAgent.check(caller, ctor.getDeclaringClass(), null, desc);
+            checkErr(caller, ctor.getDeclaringClass(), null,
+                     Utils.partialDescriptorFor(ctor.getParameterTypes()));
         }
         return ctor;
     }
@@ -231,8 +229,8 @@ public final class CustomActions {
     public static Method getEnclosingMethod(Class<?> caller, Class<?> clazz) {
         Method method = clazz.getEnclosingMethod();
         if (method != null) {
-            String desc = Utils.partialDescriptorFor(method.getParameterTypes());
-            SecurityAgent.check(caller, method.getDeclaringClass(), method.getName(), desc);
+            checkErr(caller, method.getDeclaringClass(), method.getName(),
+                     Utils.partialDescriptorFor(method.getParameterTypes()));
         }
         return method;
     }
@@ -243,8 +241,7 @@ public final class CustomActions {
         throws NoSuchMethodException
     {
         Method method = clazz.getMethod(name, paramTypes);
-        String desc = Utils.partialDescriptorFor(method.getParameterTypes());
-        SecurityAgent.check(caller, method.getDeclaringClass(), name, desc);
+        checkEx(caller, method, name);
         return method;
     }
 
@@ -291,7 +288,8 @@ public final class CustomActions {
         throws NoSuchMethodException, IllegalAccessException
     {
         MethodHandle mh = lookup.bind(receiver, name, mt);
-        return check(caller, mh, receiver.getClass(), name, mh.type());
+        checkEx(caller, receiver.getClass(), name, mh.type());
+        return mh;
     }
 
     // Custom deny action for MethodHandle.Lookup.findConstructor
@@ -299,7 +297,9 @@ public final class CustomActions {
                                                      Class<?> clazz, MethodType mt)
         throws NoSuchMethodException, IllegalAccessException
     {
-        return check(caller, lookup, lookup.findConstructor(clazz, mt));
+        MethodHandle mh = lookup.findConstructor(clazz, mt);
+        checkEx(caller, lookup, mh);
+        return mh;
     }
 
     // Custom deny action for MethodHandle.Lookup.findSpecial
@@ -308,7 +308,9 @@ public final class CustomActions {
                                                  Class<?> specialCaller)
         throws NoSuchMethodException, IllegalAccessException
     {
-        return check(caller, lookup, lookup.findSpecial(clazz, name, mt, specialCaller));
+        MethodHandle mh = lookup.findSpecial(clazz, name, mt, specialCaller);
+        checkEx(caller, lookup, mh);
+        return mh;
     }
 
     // Custom deny action for MethodHandle.Lookup.findStatic
@@ -316,7 +318,9 @@ public final class CustomActions {
                                                 Class<?> clazz, String name, MethodType mt)
         throws NoSuchMethodException, IllegalAccessException
     {
-        return check(caller, lookup, lookup.findStatic(clazz, name, mt));
+        MethodHandle mh = lookup.findStatic(clazz, name, mt);
+        checkEx(caller, lookup, mh);
+        return mh;
     }
 
     // Custom deny action for MethodHandle.Lookup.findVirtual
@@ -324,21 +328,49 @@ public final class CustomActions {
                                                  Class<?> clazz, String name, MethodType mt)
         throws NoSuchMethodException, IllegalAccessException
     {
-        return check(caller, lookup, lookup.findVirtual(clazz, name, mt));
-    }
-
-    private static MethodHandle check(Class<?> caller,
-                                      MethodHandle mh, Class<?> clazz, String name, MethodType mt)
-    {
-        SecurityAgent.check(caller, clazz, name, Utils.partialDescriptorFor(mt));
+        MethodHandle mh = lookup.findVirtual(clazz, name, mt);
+        checkEx(caller, lookup, mh);
         return mh;
     }
 
-    private static MethodHandle check(Class<?> caller,
-                                      MethodHandles.Lookup lookup, MethodHandle mh)
+    private static void checkErr(Class<?> caller, Class<?> target, String name, String desc)
+        throws NoSuchMethodError
+    {
+        if (caller.getModule() != target.getModule() &&
+            !SecurityAgent.isAllowed(caller, target, name, desc))
+        {
+            throw new NoSuchMethodError();
+        }
+    }
+
+    private static void checkEx(Class<?> caller, Class<?> target, String name, String desc)
+        throws NoSuchMethodException
+    {
+        if (caller.getModule() != target.getModule() &&
+            !SecurityAgent.isAllowed(caller, target, name, desc))
+        {
+            throw new NoSuchMethodException();
+        }
+    }
+
+    private static void checkEx(Class<?> caller, Class<?> target, String name, MethodType mt)
+        throws NoSuchMethodException
+    {
+        checkEx(caller, target, name, Utils.partialDescriptorFor(mt));
+    }
+
+    private static void checkEx(Class<?> caller, Executable exec, String name)
+        throws NoSuchMethodException
+    {
+        checkEx(caller, exec.getDeclaringClass(), name,
+                Utils.partialDescriptorFor(exec.getParameterTypes()));
+    }
+
+    private static void checkEx(Class<?> caller, MethodHandles.Lookup lookup, MethodHandle mh)
+        throws NoSuchMethodException
     {
         MethodHandleInfo info = lookup.revealDirect(mh);
-        return check(caller, mh, info.getDeclaringClass(), info.getName(), info.getMethodType());
+        checkEx(caller, info.getDeclaringClass(), info.getName(), info.getMethodType());
     }
 
     /**

@@ -329,37 +329,13 @@ public final class SecurityAgent {
     }
 
     /**
-     * Is called by a reflection access method. An exception is thrown if the caller and target
-     * modules differ, and the corresponding rule set denies access.
+     * Is called by a reflection access method. Module comparison should be performed as a
+     * prerequisite. True is returned if the corresponding rule set allows access.
      *
      * @param caller the class which is calling the target
      * @param target the class which has an operation which is potentially denied for the caller
      * @param name target method name, or null/"<init>" if a constructor
      * @param desc partial descriptor for target method or constructor
-     */
-    static void check(Class<?> caller, Class<?> target, String name, String desc)
-        throws SecurityException
-    {
-        if (!tryCheck(caller, target, name, desc)) {
-            throw new SecurityException();
-        }
-    }
-
-    /**
-     * Is called by a reflection access method. True is returned if the caller and target
-     * modules are the same or if the corresponding rule set allows access.
-     *
-     * @param caller the class which is calling the target
-     * @param target the class which has an operation which is potentially denied for the caller
-     * @param name target method name, or null/"<init>" if a constructor
-     * @param desc partial descriptor for target method or constructor
-     */
-    static boolean tryCheck(Class<?> caller, Class<?> target, String name, String desc) {
-        return caller.getModule() == target.getModule() || isAllowed(caller, target, name, desc);
-    }
-
-    /**
-     * Note: Module comparison should be performed as a prerequisite.
      */
     static boolean isAllowed(Class<?> caller, Class<?> target, String name, String desc) {
         return Proxy.isAllowed(caller, target, name, desc);

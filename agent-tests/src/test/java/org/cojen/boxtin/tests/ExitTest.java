@@ -92,8 +92,9 @@ public class ExitTest {
         try {
             System.class.getMethod("exit", int.class);
             fail();
-        } catch (SecurityException e) {
+        } catch (NoSuchMethodException e) {
             // Expected.
+            assertThrownByCustomCheck(e);
         }
     }
 
@@ -115,8 +116,9 @@ public class ExitTest {
             MethodType mt = MethodType.methodType(void.class, int.class);
             MethodHandles.lookup().findStatic(System.class, "exit", mt);
             fail();
-        } catch (SecurityException e) {
+        } catch (NoSuchMethodException e) {
             // Expected.
+            assertThrownByCustomCheck(e);
         }
     }
 
@@ -149,8 +151,9 @@ public class ExitTest {
         try {
             Class.class.getMethod("getMethod", String.class, Class[].class);
             fail();
-        } catch (SecurityException e) {
+        } catch (NoSuchMethodException e) {
             // Expected.
+            assertThrownByCustomCheck(e);
         }
     }
 
@@ -178,5 +181,9 @@ public class ExitTest {
 
     private static int okay(int x) {
         return x;
+    }
+
+    private static void assertThrownByCustomCheck(NoSuchMethodException e) {
+        assertEquals("org.cojen.boxtin.CustomActions", e.getStackTrace()[0].getClassName());
     }
 }

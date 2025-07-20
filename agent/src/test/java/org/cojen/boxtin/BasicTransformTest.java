@@ -82,8 +82,9 @@ public class BasicTransformTest extends TransformTest {
         try {
             System.class.getMethod("setOut", PrintStream.class);
             fail();
-        } catch (SecurityException e) {
+        } catch (NoSuchMethodException e) {
             // Expected.
+            assertThrownByCustomCheck(e);
         }
     }
 
@@ -113,8 +114,9 @@ public class BasicTransformTest extends TransformTest {
             MethodType mt = MethodType.methodType(void.class, PrintStream.class);
             MethodHandles.lookup().findStatic(System.class, "setOut", mt);
             fail();
-        } catch (SecurityException e) {
+        } catch (NoSuchMethodException e) {
             // Expected.
+            assertThrownByCustomCheck(e);
         }
     }
 
@@ -150,8 +152,9 @@ public class BasicTransformTest extends TransformTest {
         try {
             Class.class.getMethod("getMethod", String.class, Class[].class);
             fail();
-        } catch (SecurityException e) {
+        } catch (NoSuchMethodException e) {
             // Expected.
+            assertThrownByCustomCheck(e);
         }
     }
 
@@ -185,5 +188,9 @@ public class BasicTransformTest extends TransformTest {
 
     private static int okay(int x) {
         return x;
+    }
+
+    private static void assertThrownByCustomCheck(NoSuchMethodException e) {
+        assertEquals("org.cojen.boxtin.CustomActions", e.getStackTrace()[0].getClassName());
     }
 }
