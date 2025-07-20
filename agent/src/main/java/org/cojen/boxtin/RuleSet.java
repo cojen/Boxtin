@@ -16,8 +16,6 @@
 
 package org.cojen.boxtin;
 
-import java.io.IOException;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -160,39 +158,6 @@ final class RuleSet implements Rules {
         return Map.of();
     }
 
-    @Override
-    public boolean printTo(Appendable a, String indent, String plusIndent) throws IOException {
-        a.append(indent).append("rules").append(" {").append('\n');
-
-        String scopeIndent = indent + plusIndent;
-
-        printAllowOrDenyAll(a, scopeIndent, mDefaultRule).append('\n');
-
-        if (!mPackageScopes.isEmpty()) {
-            String subScopeIndent = scopeIndent + plusIndent;
-
-            for (Map.Entry<String, PackageScope> e : mPackageScopes.entrySet()) {
-                a.append('\n').append(scopeIndent).append("for ").append("package").append(' ');
-                a.append(e.getKey().replace('/', '.'));
-                a.append(" {").append('\n');
-
-                e.getValue().printTo(a, subScopeIndent, plusIndent);
-
-                a.append(scopeIndent).append('}').append('\n');
-            }
-        }
-
-        a.append(indent).append('}').append('\n');
-
-        return true;
-    }
-
-    private static Appendable printAllowOrDenyAll(Appendable a, String indent, Rule rule)
-        throws IOException
-    {
-        return a.append(indent).append(rule.toString()).append(" all");
-    }
-
     static final class PackageScope {
         // FIXME: If package is deny by default, then unspecified classes should disallow
         // subclassing. Do this by removing them from class file interfaces and superclass. Go
@@ -248,24 +213,6 @@ final class RuleSet implements Rules {
         ForClass forClass(CharSequence className) {
             ClassScope scope = mClassScopes.get(className);
             return scope == null ? mDefaultRule : scope;
-        }
-
-        void printTo(Appendable a, String indent, String plusIndent) throws IOException {
-            printAllowOrDenyAll(a, indent, mDefaultRule).append('\n');
-
-            if (!mClassScopes.isEmpty()) {
-                String scopeIndent = indent + plusIndent;
-
-                for (Map.Entry<String, ClassScope> e : mClassScopes.entrySet()) {
-                    a.append('\n').append(indent).append("for ").append("class").append(' ');
-                    String name = e.getKey().replace('$', '.');
-                    a.append(name).append(" {").append('\n');
-
-                    e.getValue().printTo(a, scopeIndent, plusIndent);
-
-                    a.append(indent).append('}').append('\n');
-                }
-            }
         }
 
         private void fillDeniedIndex(Map<String, Object> index) {
@@ -365,33 +312,6 @@ final class RuleSet implements Rules {
             return rule;
         }
 
-        void printTo(Appendable a, String indent, String plusIndent) throws IOException {
-            if (mDefaultConstructorRule.equals(mDefaultMethodRule) &&
-                mConstructors == null && mMethodScopes.isEmpty())
-            {
-                printAllowOrDenyAll(a, indent, mDefaultConstructorRule).append('\n');
-                return;
-            }
-
-            printAllowOrDenyAll(a, indent, mDefaultConstructorRule)
-                .append(" constructors").append('\n');
-
-            if (mConstructors != null && !mConstructors.mVariants.isEmpty()) {
-                mConstructors.printTo(a, indent + plusIndent);
-            }
-
-            printAllowOrDenyAll(a, indent, mDefaultMethodRule)
-                .append(" methods").append('\n');
-
-            for (Map.Entry<String, MethodScope> e : mMethodScopes.entrySet()) {
-                String name = e.getKey();
-                MethodScope scope = e.getValue();
-                a.append(indent).append(scope.defaultRule().toString()).append(' ')
-                    .append("method").append(' ').append(name).append('\n');
-                scope.printTo(a, indent + plusIndent);
-            }
-        }
-
         @SuppressWarnings("unchecked")
         private void fillDeniedIndex(Map<String, Object> index) {
             for (Map.Entry<String, MethodScope> e : mMethodScopes.entrySet()) {
@@ -454,31 +374,6 @@ final class RuleSet implements Rules {
         }
 
         protected abstract Rule defaultRule();
-
-        void printTo(Appendable a, String indent) throws IOException {
-            // FIXME: If method is denied and the variant is denied with the same rule, then
-            // omit printing the variant.
-            for (Map.Entry<CharSequence, Rule> e : mVariants.entrySet()) {
-                a.append(indent).append(e.getValue().toString());
-                a.append(" variant ");
-
-                String descriptor = e.getKey().toString();
-                List<String> paramTypes = tryParseParameters(descriptor);
-                if (paramTypes == null) {
-                    a.append(descriptor);
-                } else {
-                    int num = 0;
-                    for (String type : paramTypes) {
-                        if (num++ > 0) {
-                            a.append(", ");
-                        }
-                        a.append(type);
-                    }
-                }
-
-                a.append('\n');
-            }
-        }
     }
 
     static final class ConstructorScope extends ExecutableScope {

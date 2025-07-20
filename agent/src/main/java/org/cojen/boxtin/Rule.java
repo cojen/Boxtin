@@ -94,13 +94,6 @@ public sealed class Rule implements Rules, Rules.ForClass {
         return Map.of();
     }
 
-    public final boolean printTo(Appendable a, String indent, String plusIndent)
-        throws IOException
-    {
-        a.append(indent).append(toString());
-        return true;
-    }
-
     /**
      * Returns {@code this}.
      */

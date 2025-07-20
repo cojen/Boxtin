@@ -16,10 +16,6 @@
 
 package org.cojen.boxtin;
 
-import java.io.IOException;
-import java.io.PrintStream;
-import java.io.PrintWriter;
-
 import java.util.Map;
 
 /**
@@ -55,39 +51,6 @@ public interface Rules {
      * used as separators
      */
     public Map<String, Rule> denialsForMethod(CharSequence name, CharSequence descriptor);
-
-    /**
-     * Print a description of the rules to the given Appendable object.
-     *
-     * @param indent minimum indent for each line; pass an empty string for no indent
-     * @param plusIndent additional indent when entering a scope
-     * @return false if not supported
-     */
-    public boolean printTo(Appendable a, String indent, String plusIndent) throws IOException;
-
-    /**
-     * Print a description of the rules to the given PrintStream.
-     */
-    public default boolean printTo(PrintStream ps) {
-        try {
-            return printTo(ps, "", "  ");
-        } catch (IOException e) {
-            // Not expected.
-            return false;
-        }
-    }
-
-    /**
-     * Print a description of the rules to the given PrintStream.
-     */
-    public default boolean printTo(PrintWriter pw) {
-        try {
-            return printTo(pw, "", "  ");
-        } catch (IOException e) {
-            // Not expected.
-            return false;
-        }
-    }
 
     /**
      * Checks access to constructors or methods, for a specific class.
