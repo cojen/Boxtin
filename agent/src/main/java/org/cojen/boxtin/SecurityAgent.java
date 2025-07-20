@@ -18,6 +18,7 @@ package org.cojen.boxtin;
 
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
+import java.lang.instrument.UnmodifiableClassException;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -219,6 +220,14 @@ public final class SecurityAgent {
 
         inst.addTransformer(agent.newTransformer(), true);
 
+        try {
+            // Transform the defineHiddenClass methods in order for them to apply transforms to
+            // hidden classes. See #doTransform.
+            inst.retransformClasses(MethodHandles.Lookup.class);
+        } catch (UnmodifiableClassException e) {
+            logException(e);
+        }
+
         return true;
     }
 
@@ -271,37 +280,50 @@ public final class SecurityAgent {
                                     ProtectionDomain protectionDomain,
                                     byte[] classBuffer)
             {
-                try {
-                    return doTransform(module, classBuffer);
-                } catch (Throwable e) {
-                    if (e instanceof ClassFormatException cfe && cfe.ignore) {
-                        return classBuffer;
-                    }
-
-                    logException("Failed to transform class: " + className, e);
-
-                    // Any exception thrown from this method is discarded, and the class won't
-                    // be transformed. Instead, return a fake class to be fail-secure.
-
-                    try {
-                        return EmptyClassMaker.make(className);
-                    } catch (Throwable e2) {
-                        // Everything is broken.
-                        logException(e2);
-                        Runtime.getRuntime().halt(1);
-                        throw e2;
-                    }
-                }
+                return SecurityAgent.this.transform(module, className, classBuffer);
             }
         };
     }
 
+    private byte[] transform(Module module, String className, byte[] classBuffer) {
+        try {
+            return doTransform(module, className, classBuffer);
+        } catch (Throwable e) {
+            if (e instanceof ClassFormatException cfe && cfe.ignore) {
+                return classBuffer;
+            }
+
+            logException("Failed to transform class: " + className, e);
+
+            // Any exception thrown from this method is discarded, and the class won't be
+            // transformed. Instead, return a fake class to be fail-secure.
+
+            try {
+                return EmptyClassMaker.make(className);
+            } catch (Throwable e2) {
+                // Everything is broken.
+                logException(e2);
+                Runtime.getRuntime().halt(1);
+                throw e2;
+            }
+        }
+    }
+
     // Is package-private for testing.
-    byte[] doTransform(Module module, byte[] classBuffer) throws Throwable {
+    byte[] doTransform(Module module, String className, byte[] classBuffer) throws Throwable {
         if (module.getClassLoader() == null) {
             // Classes loaded by the bootstrap class loader are allowed to call anything.
+
+            if ("java/lang/invoke/MethodHandles$Lookup".equals(className)) {
+                // The transform method isn't called for hidden classes. As a workaround,
+                // transform the defineHiddenClass methods to directly call into the
+                // SecurityAgent, which can then transform it.
+                return ClassFileProcessor.begin(classBuffer).transformHiddenClassCreation();
+            }
+
             return null;
         }
+
         Rules rules = mController.rulesForCaller(module);
         return rules == null ? null : ClassFileProcessor.begin(classBuffer).transform(rules);
     }
@@ -340,7 +362,16 @@ public final class SecurityAgent {
      * Note: Module comparison should be performed as a prerequisite.
      */
     static boolean isAllowed(Class<?> caller, Class<?> target, String name, String desc) {
-        return AllowCheck.isAllowed(caller, target, name, desc);
+        return Proxy.isAllowed(caller, target, name, desc);
+    }
+
+    /**
+     * Note: Must be public because it needs to be accessed from the MethodHandles.Lookup class.
+     *
+     * @hidden
+     */
+    public static byte[] transformHiddenClass(MethodHandles.Lookup lookup, byte[] classBuffer) {
+        return Proxy.transformHiddenClass(lookup, classBuffer);
     }
 
     /**
@@ -350,22 +381,25 @@ public final class SecurityAgent {
      * magic stuff going on in the static initializer of this class is intended to find the real
      * SecurityAgent instance, which should be invoked by the isAllowed method.
      */
-    private static class AllowCheck {
-        private static final MethodHandle IS_ALLOWED_H;
+    private static class Proxy {
+        private static final MethodHandle IS_ALLOWED_H, TRANSFORM_H;
 
         static {
             var lookup = MethodHandles.lookup();
 
-            var mt = MethodType.methodType
+            var mt1 = MethodType.methodType
                 (boolean.class, Class.class, Class.class, String.class, String.class);
+            var mt2 = MethodType.methodType
+                (byte[].class, MethodHandles.Lookup.class, byte[].class);
 
-            MethodHandle mh;
+            MethodHandle mh1, mh2;
 
             try {
                 Object agent = agent();
 
                 if (agent != null) {
-                    mh = lookup.findVirtual(SecurityAgent.class, "isAllowed2", mt);
+                    mh1 = lookup.findVirtual(SecurityAgent.class, "isAllowed2", mt1);
+                    mh2 = lookup.findVirtual(SecurityAgent.class, "transformHiddenClass2", mt2);
                 } else {
                     try {
                         Class<?> altClass = Class.forName
@@ -378,18 +412,22 @@ public final class SecurityAgent {
                             .invoke();
 
                         if (agent != null) {
-                            mh = lookup.findVirtual(altClass, "isAllowed2", mt);
+                            mh1 = lookup.findVirtual(altClass, "isAllowed2", mt1);
+                            mh2 = lookup.findVirtual(altClass, "transformHiddenClass2", mt2);
                         } else {
-                            mh = lookup.findStatic(altClass, "isAllowed3", mt);
+                            mh1 = lookup.findStatic(altClass, "isAllowed3", mt1);
+                            mh2 = lookup.findStatic(altClass, "transformHiddenClass2", mt2);
                         }
                     } catch (ClassNotFoundException e) {
                         agent = null;
-                        mh = lookup.findStatic(SecurityAgent.class, "isAllowed3", mt);
+                        mh1 = lookup.findStatic(SecurityAgent.class, "isAllowed3", mt1);
+                        mh2 = lookup.findStatic(SecurityAgent.class, "transformHiddenClass3", mt2);
                     }
                 }
 
                 if (agent != null) {
-                    mh = MethodHandles.insertArguments(mh, 0, agent);
+                    mh1 = MethodHandles.insertArguments(mh1, 0, agent);
+                    mh2 = MethodHandles.insertArguments(mh2, 0, agent);
                 }
             } catch (ExceptionInInitializerError e) {
                 throw e;
@@ -397,7 +435,8 @@ public final class SecurityAgent {
                 throw new ExceptionInInitializerError(e);
             }
 
-            IS_ALLOWED_H = mh;
+            IS_ALLOWED_H = mh1;
+            TRANSFORM_H = mh2;
         }
 
         static boolean isAllowed(Class<?> caller, Class<?> target, String name, String desc) {
@@ -405,6 +444,14 @@ public final class SecurityAgent {
                 return (boolean) IS_ALLOWED_H.invokeExact(caller, target, name, desc);
             } catch (SecurityException e) {
                 throw e;
+            } catch (Throwable e) {
+                throw new SecurityException(e);
+            }
+        }
+
+        static byte[] transformHiddenClass(MethodHandles.Lookup lookup, byte[] classBuffer) {
+            try {
+                return (byte[]) TRANSFORM_H.invokeExact(lookup, classBuffer);
             } catch (Throwable e) {
                 throw new SecurityException(e);
             }
@@ -457,5 +504,20 @@ public final class SecurityAgent {
     private static boolean isAllowed3(Class<?> caller, Class<?> target, String name, String desc) {
         SecurityAgent agent = agent();
         return agent != null && agent.isAllowed2(caller, target, name, desc);
+    }
+
+    /**
+     * Note: Must be public because it can be accessed from a different ClassLoader.
+     *
+     * @hidden
+     */
+    public byte[] transformHiddenClass2(MethodHandles.Lookup lookup, byte[] classBuffer) {
+        byte[] bytes = agent().transform(lookup.lookupClass().getModule(), null, classBuffer);
+        return bytes == null ? classBuffer : bytes;
+    }
+
+    private static byte[] transformHiddenClass3(MethodHandles.Lookup lookup, byte[] classBuffer) {
+        SecurityAgent agent = agent();
+        return agent == null ? classBuffer : agent.transformHiddenClass2(lookup, classBuffer);
     }
 }

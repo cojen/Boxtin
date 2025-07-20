@@ -51,6 +51,9 @@ class CodeAttr implements RegionReplacement {
     // Modified code.
     BufferEncoder codeEncoder;
 
+    // Amount of bytes inserted at the start of the code.
+    int insertion;
+
     // Modified StackMapTable.
     StackMapTable smt;
 
@@ -89,10 +92,17 @@ class CodeAttr implements RegionReplacement {
             // Update the exception handlers to cover the new deny checks and the moved invoke
             // operation.
 
+            long pcAdjust = 0;
+            if (insertion != 0) {
+                long amt = insertion;
+                // If any of the pc fields overflow, the code is too large anyhow.
+                pcAdjust = (amt << 48) | (amt << 32) | (amt << 16);
+            }
+
             var exTable = new long[exCount];
             for (int i=0; i<exCount; i++) {
                 // Read start_pc, end_pc, handler_pc, and catch_type.
-                exTable[i] = decoder.readLong();
+                exTable[i] = decoder.readLong() + pcAdjust;
             }
 
             IntArray replaced = mReplacedOpAddresses;
@@ -166,6 +176,22 @@ class CodeAttr implements RegionReplacement {
                 continue;
             }
 
+            if (insertion > 0) {
+                if (attrName.equals("LocalVariableTable") ||
+                    attrName.equals("LocalVariableTypeTable"))
+                {
+                    codeEncoder.writeInt((int) attrLength);
+                    int tableLength = decoder.readUnsignedShort();
+                    codeEncoder.writeShort(tableLength);
+                    for (int j=0; j<tableLength; j++) {
+                        // If the start_pc field overflows, the code is too large anyhow.
+                        codeEncoder.writeShort(decoder.readUnsignedShort() + insertion);
+                        codeEncoder.writeLong(decoder.readLong());
+                    }
+                    continue;
+                }
+            }
+
             if (!attrName.equals("LineNumberTable")) {
                 // Copy the original attribute.
                 codeEncoder.writeInt((int) attrLength);
@@ -179,7 +205,8 @@ class CodeAttr implements RegionReplacement {
             int numEntries = decoder.readUnsignedShort();
             var lnTable = new long[numEntries];
             for (int j=0; j<numEntries; j++) {
-                lnTable[j] = decoder.readUnsignedInt();
+                // If the start_pc field overflows, the code is too large anyhow.
+                lnTable[j] = decoder.readUnsignedInt() + (insertion << 16);
             }
 
             Arrays.sort(lnTable);
@@ -261,7 +288,30 @@ class CodeAttr implements RegionReplacement {
         throws IOException
     {
         // Initial capacity should have some room for growth.
-        codeEncoder = new BufferEncoder(Math.toIntExact(attrLength + 100));
+        prepareForModification(cp, thisClassIndex, buffer, 0, 100);
+    }
+
+    /**
+     * @param insertion amount of zero bytes to insert at the start of the code; the actual
+     * amount can be rounded up
+     * @param growth additional room for code growth at the end
+     */
+    void prepareForModification(ConstantPool cp, int thisClassIndex, byte[] buffer,
+                                int insertion, int growth)
+        throws IOException
+    {
+        if (codeEncoder != null) {
+            throw new IllegalStateException();
+        }
+
+        codeEncoder = new BufferEncoder(Math.toIntExact(attrLength + insertion + growth));
+
+        if (insertion > 0) {
+            // Round up by 4 to accommodate switch statement alignment requirements.
+            insertion = (insertion + 3) & ~0x03;
+            codeEncoder.skip(insertion);
+            this.insertion = insertion;
+        }
 
         if (buffer != null) {
             // Copy the original code.
@@ -280,7 +330,7 @@ class CodeAttr implements RegionReplacement {
                 ConstantPool.C_UTF8 attrName = cp.findConstantUTF8(attrNameIndex);
 
                 if (attrName.equals("StackMapTable") && smt == null) {
-                    smt = new StackMapTable(cp, thisClassIndex, this, buffer, offset);
+                    smt = new StackMapTable(cp, thisClassIndex, this, insertion, buffer, offset);
                 }
 
                 offset += attrLength;
@@ -288,7 +338,7 @@ class CodeAttr implements RegionReplacement {
         }
 
         if (smt == null) {
-            smt = new StackMapTable(cp, thisClassIndex, this, null, 0);
+            smt = new StackMapTable(cp, thisClassIndex, this, insertion, null, 0);
             mHasNewSMT = true;
         }
 

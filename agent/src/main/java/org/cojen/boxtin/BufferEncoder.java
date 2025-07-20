@@ -19,6 +19,8 @@ package org.cojen.boxtin;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 
+import java.util.Arrays;
+
 /**
  * Encodes the primitive data elements of a class file.
  *
@@ -41,6 +43,10 @@ class BufferEncoder extends DataOutputStream {
         return ((Buffer) out).length();
     }
 
+    void skip(int amt) {
+        ((Buffer) out).skip(amt);
+    }
+
     void reset() {
         ((Buffer) out).reset();
     }
@@ -56,6 +62,14 @@ class BufferEncoder extends DataOutputStream {
 
         int length() {
             return count;
+        }
+
+        void skip(int amt) {
+            int newCount = count + amt;
+            if (newCount > buf.length) {
+                buf = Arrays.copyOf(buf, newCount);
+            }
+            count = newCount;
         }
     }
 }

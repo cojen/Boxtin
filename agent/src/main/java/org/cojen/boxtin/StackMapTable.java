@@ -157,10 +157,11 @@ final class StackMapTable {
     /**
      * Decodes a StackMapTable attribute for a method.
      *
+     * @param insertion increment all addresses but the initial one by this amount
      * @param buffer refers to the attribute data to decode; pass null if none
      * @param offset buffer offset to the number_of_entries field
      */
-    StackMapTable(ConstantPool cp, int thisClassIndex, CodeAttr method,
+    StackMapTable(ConstantPool cp, int thisClassIndex, CodeAttr method, int insertion,
                   byte[] buffer, int offset)
     {
         mEntries = new TreeMap<>();
@@ -250,7 +251,7 @@ final class StackMapTable {
                 }
             }
 
-            mEntries.put(address, prevEntry = new Entry(localTypes, stackTypes));
+            mEntries.put(address + insertion, prevEntry = new Entry(localTypes, stackTypes));
         }
     }
 

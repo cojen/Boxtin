@@ -29,6 +29,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
+import java.util.function.Predicate;
+
 import static java.lang.invoke.MethodHandleInfo.*;
 
 import static org.cojen.boxtin.ConstantPool.*;
@@ -200,12 +202,93 @@ final class ClassFileProcessor {
 
         // Check the methods.
 
+        forAllMethods(null, method -> insertCallerChecks(rules, method));
+
+        int methodsEndOffset = decoder.offset();
+
+        if (mProxyMethods != null) {
+            // Append the new methods by "replacing" what is logically an empty method just
+            // after the method table.
+            storeReplacement(methodsEndOffset, new CompositeReplacement(mProxyMethods.values()));
+        }
+
+        return mReplacements != null;
+    }
+
+    private void storeReplacement(int originalOffset, RegionReplacement replacement) {
+        if (replacement != null) {
+            if (mReplacements == null) {
+                mReplacements = new TreeMap<>();
+            }
+            mReplacements.put(originalOffset, replacement);
+        }
+    }
+
+    /**
+     * Transforms the methods the MethodHandles.Lookup class which define hidden classes such
+     * that the new hidden class has SecurityAgent transforms applied to it.
+     */
+    public byte[] transformHiddenClassCreation() throws IOException, ClassFormatException {
+        forAllMethods(name -> name.equals("defineHiddenClass") ||
+                      name.equals("defineHiddenClassWithClassData"),
+                      this::insertHiddenClassTransform);
+
+        return redefine();
+    }
+
+    private void insertHiddenClassTransform(CodeAttr method)
+        throws IOException, ClassFormatException
+    {
+        ConstantPool cp = mConstantPool;
+        cp.extend();
+
+        // Require 6 bytes to encode the transform operation.
+        method.prepareForModification(cp, mThisClassIndex, cp.buffer(), 6, 0);
+
+        C_Class agentClass = cp.addClass(SecurityAgent.class);
+        C_MemberRef ref = cp.addMethodRef(agentClass, "transformHiddenClass",
+                                          "(Ljava/lang/invoke/MethodHandles$Lookup;[B)[B");
+
+        byte[] buffer = method.codeEncoder.buffer();
+
+        int offset = 0;
+        buffer[offset++] = ALOAD_0;
+        buffer[offset++] = ALOAD_1;
+        buffer[offset++] = INVOKESTATIC;
+        encodeShortBE(buffer, offset, ref.mIndex); offset += 2;
+        buffer[offset++] = ASTORE_1;
+
+        storeReplacement(method.attrOffset, method);
+    }
+
+    private static interface MethodConsumer {
+        void accept(CodeAttr method) throws IOException;
+    }
+
+    /**
+     * When called, the decoder must be at the first method_info offset.
+     *
+     * @param nameFilter if provided, return true if the name is accepted
+     */
+    private void forAllMethods(Predicate<ConstantPool.C_UTF8> nameFilter,
+                               MethodConsumer methodConsumer)
+        throws IOException
+    {
+        final BufferDecoder decoder = mDecoder;
+        final ConstantPool cp = mConstantPool;
+        final byte[] cpBuffer = cp.buffer();
+
         for (int i = mMethodsCount; --i >= 0; ) {
             int methodInfoOffset = decoder.offset();
 
             int accessFlags = decoder.readUnsignedShort();
             int nameIndex = decoder.readUnsignedShort();
             int descIndex = decoder.readUnsignedShort();
+
+            if (nameFilter != null && !nameFilter.test(cp.findConstantUTF8(nameIndex))) {
+                decoder.skipAttributes();
+                continue;
+            }
 
             // Only attempt to modify methods which have a code attribute.
 
@@ -255,29 +338,10 @@ final class ClassFileProcessor {
                 decoder.offset(methodInfoOffset + (2 + 2 + 2));
                 decoder.skipAttributes();
 
-                insertCallerChecks(rules, method, decoder.buffer());
+                methodConsumer.accept(method);
 
                 break;
             }
-        }
-
-        int methodsEndOffset = decoder.offset();
-
-        if (mProxyMethods != null) {
-            // Append the new methods by "replacing" what is logically an empty method just
-            // after the method table.
-            storeReplacement(methodsEndOffset, new CompositeReplacement(mProxyMethods.values()));
-        }
-
-        return mReplacements != null;
-    }
-
-    private void storeReplacement(int originalOffset, RegionReplacement replacement) {
-        if (replacement != null) {
-            if (mReplacements == null) {
-                mReplacements = new TreeMap<>();
-            }
-            mReplacements.put(originalOffset, replacement);
         }
     }
 
@@ -423,7 +487,7 @@ final class ClassFileProcessor {
      * ClassFormatException is thrown instead. With INVOKEINTERFACE, five bytes are available,
      * and so a GOTO_W operation is used instead.
      */
-    private void insertCallerChecks(Rules rules, CodeAttr caller, byte[] buffer) 
+    private void insertCallerChecks(Rules rules, CodeAttr caller) 
         throws IOException, ClassFormatException
     {
         int offset = caller.codeOffset;
@@ -438,6 +502,7 @@ final class ClassFileProcessor {
         }
 
         final ConstantPool cp = mConstantPool;
+        final byte[] buffer = cp.buffer();
 
         while (offset < endOffset) {
             final int opOffset = offset;
