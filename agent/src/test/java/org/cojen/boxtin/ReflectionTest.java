@@ -200,24 +200,27 @@ public class ReflectionTest extends TransformTest {
     }
 
     @Test
-    @Ignore // FIXME
     public void getEnclosingConstructor() throws Exception {
-        if (runTransformed()) {
+        if (runTransformed(Outer.class, new Outer().fooClass)) {
             return;
         }
 
-        class Outer {
-            public Outer() {
-                class Foo {
-                }
+        Class fooClass = new Outer().fooClass;
 
-                assertNotNull(Foo.class.getEnclosingConstructor());
+        Constructor ctor = fooClass.getEnclosingConstructor();
+        assertEquals("org.cojen.boxtin.ReflectionTest$Outer", ctor.getName());
 
-                assertNull(Foo.class.getEnclosingMethod());
+        assertNull(fooClass.getEnclosingMethod());
+    }
+
+    public static class Outer {
+        public final Class fooClass;
+
+        public Outer() {
+            class Foo {
             }
+            fooClass = Foo.class;
         }
-
-        new Outer();
     }
 
     @Test
