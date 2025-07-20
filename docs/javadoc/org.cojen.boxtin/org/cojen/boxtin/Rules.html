@@ -69,9 +69,6 @@ loadScripts(document, 'script');</script>
 <li><a href="#forClass(java.lang.CharSequence,java.lang.CharSequence)" tabindex="0">forClass(CharSequence, CharSequence)</a></li>
 <li><a href="#forClass(java.lang.Class)" tabindex="0">forClass(Class)</a></li>
 <li><a href="#denialsForMethod(java.lang.CharSequence,java.lang.CharSequence)" tabindex="0">denialsForMethod(CharSequence, CharSequence)</a></li>
-<li><a href="#printTo(java.lang.Appendable,java.lang.String,java.lang.String)" tabindex="0">printTo(Appendable, String, String)</a></li>
-<li><a href="#printTo(java.io.PrintStream)" tabindex="0">printTo(PrintStream)</a></li>
-<li><a href="#printTo(java.io.PrintWriter)" tabindex="0">printTo(PrintWriter)</a></li>
 </ol>
 </li>
 </ol>
@@ -137,23 +134,6 @@ loadScripts(document, 'script');</script>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#forClass(java.lang.Class)" class="member-name-link">forClass</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;?&gt;&nbsp;clazz)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default boolean</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#printTo(java.io.PrintStream)" class="member-name-link">printTo</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/io/PrintStream.html" title="class or interface in java.io" class="external-link">PrintStream</a>&nbsp;ps)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
-<div class="block">Print a description of the rules to the given PrintStream.</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default boolean</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#printTo(java.io.PrintWriter)" class="member-name-link">printTo</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/io/PrintWriter.html" title="class or interface in java.io" class="external-link">PrintWriter</a>&nbsp;pw)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
-<div class="block">Print a description of the rules to the given PrintStream.</div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>boolean</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#printTo(java.lang.Appendable,java.lang.String,java.lang.String)" class="member-name-link">printTo</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Appendable.html" title="class or interface in java.lang" class="external-link">Appendable</a>&nbsp;a,
- <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;indent,
- <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;plusIndent)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
-<div class="block">Print a description of the rules to the given Appendable object.</div>
-</div>
 </div>
 </div>
 </div>
@@ -206,51 +186,12 @@ loadScripts(document, 'script');</script>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>name</code> - method name</dd>
-<dd><code>descriptor</code> - descriptor for the parameters, not including parenthesis or the return
- type</dd>
+<dd><code>descriptor</code> - descriptor for the parameters, including parenthesis, but the return
+ type is optional</dd>
 <dt>Returns:</dt>
 <dd>a non-null map of fully qualified class names to deny rules; '/' characters are
  used as separators</dd>
 </dl>
-</div>
-</section>
-</li>
-<li>
-<section class="detail" id="printTo(java.lang.Appendable,java.lang.String,java.lang.String)">
-<h3>printTo</h3>
-<div class="horizontal-scroll">
-<div class="member-signature"><span class="return-type">boolean</span>&nbsp;<span class="element-name">printTo</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Appendable.html" title="class or interface in java.lang" class="external-link">Appendable</a>&nbsp;a,
- <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;indent,
- <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;plusIndent)</span>
-         throws <span class="exceptions"><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/io/IOException.html" title="class or interface in java.io" class="external-link">IOException</a></span></div>
-<div class="block">Print a description of the rules to the given Appendable object.</div>
-<dl class="notes">
-<dt>Parameters:</dt>
-<dd><code>indent</code> - minimum indent for each line; pass an empty string for no indent</dd>
-<dd><code>plusIndent</code> - additional indent when entering a scope</dd>
-<dt>Returns:</dt>
-<dd>false if not supported</dd>
-<dt>Throws:</dt>
-<dd><code><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/io/IOException.html" title="class or interface in java.io" class="external-link">IOException</a></code></dd>
-</dl>
-</div>
-</section>
-</li>
-<li>
-<section class="detail" id="printTo(java.io.PrintStream)">
-<h3>printTo</h3>
-<div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">printTo</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/io/PrintStream.html" title="class or interface in java.io" class="external-link">PrintStream</a>&nbsp;ps)</span></div>
-<div class="block">Print a description of the rules to the given PrintStream.</div>
-</div>
-</section>
-</li>
-<li>
-<section class="detail" id="printTo(java.io.PrintWriter)">
-<h3>printTo</h3>
-<div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">printTo</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/io/PrintWriter.html" title="class or interface in java.io" class="external-link">PrintWriter</a>&nbsp;pw)</span></div>
-<div class="block">Print a description of the rules to the given PrintStream.</div>
 </div>
 </section>
 </li>
