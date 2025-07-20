@@ -66,8 +66,8 @@ The following methods in `java.lang.Class` have custom deny actions:
 - `getDeclaredConstructors` - can filter the results
 - `getDeclaredMethod` - can throw a `NoSuchMethodException`
 - `getDeclaredMethods`- can filter the results
-- `getEnclosingConstructor` - can throw a `SecurityException`
-- `getEnclosingMethod` - can throw a `SecurityException`
+- `getEnclosingConstructor` - can throw a `NoSuchMethodError`
+- `getEnclosingMethod` - can throw a `NoSuchMethodError`
 - `getMethod` - can throw a `NoSuchMethodException`
 - `getMethods`- can filter the results
 - `getRecordComponents`- can filter the results
