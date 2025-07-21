@@ -177,29 +177,6 @@ public final class SecurityAgent {
      * @throws SecurityException if already activated
      */
     public static void activate(Controller controller) {
-        if (!tryActivate(controller)) {
-            throw new SecurityException();
-        }
-    }
-
-    /**
-     * Should only be used by the tests. Pass null to deactivate.
-     */
-    static SecurityAgent testActivate(Controller controller) {
-        return cAgent = controller == null ? null : new SecurityAgent(controller);
-    }
-
-    /**
-     * Activate the security agent if not already done so. Activation should be done as early
-     * as possible, because some classes which have already been loaded might not be
-     * transformable.
-     *
-     * @param controller if null, a default one is used which only allows limited access to the
-     * {@link RulesApplier#java_base java.base} module
-     * @throws IllegalStateException if the {@code SecurityAgent} wasn't loaded
-     * @return false if already activated
-     */
-    public static boolean tryActivate(Controller controller) {
         if (controller == null) {
             controller = new DefaultController();
         }
@@ -213,7 +190,7 @@ public final class SecurityAgent {
             }
             if (cAgent != null) {
                 // Already activated.
-                return false;
+                throw new SecurityException();
             }
             cAgent = agent = new SecurityAgent(controller);
         }
@@ -227,13 +204,18 @@ public final class SecurityAgent {
         } catch (UnmodifiableClassException e) {
             logException(e);
         }
-
-        return true;
     }
 
     /**
-     * Returns true if a call to {@link #activate activate} or {@link #tryActivate tryActivate}
-     * succeeded. Once activated, the security agent cannot be deactivated.
+     * Should only be used by the tests. Pass null to deactivate.
+     */
+    static SecurityAgent testActivate(Controller controller) {
+        return cAgent = controller == null ? null : new SecurityAgent(controller);
+    }
+
+    /**
+     * Returns true if a call to {@link #activate activate} succeeded. Once activated, the
+     * security agent cannot be deactivated.
      */
     public static boolean isActivated() {
         return cAgent != null;
