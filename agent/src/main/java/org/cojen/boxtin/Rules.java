@@ -26,13 +26,18 @@ import java.util.Map;
  */
 public interface Rules {
     /**
+     * Returns the rules for a specific class, as specified by its package name and class name.
+     *
      * @param packageName package name must have '/' characters as separators
-     * @return a non-null ForClass instance
+     * @param className non-qualified class name
+     * @return a non-null {@code ForClass} instance
      */
     public ForClass forClass(CharSequence packageName, CharSequence className);
 
     /**
-     * @return a non-null ForClass instance
+     * Returns the rules for a specific class.
+     *
+     * @return a non-null {@code ForClass} instance
      */
     public default ForClass forClass(Class<?> clazz) {
         String fullName = clazz.getName().replace('.', '/');
@@ -62,21 +67,31 @@ public interface Rules {
         public boolean isAllAllowed();
 
         /**
+         * Returns the rule for a specific constructor, as specified by its descriptor.
+         *
          * @param descriptor descriptor for the parameters, including parenthesis, but the
          * return type is optional
          */
         public Rule ruleForConstructor(CharSequence descriptor);
 
+        /**
+         * Returns the rule for a specific constructor, as specified by its parameters.
+         */
         public default Rule ruleForConstructor(Class<?>... paramTypes) {
             return ruleForConstructor(Utils.partialDescriptorFor(paramTypes));
         }
 
         /**
+         * Returns the rule for a specific method, as specified by its name and descriptor.
+         *
          * @param descriptor descriptor for the parameters, including parenthesis, but the
          * return type is optional
          */
         public Rule ruleForMethod(CharSequence name, CharSequence descriptor);
 
+        /**
+         * Returns the rule for a specific method, as specified by its name and parameters.
+         */
         public default Rule ruleForMethod(CharSequence name, Class<?>... paramTypes) {
             return ruleForMethod(name, Utils.partialDescriptorFor(paramTypes));
         }

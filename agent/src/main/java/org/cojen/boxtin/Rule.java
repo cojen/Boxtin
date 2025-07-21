@@ -16,27 +16,35 @@
 
 package org.cojen.boxtin;
 
-import java.io.IOException;
-
 import java.util.Map;
 import java.util.Objects;
 
 /**
- * 
+ * Indicates if access to an operation is allowed or denied.
  *
  * @author Brian S. O'Neill
  */
 public sealed class Rule implements Rules, Rules.ForClass {
     private static final Rule ALLOWED = new Rule();
 
+    /**
+     * Returns a singleton rule which is always allowed.
+     */
     public static Rule allow() {
         return ALLOWED;
     }
 
+    /**
+     * Returns a singleton rule which is always denied, with the {@link DenyAction#standard
+     * standard} action.
+     */
     public static Rule deny() {
         return Denied.STANDARD;
     }
 
+    /**
+     * Returns a rule which is denied with the given action.
+     */
     public static Rule deny(DenyAction action) {
         if (action == DenyAction.standard()) {
             return Denied.STANDARD;
@@ -50,15 +58,23 @@ public sealed class Rule implements Rules, Rules.ForClass {
     private Rule() {
     }
 
+    /**
+     * Returns true if rule is always allowed.
+     */
     public final boolean isAllowed() {
         return !isDenied();
     }
 
+    /**
+     * Returns true if the rule is always denied.
+     */
     public boolean isDenied() {
         return false;
     }
 
     /**
+     * Returns the deny action for this rule, which is null if the rule isn't denied.
+     *
      * @return null if not denied
      */
     public DenyAction denyAction() {
@@ -89,6 +105,9 @@ public sealed class Rule implements Rules, Rules.ForClass {
         return this;
     }
 
+    /**
+     * Returns an empty map.
+     */
     @Override
     public Map<String, Rule> denialsForMethod(CharSequence name, CharSequence descriptor) {
         return Map.of();

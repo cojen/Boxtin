@@ -173,7 +173,7 @@ public final class SecurityAgent {
      *
      * @param controller if null, a default one is used which only allows limited access to the
      * {@link RulesApplier#java_base java.base} module
-     * @throws IllegalStateException if the SecurityAgent wasn't loaded
+     * @throws IllegalStateException if the {@code SecurityAgent} wasn't loaded
      * @throws SecurityException if already activated
      */
     public static void activate(Controller controller) {
@@ -196,7 +196,7 @@ public final class SecurityAgent {
      *
      * @param controller if null, a default one is used which only allows limited access to the
      * {@link RulesApplier#java_base java.base} module
-     * @throws IllegalStateException if the SecurityAgent wasn't loaded
+     * @throws IllegalStateException if the {@code SecurityAgent} wasn't loaded
      * @return false if already activated
      */
     public static boolean tryActivate(Controller controller) {
@@ -231,6 +231,10 @@ public final class SecurityAgent {
         return true;
     }
 
+    /**
+     * Returns true if a call to {@link #activate activate} or {@link #tryActivate tryActivate}
+     * succeeded. Once activated, the security agent cannot be deactivated.
+     */
     public static boolean isActivated() {
         return cAgent != null;
     }

@@ -27,7 +27,7 @@ public interface Controller {
      * Returns rules which determine if a calling module is allowed to perform an operation.
      *
      * @param module the caller's module, which can be named or unnamed
-     * @return a Rules instance, which can be null if all operations are allowed
+     * @return a {@code Rules} instance, which can be null if all operations are allowed
      */
     public Rules rulesForCaller(Module module);
 }

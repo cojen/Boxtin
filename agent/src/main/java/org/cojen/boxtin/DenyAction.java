@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * 
+ * Specifies the action to take when access to an operation is denied.
  *
  * @author Brian S. O'Neill
  */

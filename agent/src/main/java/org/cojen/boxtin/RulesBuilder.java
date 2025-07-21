@@ -54,10 +54,18 @@ public final class RulesBuilder {
     // Default is selected when no map entry is found.
     private Rule mDefaultRule;
 
+    /**
+     * Construct an instance which uses the boot module layer for discovering modules,
+     * packages, and classes.
+     */
     public RulesBuilder() {
         this(ModuleLayer.boot());
     }
 
+    /**
+     * Construct an instance which uses the given module layer for discovering modules,
+     * packages, and classes.
+     */
     public RulesBuilder(ModuleLayer layer) {
         mLayer = Objects.requireNonNull(layer);
         denyAll();
