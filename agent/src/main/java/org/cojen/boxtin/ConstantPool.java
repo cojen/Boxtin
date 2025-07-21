@@ -718,7 +718,7 @@ final class ConstantPool {
         }
 
         /**
-         * Returns true if the value starts the "java/".
+         * Returns true if the value starts with "java/".
          */
         boolean isProhibitedPackage() {
             int length = mLength;
