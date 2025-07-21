@@ -115,18 +115,26 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#ruleForConstructor(java.lang.CharSequence)" class="member-name-link">ruleForConstructor</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;descriptor)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">&nbsp;</div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="block">Returns the rule for a specific constructor, as specified by its descriptor.</div>
+</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#ruleForConstructor(java.lang.Class...)" class="member-name-link">ruleForConstructor</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;?&gt;...&nbsp;paramTypes)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">&nbsp;</div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">Returns the rule for a specific constructor, as specified by its parameters.</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#ruleForMethod(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">ruleForMethod</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;descriptor)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">&nbsp;</div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="block">Returns the rule for a specific method, as specified by its name and descriptor.</div>
+</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#ruleForMethod(java.lang.CharSequence,java.lang.Class...)" class="member-name-link">ruleForMethod</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;?&gt;...&nbsp;paramTypes)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">&nbsp;</div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">Returns the rule for a specific method, as specified by its name and parameters.</div>
+</div>
 </div>
 </div>
 </div>
@@ -155,6 +163,7 @@ loadScripts(document, 'script');</script>
 <h3>ruleForConstructor</h3>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="return-type"><a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></span>&nbsp;<span class="element-name">ruleForConstructor</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;descriptor)</span></div>
+<div class="block">Returns the rule for a specific constructor, as specified by its descriptor.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>descriptor</code> - descriptor for the parameters, including parenthesis, but the
@@ -168,6 +177,7 @@ loadScripts(document, 'script');</script>
 <h3>ruleForConstructor</h3>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></span>&nbsp;<span class="element-name">ruleForConstructor</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;?&gt;...&nbsp;paramTypes)</span></div>
+<div class="block">Returns the rule for a specific constructor, as specified by its parameters.</div>
 </div>
 </section>
 </li>
@@ -177,6 +187,7 @@ loadScripts(document, 'script');</script>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="return-type"><a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></span>&nbsp;<span class="element-name">ruleForMethod</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;descriptor)</span></div>
+<div class="block">Returns the rule for a specific method, as specified by its name and descriptor.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>descriptor</code> - descriptor for the parameters, including parenthesis, but the
@@ -191,6 +202,7 @@ loadScripts(document, 'script');</script>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></span>&nbsp;<span class="element-name">ruleForMethod</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;?&gt;...&nbsp;paramTypes)</span></div>
+<div class="block">Returns the rule for a specific method, as specified by its name and parameters.</div>
 </div>
 </section>
 </li>
