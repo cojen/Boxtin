@@ -66,7 +66,6 @@ loadScripts(document, 'script');</script>
 <li><a href="#method-detail" tabindex="0">Method Details</a>
 <ol class="toc-list">
 <li><a href="#activate(org.cojen.boxtin.Controller)" tabindex="0">activate(Controller)</a></li>
-<li><a href="#tryActivate(org.cojen.boxtin.Controller)" tabindex="0">tryActivate(Controller)</a></li>
 <li><a href="#isActivated()" tabindex="0">isActivated()</a></li>
 </ol>
 </li>
@@ -131,13 +130,7 @@ loadScripts(document, 'script');</script>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static boolean</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#isActivated()" class="member-name-link">isActivated</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
-<div class="block">Returns true if a call to <a href="#activate(org.cojen.boxtin.Controller)"><code>activate</code></a> or <a href="#tryActivate(org.cojen.boxtin.Controller)"><code>tryActivate</code></a>
- succeeded.</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static boolean</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#tryActivate(org.cojen.boxtin.Controller)" class="member-name-link">tryActivate</a><wbr>(<a href="Controller.html" title="interface in org.cojen.boxtin">Controller</a>&nbsp;controller)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
-<div class="block">Activate the security agent if not already done so.</div>
+<div class="block">Returns true if a call to <a href="#activate(org.cojen.boxtin.Controller)"><code>activate</code></a> succeeded.</div>
 </div>
 </div>
 </div>
@@ -176,32 +169,12 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="tryActivate(org.cojen.boxtin.Controller)">
-<h3>tryActivate</h3>
-<div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">tryActivate</span><wbr><span class="parameters">(<a href="Controller.html" title="interface in org.cojen.boxtin">Controller</a>&nbsp;controller)</span></div>
-<div class="block">Activate the security agent if not already done so. Activation should be done as early
- as possible, because some classes which have already been loaded might not be
- transformable.</div>
-<dl class="notes">
-<dt>Parameters:</dt>
-<dd><code>controller</code> - if null, a default one is used which only allows limited access to the
- <a href="RulesApplier.html#java_base()"><code>java.base</code></a> module</dd>
-<dt>Returns:</dt>
-<dd>false if already activated</dd>
-<dt>Throws:</dt>
-<dd><code><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/IllegalStateException.html" title="class or interface in java.lang" class="external-link">IllegalStateException</a></code> - if the <code>SecurityAgent</code> wasn't loaded</dd>
-</dl>
-</div>
-</section>
-</li>
-<li>
 <section class="detail" id="isActivated()">
 <h3>isActivated</h3>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">isActivated</span>()</div>
-<div class="block">Returns true if a call to <a href="#activate(org.cojen.boxtin.Controller)"><code>activate</code></a> or <a href="#tryActivate(org.cojen.boxtin.Controller)"><code>tryActivate</code></a>
- succeeded. Once activated, the security agent cannot be deactivated.</div>
+<div class="block">Returns true if a call to <a href="#activate(org.cojen.boxtin.Controller)"><code>activate</code></a> succeeded. Once activated, the
+ security agent cannot be deactivated.</div>
 </div>
 </section>
 </li>
