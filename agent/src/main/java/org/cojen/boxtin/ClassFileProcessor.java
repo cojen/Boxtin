@@ -781,7 +781,7 @@ final class ClassFileProcessor {
 
     private static void encodeBranch(BufferEncoder encoder, int address) throws IOException {
         int branchDelta = address - encoder.length();
-        if (branchDelta >= -32768) {
+        if (((short) branchDelta) == branchDelta) {
             encoder.write(GOTO);
             encoder.writeShort(branchDelta);
         } else {
