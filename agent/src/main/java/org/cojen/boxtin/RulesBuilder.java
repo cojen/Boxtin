@@ -29,7 +29,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.NavigableMap;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
@@ -115,13 +114,13 @@ public final class RulesBuilder {
      */
     public ModuleScope forModule(String name) {
         Objects.requireNonNull(name);
-        mLayer.findModule(name).orElseThrow(IllegalArgumentException::new);
+        Module module = mLayer.findModule(name).orElseThrow(IllegalArgumentException::new);
         Map<String, ModuleScope> modules = mModules;
         if (modules == null) {
             mModules = modules = new LinkedHashMap<>();
         }
         return modules.computeIfAbsent(name, k -> {
-            return new ModuleScope(name.intern()).ruleForAll(mDefaultRule);
+            return new ModuleScope(module).ruleForAll(mDefaultRule);
         });
     }
 
@@ -342,7 +341,7 @@ public final class RulesBuilder {
      * Builder of rules at the module level.
      */
     public final class ModuleScope {
-        private final String mName;
+        private final Module mModule;
 
         // Can be null when empty.
         private Map<String, PackageScope> mPackages;
@@ -350,8 +349,8 @@ public final class RulesBuilder {
         // Default is selected when no map entry is found.
         private Rule mDefaultRule;
 
-        private ModuleScope(String name) {
-            mName = name;
+        private ModuleScope(Module module) {
+            mModule = module;
         }
 
         /**
@@ -379,18 +378,15 @@ public final class RulesBuilder {
          * recursive, allowing access to all classes, constructors, etc.
          *
          * @return this
-         * @throws NoSuchElementException if the module name isn't found
          */
-        public ModuleScope allowAll() throws NoSuchElementException {
+        public ModuleScope allowAll() {
             // Need to expand all the packages, given that the module associations aren't known
             // when classes are transformed.
 
-            Module module = mLayer.findModule(mName).get();
-
             denyAll();
 
-            for (String packageName : module.getPackages()) {
-                if (module.isExported(packageName)) {
+            for (String packageName : mModule.getPackages()) {
+                if (mModule.isExported(packageName)) {
                     forPackage(packageName).allowAll();
                 }
             }
@@ -412,8 +408,12 @@ public final class RulesBuilder {
          * rules.
          *
          * @param name fully qualified package name
+         * @throws IllegalArgumentException if the package name isn't found
          */
         public PackageScope forPackage(String name) {
+            if (!mModule.getPackages().contains(name)) {
+                throw new IllegalArgumentException();
+            }
             final String slashName = name.replace('.', '/').intern();
             Map<String, PackageScope> packages = mPackages;
             if (packages == null) {
@@ -452,22 +452,15 @@ public final class RulesBuilder {
          * Validates that all classes are loadable, and that all class members are found.
          */
         void validate(Consumer<String> reporter) {
-            Module module = mLayer.findModule(mName).orElse(null);
-
-            if (module == null) {
-                reporter.accept("Module isn't found: " + mName);
-                return;
-            }
-
             ClassLoader loader;
             try {
-                loader = mLayer.findLoader(mName);
+                loader = mLayer.findLoader(mModule.getName());
             } catch (IllegalArgumentException e) {
-                reporter.accept("Module isn't found: " + mName);
+                reporter.accept("Module loader isn't found: " + mModule.getName());
                 return;
             }
 
-            Set<String> packages = module.getPackages();
+            Set<String> packages = mModule.getPackages();
 
             if (mPackages != null) {
                 for (PackageScope ps : mPackages.values()) {
@@ -477,10 +470,13 @@ public final class RulesBuilder {
         }
 
         private void buildIntoPackageToModuleMap(Map<String, String> packageToModuleMap) {
-            if (mPackages != null) for (String packageName : mPackages.keySet()) {
-                if (packageToModuleMap.putIfAbsent(packageName, mName) != null) {
-                    throw new IllegalStateException
-                        ("Package is defined in multiple modules: " + packageName);
+            if (mPackages != null) {
+                String moduleName = mModule.getName().intern();
+                for (String packageName : mPackages.keySet()) {
+                    if (packageToModuleMap.putIfAbsent(packageName, moduleName) != null) {
+                        throw new IllegalStateException
+                            ("Package is defined in multiple modules: " + packageName);
+                    }
                 }
             }
         }
@@ -488,11 +484,14 @@ public final class RulesBuilder {
         private void buildIntoPackageScopes(Map<String, RuleSet.PackageScope> packageScopes,
                                             Map<String, String> packageToModuleMap)
         {
-            if (mPackages != null) for (Map.Entry<String, PackageScope> e : mPackages.entrySet()) {
-                RuleSet.PackageScope scope = e.getValue()
-                    .build(mName, mDefaultRule, packageToModuleMap);
-                if (scope != null) {
-                    packageScopes.put(scope.name(), scope);
+            if (mPackages != null) {
+                String moduleName = mModule.getName().intern();
+                for (Map.Entry<String, PackageScope> e : mPackages.entrySet()) {
+                    RuleSet.PackageScope scope = e.getValue()
+                        .build(moduleName, mDefaultRule, packageToModuleMap);
+                    if (scope != null) {
+                        packageScopes.put(scope.name(), scope);
+                    }
                 }
             }
         }
@@ -625,7 +624,8 @@ public final class RulesBuilder {
             String dottedName = mName.replace('/', '.');
 
             if (!packages.contains(dottedName)) {
-                reporter.accept("Package isn't found: " + mParent.mName + '/' + dottedName);
+                reporter.accept("Package isn't found: " +
+                                mParent.mModule.getName() + '/' + dottedName);
                 return;
             }
 
