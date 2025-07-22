@@ -48,8 +48,6 @@ public class ReflectionTest extends TransformTest {
     protected RulesBuilder builder() {
         RulesBuilder b = new RulesBuilder().applyRules(RulesApplier.java_base());
 
-        b.forModule("org.cojen.maker").forPackage("org.cojen.maker").allowAll();
-
         b.forModule("org.cojen.boxtin")
             .forPackage("org.cojen.boxtin")
             .forClass("ReflectionTest$SubFile").allowAll()

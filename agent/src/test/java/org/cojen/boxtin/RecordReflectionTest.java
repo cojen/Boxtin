@@ -46,7 +46,6 @@ public class RecordReflectionTest extends TransformTest {
 
         RulesBuilder b = new RulesBuilder(mod.getLayer()).applyRules(RulesApplier.java_base());
         b.forModule("java.base").forPackage("java.lang").forClass("System").allowAll();
-        b.forModule("org.cojen.maker").forPackage("org.cojen.maker").allowAll();
 
         b.forModule(mod.getName()).denyAll();
 

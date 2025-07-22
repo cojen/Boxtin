@@ -68,8 +68,6 @@ public abstract class TransformTest {
             .forClass("TransformTest").allowAll()
             .forClass("TestUtils").allowAll()
             ;
-            
-        b.forModule("org.junit").forPackage("org.junit").allowAll();
 
         Rules rules = b.build();
 
@@ -153,7 +151,7 @@ public abstract class TransformTest {
                 bytes = in.readAllBytes();
             }
 
-            byte[] xbytes = mAgent.doTransform(getClass().getModule(), pathName, bytes);
+            byte[] xbytes = mAgent.doTransform(getUnnamedModule(), pathName, bytes);
 
             if (xbytes == null) {
                 xbytes = bytes;

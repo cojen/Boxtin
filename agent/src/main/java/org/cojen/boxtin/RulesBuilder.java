@@ -111,9 +111,11 @@ public final class RulesBuilder {
      * Define specific rules against the given module, which can supersede all previous rules.
      *
      * @param name fully qualified module name
+     * @throws IllegalArgumentException if the module isn't found
      */
     public ModuleScope forModule(String name) {
         Objects.requireNonNull(name);
+        mLayer.findModule(name).orElseThrow(IllegalArgumentException::new);
         Map<String, ModuleScope> modules = mModules;
         if (modules == null) {
             mModules = modules = new LinkedHashMap<>();

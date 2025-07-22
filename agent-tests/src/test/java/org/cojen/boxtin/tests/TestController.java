@@ -32,7 +32,7 @@ public final class TestController implements Controller {
     public TestController() {
         var b = new RulesBuilder().applyRules(RulesApplier.java_base());
         b.forModule("org.cojen.maker").forPackage("org.cojen.maker").allowAll();
-        b.forModule("org.junit").forPackage("org.junit").allowAll();
+        b.forModule("junit").forPackage("org.junit").allowAll();
         mRules = b.build();
     }
 
