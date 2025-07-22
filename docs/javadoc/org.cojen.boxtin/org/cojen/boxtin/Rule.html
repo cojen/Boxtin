@@ -73,8 +73,8 @@ loadScripts(document, 'script');</script>
 <li><a href="#isDenied()" tabindex="0">isDenied()</a></li>
 <li><a href="#denyAction()" tabindex="0">denyAction()</a></li>
 <li><a href="#isAllAllowed()" tabindex="0">isAllAllowed()</a></li>
-<li><a href="#forClass(java.lang.CharSequence,java.lang.CharSequence)" tabindex="0">forClass(CharSequence, CharSequence)</a></li>
-<li><a href="#forClass(java.lang.Class)" tabindex="0">forClass(Class)</a></li>
+<li><a href="#forClass(java.lang.Module,java.lang.CharSequence,java.lang.CharSequence)" tabindex="0">forClass(Module, CharSequence, CharSequence)</a></li>
+<li><a href="#forClass(java.lang.Module,java.lang.Class)" tabindex="0">forClass(Module, Class)</a></li>
 <li><a href="#denialsForMethod(java.lang.CharSequence,java.lang.CharSequence)" tabindex="0">denialsForMethod(CharSequence, CharSequence)</a></li>
 <li><a href="#ruleForConstructor(java.lang.CharSequence)" tabindex="0">ruleForConstructor(CharSequence)</a></li>
 <li><a href="#ruleForConstructor(java.lang.Class...)" tabindex="0">ruleForConstructor(Class...)</a></li>
@@ -156,13 +156,15 @@ implements <a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a>,
 <div class="block">Returns the deny action for this rule, which is null if the rule isn't denied.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#forClass(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">forClass</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;packageName,
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#forClass(java.lang.Module,java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">forClass</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Module.html" title="class or interface in java.lang" class="external-link">Module</a>&nbsp;caller,
+ <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;packageName,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;className)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns <code>this</code>.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#forClass(java.lang.Class)" class="member-name-link">forClass</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;?&gt;&nbsp;clazz)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#forClass(java.lang.Module,java.lang.Class)" class="member-name-link">forClass</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Module.html" title="class or interface in java.lang" class="external-link">Module</a>&nbsp;caller,
+ <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;?&gt;&nbsp;clazz)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns <code>this</code>.</div>
 </div>
@@ -298,16 +300,18 @@ implements <a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a>,
 </section>
 </li>
 <li>
-<section class="detail" id="forClass(java.lang.CharSequence,java.lang.CharSequence)">
+<section class="detail" id="forClass(java.lang.Module,java.lang.CharSequence,java.lang.CharSequence)">
 <h3>forClass</h3>
 <div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></span>&nbsp;<span class="element-name">forClass</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;packageName,
+<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></span>&nbsp;<span class="element-name">forClass</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Module.html" title="class or interface in java.lang" class="external-link">Module</a>&nbsp;caller,
+ <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;packageName,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;className)</span></div>
 <div class="block">Returns <code>this</code>.</div>
 <dl class="notes">
 <dt>Specified by:</dt>
-<dd><code><a href="Rules.html#forClass(java.lang.CharSequence,java.lang.CharSequence)">forClass</a></code>&nbsp;in interface&nbsp;<code><a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a></code></dd>
+<dd><code><a href="Rules.html#forClass(java.lang.Module,java.lang.CharSequence,java.lang.CharSequence)">forClass</a></code>&nbsp;in interface&nbsp;<code><a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a></code></dd>
 <dt>Parameters:</dt>
+<dd><code>caller</code> - the module which contains the caller class</dd>
 <dd><code>packageName</code> - package name must have '/' characters as separators</dd>
 <dd><code>className</code> - non-qualified class name</dd>
 <dt>Returns:</dt>
@@ -317,14 +321,18 @@ implements <a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a>,
 </section>
 </li>
 <li>
-<section class="detail" id="forClass(java.lang.Class)">
+<section class="detail" id="forClass(java.lang.Module,java.lang.Class)">
 <h3>forClass</h3>
 <div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></span>&nbsp;<span class="element-name">forClass</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;?&gt;&nbsp;clazz)</span></div>
+<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></span>&nbsp;<span class="element-name">forClass</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Module.html" title="class or interface in java.lang" class="external-link">Module</a>&nbsp;caller,
+ <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;?&gt;&nbsp;clazz)</span></div>
 <div class="block">Returns <code>this</code>.</div>
 <dl class="notes">
 <dt>Specified by:</dt>
-<dd><code><a href="Rules.html#forClass(java.lang.Class)">forClass</a></code>&nbsp;in interface&nbsp;<code><a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a></code></dd>
+<dd><code><a href="Rules.html#forClass(java.lang.Module,java.lang.Class)">forClass</a></code>&nbsp;in interface&nbsp;<code><a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a></code></dd>
+<dt>Parameters:</dt>
+<dd><code>caller</code> - the module which contains the caller class</dd>
+<dd><code>clazz</code> - the target class</dd>
 <dt>Returns:</dt>
 <dd>a non-null <code>ForClass</code> instance</dd>
 </dl>
