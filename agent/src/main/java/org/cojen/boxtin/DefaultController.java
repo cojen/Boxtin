@@ -29,7 +29,7 @@ final class DefaultController implements Controller {
     }
 
     @Override
-    public Rules rulesForCaller(Module module) {
+    public Rules rulesForCaller(Module caller) {
         return mRules;
     }
 }

@@ -104,6 +104,9 @@ final class ClassFileProcessor {
     private final int mMethodsStartOffset;
     private final int mMethodsCount;
 
+    private Module mModule;
+    private Rules mRules;
+
     private MethodMap mDeclaredMethods;
 
     private Map<Integer, RegionReplacement> mReplacements;
@@ -132,18 +135,24 @@ final class ClassFileProcessor {
 
     /**
      * Transforms the class or else returns null when no transformation is necessary.
+     *
+     * @param module the module which contains the class being transformed
      */
-    public byte[] transform(Rules rules) throws IOException, ClassFormatException {
-        return check(rules) ? redefine() : null;
+    public byte[] transform(Module module, Rules rules) throws IOException, ClassFormatException {
+        return check(module, rules) ? redefine() : null;
     }
 
     /**
      * Examines the class to see if any constructors or methods need to be modified for
      * supporting runtime checks, and begins making modifications if so.
      *
+     * @param module the module which contains the class being transformed
      * @return true if the class requires modification
      */
-    public boolean check(Rules rules) throws IOException, ClassFormatException {
+    public boolean check(Module module, Rules rules) throws IOException, ClassFormatException {
+        mModule = module;
+        mRules = rules;
+
         final BufferDecoder decoder = mDecoder;
 
         // Gather up all the method declarations, to be used later by the rulesForClass method.
@@ -172,13 +181,13 @@ final class ClassFileProcessor {
             byte op;
 
             if (kind == REF_newInvokeSpecial) {
-                rule = ruleForConstructor(rules, methodRef);
+                rule = ruleForConstructor(methodRef);
                 if (rule.isAllowed()) {
                     return;
                 }
                 op = NEW;
             } else {
-                rule = ruleForMethod(rules, methodRef);
+                rule = ruleForMethod(methodRef);
                 if (rule.isAllowed()) {
                     return;
                 }
@@ -202,7 +211,7 @@ final class ClassFileProcessor {
 
         // Check the methods.
 
-        forAllMethods(null, method -> insertCallerChecks(rules, method));
+        forAllMethods(null, method -> insertCallerChecks(method));
 
         int methodsEndOffset = decoder.offset();
 
@@ -487,9 +496,7 @@ final class ClassFileProcessor {
      * ClassFormatException is thrown instead. With INVOKEINTERFACE, five bytes are available,
      * and so a GOTO_W operation is used instead.
      */
-    private void insertCallerChecks(Rules rules, CodeAttr caller) 
-        throws IOException, ClassFormatException
-    {
+    private void insertCallerChecks(CodeAttr caller) throws IOException, ClassFormatException {
         int offset = caller.codeOffset;
 
         final int endOffset;
@@ -524,9 +531,9 @@ final class ClassFileProcessor {
                     offset += op != INVOKEINTERFACE ? 2 : 4;
 
                     if (methodRef.mNameAndType.mName.isConstructor()) {
-                        rule = ruleForConstructor(rules, methodRef);
+                        rule = ruleForConstructor(methodRef);
                     } else {
-                        rule = ruleForMethod(rules, methodRef);
+                        rule = ruleForMethod(methodRef);
                     }
 
                     if (rule.isAllAllowed()) {
@@ -705,13 +712,12 @@ final class ClassFileProcessor {
      *
      * @param methodRef target constructor
      */
-    private Rule ruleForConstructor(Rules rules, C_MemberRef methodRef) {
+    private Rule ruleForConstructor(C_MemberRef methodRef) {
         if (isInvokingThisClass(methodRef) && mDeclaredMethods.find(methodRef) != null) {
             return Rule.allow();
         }
 
-        return rulesForClass(rules, methodRef.mClass)
-            .ruleForConstructor(methodRef.mNameAndType.mTypeDesc);
+        return rulesForClass(methodRef.mClass).ruleForConstructor(methodRef.mNameAndType.mTypeDesc);
     }
 
     /**
@@ -719,7 +725,7 @@ final class ClassFileProcessor {
      *
      * @param methodRef target constructor
      */
-    private Rule ruleForMethod(Rules rules, C_MemberRef methodRef) {
+    private Rule ruleForMethod(C_MemberRef methodRef) {
         boolean invokingThis = isInvokingThisClass(methodRef);
 
         if (invokingThis && mDeclaredMethods.find(methodRef) != null) {
@@ -731,13 +737,13 @@ final class ClassFileProcessor {
         }
 
         C_NameAndType nat = methodRef.mNameAndType;
-        Rule rule = rulesForClass(rules, methodRef.mClass).ruleForMethod(nat.mName, nat.mTypeDesc);
+        Rule rule = rulesForClass(methodRef.mClass).ruleForMethod(nat.mName, nat.mTypeDesc);
 
         if (invokingThis && !hasInheritance()) {
             return rule;
         }
 
-        Map<String, Rule> denials = rules.denialsForMethod(nat.mName, nat.mTypeDesc);
+        Map<String, Rule> denials = mRules.denialsForMethod(nat.mName, nat.mTypeDesc);
 
         if (denials.isEmpty() || denials.containsKey(methodRef.mClass.mValue)) {
             return rule;
@@ -751,7 +757,7 @@ final class ClassFileProcessor {
      *
      * @param target target class
      */
-    private Rules.ForClass rulesForClass(Rules rules, C_Class target) {
+    private Rules.ForClass rulesForClass(C_Class target) {
         ConstantPool.C_UTF8 packageName = mPackageName;
         ConstantPool.C_UTF8 className = mClassName;
 
@@ -762,7 +768,7 @@ final class ClassFileProcessor {
 
         target.split(packageName, className);
 
-        return rules.forClass(packageName, className);
+        return mRules.forClass(mModule, packageName, className);
     }
 
     private boolean isInvokingThisClass(C_MemberRef methodRef) {

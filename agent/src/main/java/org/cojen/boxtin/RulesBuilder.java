@@ -485,10 +485,9 @@ public final class RulesBuilder {
                                             Map<String, String> packageToModuleMap)
         {
             if (mPackages != null) {
-                String moduleName = mModule.getName().intern();
                 for (Map.Entry<String, PackageScope> e : mPackages.entrySet()) {
                     RuleSet.PackageScope scope = e.getValue()
-                        .build(moduleName, mDefaultRule, packageToModuleMap);
+                        .build(mModule, mDefaultRule, packageToModuleMap);
                     if (scope != null) {
                         packageScopes.put(scope.name(), scope);
                     }
@@ -639,7 +638,7 @@ public final class RulesBuilder {
         /**
          * @return null if redundant
          */
-        private RuleSet.PackageScope build(String moduleName, Rule parentRule,
+        private RuleSet.PackageScope build(Module module, Rule parentRule,
                                            Map<String, String> packageToModuleMap)
         {
             if (isEmpty(mClasses) && parentRule.equals(mDefaultRule)) {
@@ -661,7 +660,7 @@ public final class RulesBuilder {
                 }
             }
 
-            return new RuleSet.PackageScope(moduleName, mName, builtClasses, mDefaultRule);
+            return new RuleSet.PackageScope(module, mName, builtClasses, mDefaultRule);
         }
     }
 

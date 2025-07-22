@@ -26,23 +26,27 @@ import java.util.Map;
  */
 public interface Rules {
     /**
-     * Returns the rules for a specific class, as specified by its package name and class name.
+     * Returns the rules for a specific target class, as specified by its package name and
+     * class name.
      *
+     * @param caller the module which contains the caller class
      * @param packageName package name must have '/' characters as separators
      * @param className non-qualified class name
      * @return a non-null {@code ForClass} instance
      */
-    public ForClass forClass(CharSequence packageName, CharSequence className);
+    public ForClass forClass(Module caller, CharSequence packageName, CharSequence className);
 
     /**
-     * Returns the rules for a specific class.
+     * Returns the rules for a specific target class.
      *
+     * @param caller the module which contains the caller class
+     * @param target the target class
      * @return a non-null {@code ForClass} instance
      */
-    public default ForClass forClass(Class<?> clazz) {
-        String fullName = clazz.getName().replace('.', '/');
+    public default ForClass forClass(Module caller, Class<?> target) {
+        String fullName = target.getName().replace('.', '/');
         String packageName = Utils.packageName(fullName);
-        return forClass(packageName, Utils.className(packageName, fullName));
+        return forClass(caller, packageName, Utils.className(packageName, fullName));
     }
 
     /**

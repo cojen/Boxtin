@@ -311,7 +311,8 @@ public final class SecurityAgent {
         }
 
         Rules rules = mController.rulesForCaller(module);
-        return rules == null ? null : ClassFileProcessor.begin(classBuffer).transform(rules);
+        return rules == null ? null
+            : ClassFileProcessor.begin(classBuffer).transform(module, rules);
     }
 
     /**
@@ -442,13 +443,14 @@ public final class SecurityAgent {
             return true;
         }
 
-        Rules rules = mController.rulesForCaller(caller.getModule());
+        Module module = caller.getModule();
+        Rules rules = mController.rulesForCaller(module);
 
         if (rules == null) {
             return true;
         }
 
-        Rules.ForClass forClass = rules.forClass(target);
+        Rules.ForClass forClass = rules.forClass(module, target);
 
         Rule rule;
         if (name == null || name.equals("<init>")) {

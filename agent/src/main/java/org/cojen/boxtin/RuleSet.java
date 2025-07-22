@@ -101,14 +101,21 @@ final class RuleSet implements Rules {
     }
 
     @Override
-    public ForClass forClass(CharSequence packageName, CharSequence className) {
+    public ForClass forClass(Module caller, CharSequence packageName, CharSequence className) {
         if (!mModularPackages.contains(packageName)) {
             // Denial rules are only applicable to packages which are provided by named
             // modules. If the package isn't provided this way, then allow the operation.
             return Rule.allow();
         }
         PackageScope scope = mPackageScopes.get(packageName);
-        return scope == null ? mDefaultRule : scope.forClass(className);
+        if (scope == null) {
+            return mDefaultRule;
+        }
+        if (scope.mModule.equals(caller)) {
+            // Allow calls within the same module.
+            return Rule.allow();
+        }
+        return scope.forClass(className);
     }
 
     @Override
@@ -163,7 +170,8 @@ final class RuleSet implements Rules {
         // subclassing. Do this by removing them from class file interfaces and superclass. Go
         // up a level for superclass, until an allowed one is found.
 
-        private final String mModuleName, mPackageName;
+        private final Module mModule;
+        private final String mPackageName;
 
         private final Map<String, ClassScope> mClassScopes;
 
@@ -175,13 +183,17 @@ final class RuleSet implements Rules {
         /**
          * @param packageName must have '/' characters as separators 
          */
-        PackageScope(String moduleName, String packageName,
+        PackageScope(Module module, String packageName,
                      Map<String, ClassScope> classScopes, Rule defaultRule)
         {
-            mModuleName = Objects.requireNonNull(moduleName);
+            mModule = Objects.requireNonNull(module);
             mPackageName = Objects.requireNonNull(packageName);
             mClassScopes = Objects.requireNonNull(classScopes);
             mDefaultRule = Objects.requireNonNull(defaultRule);
+        }
+
+        Module module() {
+            return mModule;
         }
 
         String name() {
@@ -192,7 +204,7 @@ final class RuleSet implements Rules {
         public int hashCode() {
             int hash = mHashCode;
             if (hash == 0) {
-                hash = mModuleName.hashCode();
+                hash = mModule.hashCode();
                 hash = hash * 31 + mPackageName.hashCode();
                 hash = hash * 31 + mClassScopes.hashCode();
                 hash = hash * 31 + mDefaultRule.hashCode();
@@ -204,7 +216,7 @@ final class RuleSet implements Rules {
         @Override
         public boolean equals(Object obj) {
             return this == obj || obj instanceof PackageScope other
-                && mModuleName.equals(other.mModuleName)
+                && mModule.equals(other.mModule)
                 && mPackageName.equals(other.mPackageName)
                 && mDefaultRule.equals(other.mDefaultRule)
                 && mClassScopes.equals(other.mClassScopes);

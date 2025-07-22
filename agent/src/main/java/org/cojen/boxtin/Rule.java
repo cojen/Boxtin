@@ -93,7 +93,8 @@ public sealed class Rule implements Rules, Rules.ForClass {
      * Returns {@code this}.
      */
     @Override
-    public final ForClass forClass(CharSequence packageName, CharSequence className) {
+    public final ForClass forClass(Module caller, CharSequence packageName, CharSequence className)
+    {
         return this;
     }
 
@@ -101,7 +102,7 @@ public sealed class Rule implements Rules, Rules.ForClass {
      * Returns {@code this}.
      */
     @Override
-    public final ForClass forClass(Class<?> clazz) {
+    public final ForClass forClass(Module caller, Class<?> clazz) {
         return this;
     }
 
