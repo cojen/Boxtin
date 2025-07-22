@@ -652,8 +652,7 @@ public final class RulesBuilder {
             } else {
                 builtClasses = new LinkedHashMap<>();
                 for (Map.Entry<String, ClassScope> e : mClasses.entrySet()) {
-                    RuleSet.ClassScope scope = e.getValue()
-                        .build(mName, mDefaultRule, packageToModuleMap);
+                    RuleSet.ClassScope scope = e.getValue().build(this, packageToModuleMap);
                     if (scope != null) {
                         builtClasses.put(e.getKey().intern(), scope);
                     }
@@ -1019,15 +1018,19 @@ public final class RulesBuilder {
         /**
          * @return null if redundant
          */
-        private RuleSet.ClassScope build(String packageName, Rule parentRule,
+        private RuleSet.ClassScope build(PackageScope packageScope,
                                          Map<String, String> packageToModuleMap)
         {
+            Rule parentRule = packageScope.mDefaultRule;
+
             if (mConstructors == null && isEmpty(mMethods) &&
                 parentRule.equals(mDefaultConstructorRule) &&
                 parentRule.isAllowed() && mDefaultMethodRule.isAllowed())
             {
                 return null;
             }
+
+            String packageName = packageScope.mName;
 
             RuleSet.ConstructorScope builtConstructors;
 

@@ -90,6 +90,14 @@ public sealed class Rule implements Rules, Rules.ForClass {
     }
 
     /**
+     * Same as {@link #isAllowed}.
+     */
+    @Override
+    public final boolean isSubtypingAllowed() {
+        return isAllowed();
+    }
+
+    /**
      * Returns {@code this}.
      */
     @Override

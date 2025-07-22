@@ -51,9 +51,14 @@ public class ResourceBundleTransformTest extends TransformTest {
 
     @Override
     protected RulesBuilder builder() {
-        return new RulesBuilder().applyRules(RulesApplier.java_base())
-            .forModule("java.base").forPackage("java.lang").forClass("System").allowAll()
-            .end().end().end();
+        RulesBuilder b = new RulesBuilder().applyRules(RulesApplier.java_base());
+
+        b.forModule("java.base").forPackage("java.lang").forClass("System").allowAll();
+
+        b.forModule("org.cojen.boxtin").forPackage("org.cojen.boxtin")
+            .forClass("ResourceBundleTransformTest$Sub").allowAll();
+
+        return b;
     }
 
     @Test

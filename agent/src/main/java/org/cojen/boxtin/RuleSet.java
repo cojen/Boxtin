@@ -166,10 +166,6 @@ final class RuleSet implements Rules {
     }
 
     static final class PackageScope {
-        // FIXME: If package is deny by default, then unspecified classes should disallow
-        // subclassing. Do this by removing them from class file interfaces and superclass. Go
-        // up a level for superclass, until an allowed one is found.
-
         private final Module mModule;
         private final String mPackageName;
 

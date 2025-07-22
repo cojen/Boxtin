@@ -77,29 +77,13 @@ final class ClassFileProcessor {
             throw new ClassFormatException(true);
         }
 
-        var cp = ConstantPool.decode(decoder);
-
-        int accessFlags = decoder.readUnsignedShort();
-        int thisClassIndex = decoder.readUnsignedShort();
-        int superClassIndex = decoder.readUnsignedShort();
-
-        // Skip the super interfaces.
-        int numIfaces = decoder.readUnsignedShort();
-        decoder.skipNBytes(numIfaces * 2);
-
-        // Skip the fields.
-        for (int i = decoder.readUnsignedShort(); --i >= 0;) {
-            // Skip access_flags, name_index, and descriptor_index.
-            decoder.skipNBytes(2 + 2 + 2);
-            decoder.skipAttributes();
-        }
-
-        return new ClassFileProcessor(cp, thisClassIndex, superClassIndex, numIfaces, decoder);
+        return new ClassFileProcessor(decoder);
     }
 
     private final ConstantPool mConstantPool;
-    private final int mThisClassIndex, mSuperClassIndex;
-    private final int mNumIterfaces;
+    private final int mThisClassIndex;
+    private final int mSuperClassOffset, mSuperClassIndex;
+    private final int[] mInterfaceIndexes;
     private final BufferDecoder mDecoder;
     private final int mMethodsStartOffset;
     private final int mMethodsCount;
@@ -109,7 +93,9 @@ final class ClassFileProcessor {
 
     private MethodMap mDeclaredMethods;
 
-    private Map<Integer, RegionReplacement> mReplacements;
+    private boolean mDenyConstruction;
+
+    private TreeMap<Integer, RegionReplacement> mReplacements;
 
     private Map<Integer, ProxyMethod> mProxyMethods;
 
@@ -119,15 +105,34 @@ final class ClassFileProcessor {
     // Work objects used by the rulesForClass method.
     private ConstantPool.C_UTF8 mPackageName, mClassName;
 
-    private ClassFileProcessor(ConstantPool cp,
-                               int thisClassIndex, int superClassIndex, int numIfaces,
-                               BufferDecoder decoder)
-        throws IOException
-    {
-        mConstantPool = cp;
-        mThisClassIndex = thisClassIndex;
-        mSuperClassIndex = superClassIndex;
-        mNumIterfaces = numIfaces;
+    private ClassFileProcessor(BufferDecoder decoder) throws IOException {
+        mConstantPool = ConstantPool.decode(decoder);
+
+        int accessFlags = decoder.readUnsignedShort();
+        mThisClassIndex = decoder.readUnsignedShort();
+
+        mSuperClassOffset = decoder.offset();
+        mSuperClassIndex = decoder.readUnsignedShort();
+
+        {
+            int numIfaces = decoder.readUnsignedShort();
+            if (numIfaces == 0) {
+                mInterfaceIndexes = null;
+            } else {
+                mInterfaceIndexes = new int[numIfaces];
+                for (int i=0; i<numIfaces; i++) {
+                    mInterfaceIndexes[i] = decoder.readUnsignedShort();
+                }
+            }
+        }
+
+        // Skip the fields.
+        for (int i = decoder.readUnsignedShort(); --i >= 0;) {
+            // Skip access_flags, name_index, and descriptor_index.
+            decoder.skipNBytes(2 + 2 + 2);
+            decoder.skipAttributes();
+        }
+
         mDecoder = decoder;
         mMethodsStartOffset = decoder.offset();
         mMethodsCount = decoder.readUnsignedShort();
@@ -153,14 +158,13 @@ final class ClassFileProcessor {
         mModule = module;
         mRules = rules;
 
+        final ConstantPool cp = mConstantPool;
         final BufferDecoder decoder = mDecoder;
 
         // Gather up all the method declarations, to be used later by the rulesForClass method.
 
         mDeclaredMethods = new MethodMap(mMethodsCount);
 
-        final ConstantPool cp = mConstantPool;
-        final byte[] cpBuffer = cp.buffer();
         final int methodsOffset = decoder.offset();
 
         for (int i = mMethodsCount; --i >= 0; ) {
@@ -173,6 +177,37 @@ final class ClassFileProcessor {
 
         // Restore the offset for checking the methods again later.
         decoder.offset(methodsOffset);
+
+        // Check if any superclasses disallow subtyping.
+
+        if (mSuperClassIndex != 0) {
+            Rules.ForClass forClass = rulesForClass(cp.findConstantClass(mSuperClassIndex));
+            if (!forClass.isSubtypingAllowed()) {
+                // Replace the superclass with Object. As a result, the constructors won't
+                // work, so replace them with simple ones which always throw an exception.
+                mDenyConstruction = true;
+                cp.extend();
+                var replacement = new SimpleReplacement(2);
+                replacement.writeShort(cp.addClass("java/lang/Object").mIndex);
+                storeReplacement(mSuperClassOffset, replacement);
+            }
+        }
+
+        // Check if any super interfaces disallow subtyping
+
+        if (mInterfaceIndexes != null) for (int i=0; i<mInterfaceIndexes.length; i++) {
+            Rules.ForClass forClass = rulesForClass(cp.findConstantClass(mInterfaceIndexes[i]));
+            int removed = 0;
+            if (!forClass.isSubtypingAllowed()) {
+                // Just drop the interface from the set.
+                removed++;
+                cp.extend();
+                storeReplacement(mSuperClassOffset + 4 + i * 2, new SimpleReplacement(2, 0));
+            }
+            var ifacesCount = new SimpleReplacement(2);
+            ifacesCount.writeShort(mInterfaceIndexes.length - removed);
+            storeReplacement(mSuperClassOffset + 2, ifacesCount);
+        }
 
         // Check the MethodHandle constants.
 
@@ -497,6 +532,18 @@ final class ClassFileProcessor {
      * and so a GOTO_W operation is used instead.
      */
     private void insertCallerChecks(CodeAttr caller) throws IOException, ClassFormatException {
+        final ConstantPool cp = mConstantPool;
+
+        if (mDenyConstruction && cp.findConstantUTF8(caller.nameIndex).isConstructor()) {
+            // Just throw an exception.
+            cp.extend();
+            var ctor = new ReplacedMethod(caller);
+            ctor.prepareForModification(cp, mThisClassIndex, null);
+            encodeExceptionAction(ctor.codeEncoder, ctor, DenyAction.Standard.THE);
+            storeReplacement(ctor.attrOffset, ctor);
+            return;
+        }
+
         int offset = caller.codeOffset;
 
         final int endOffset;
@@ -508,7 +555,6 @@ final class ClassFileProcessor {
             endOffset = (int) endL;
         }
 
-        final ConstantPool cp = mConstantPool;
         final byte[] buffer = cp.buffer();
 
         while (offset < endOffset) {
@@ -779,7 +825,7 @@ final class ClassFileProcessor {
     }
 
     private boolean hasInheritance() {
-        return mNumIterfaces != 0
+        return mInterfaceIndexes != null
             || (mSuperClassIndex != 0 &&
                 !mConstantPool.findConstantClass(mSuperClassIndex)
                 .mValue.equals("java/lang/Object"));
@@ -1661,6 +1707,29 @@ final class ClassFileProcessor {
             encoder.writeShort(mCodeAttrNameIndex);
 
             super.writeTo(encoder);
+        }
+    }
+
+    private static class ReplacedMethod extends CodeAttr {
+        ReplacedMethod(CodeAttr original) {
+            attrOffset = original.attrOffset;
+            attrLength = original.attrLength;
+            accessFlags = original.accessFlags;
+            nameIndex = original.nameIndex;
+            descIndex = original.descIndex;
+            maxLocals = original.maxLocals;
+            codeOffset = original.codeOffset;
+            codeLength = original.codeLength;
+        }
+
+        @Override
+        public long finish(ConstantPool cp, byte[] originalBuffer) throws IOException {
+            if (mNewCodeLength == 0) {
+                mNewCodeLength = codeEncoder.length();
+                codeEncoder.writeShort(0); // exception_table_length
+                codeEncoder.writeShort(0); // attributes_count
+            }
+            return newLength();
         }
     }
 }

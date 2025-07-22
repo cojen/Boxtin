@@ -71,6 +71,15 @@ public interface Rules {
         public boolean isAllAllowed();
 
         /**
+         * Returns true if a class can be declared as a subtype of this class. This is
+         * generally true, except when all classes in a package are denied by default, and no
+         * explicit rule is defined for this class.
+         */
+        public default boolean isSubtypingAllowed() {
+            return true;
+        }
+
+        /**
          * Returns the rule for a specific constructor, as specified by its descriptor.
          *
          * @param descriptor descriptor for the parameters, including parenthesis, but the
