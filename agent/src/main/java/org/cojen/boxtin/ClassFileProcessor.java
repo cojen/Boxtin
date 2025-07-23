@@ -161,7 +161,7 @@ final class ClassFileProcessor {
         final ConstantPool cp = mConstantPool;
         final BufferDecoder decoder = mDecoder;
 
-        // Gather up all the method declarations, to be used later by the rulesForClass method.
+        // Gather all the method declarations, to be used later by the rulesForClass method.
 
         mDeclaredMethods = new MethodMap(mMethodsCount);
 
@@ -246,7 +246,7 @@ final class ClassFileProcessor {
 
         // Check the methods.
 
-        forAllMethods(null, method -> insertCallerChecks(method));
+        forAllMethods(null, this::insertCallerChecks);
 
         int methodsEndOffset = decoder.offset();
 
@@ -503,7 +503,7 @@ final class ClassFileProcessor {
      * allowed. The Module instances aren't available until the classes are loaded, and they
      * cannot be loaded yet.
      *
-     * Inserting code is complicated, because it requires that jump offsets be modified as
+     * Inserting code is complicated because it requires that jump offsets be modified as
      * well. To simplify things, the deny code is actually inserted at the end, like so:
      *
      * private void someMethod() throws IOException {
@@ -548,7 +548,7 @@ final class ClassFileProcessor {
 
         final int endOffset;
         {
-            long endL = offset + caller.codeLength;
+            long endL = (long) offset + (long) caller.codeLength;
             if (endL > Integer.MAX_VALUE) {
                 throw new ClassFormatException();
             }

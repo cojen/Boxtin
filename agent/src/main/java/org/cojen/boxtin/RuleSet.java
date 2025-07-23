@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
@@ -111,7 +110,7 @@ final class RuleSet implements Rules {
         if (scope == null) {
             return mDefaultRule;
         }
-        if (scope.mModule.equals(caller)) {
+        if (scope.module().equals(caller)) {
             // Allow calls within the same module.
             return Rule.allow();
         }

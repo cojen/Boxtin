@@ -412,7 +412,7 @@ final class ConstantPool {
             encoder.write(buffer(), startOffset, mEndOffset - startOffset);
         }
 
-        for (Constant c : mAddedConstants) {
+        if (mAddedConstants != null) for (Constant c : mAddedConstants) {
             if (c != null) {
                 c.writeTo(encoder);
             }
