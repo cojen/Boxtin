@@ -730,7 +730,7 @@ final class ClassFileProcessor {
             boolean hasInstance = hasInstance(op);
             CodeAttr.StoredArgs args = caller.storeArgs(encoder, denyEntry, hasInstance, methodRef);
 
-            encodeDenyAction(encoder, caller, hasInstance, true, methodRef, methodRef.mClass,
+            encodeDenyAction(caller, hasInstance, true, methodRef, methodRef.mClass,
                              rule.denyAction(), resumeAddress,
                              args.argSlots(), 0, args.withArgs(), null);
 
@@ -888,14 +888,15 @@ final class ClassFileProcessor {
      * @param withArgs smt entry with the argSlots defined as local variables
      * @param denyAddresses addresses where deny actions have been encoded; initially null
      */
-    private void encodeDenyAction(BufferEncoder encoder,
-                                  CodeAttr caller, boolean hasInstance, boolean maybeNull,
+    private void encodeDenyAction(CodeAttr caller, boolean hasInstance, boolean maybeNull,
                                   C_MemberRef methodRef, C_Class targetClass,
                                   DenyAction action, int resumeAddress,
                                   int[] argSlots, int castArg0, StackMapTable.Entry withArgs,
                                   Map<DenyAction, Integer> denyAddresses)
         throws IOException
     {
+        BufferEncoder encoder = caller.codeEncoder;
+
         if (action instanceof DenyAction.Multi mu) {
             C_MemberRef isAssignableFrom = null;
 
@@ -935,7 +936,7 @@ final class ClassFileProcessor {
 
                 // Note that maybeNull is now false because of the instanceof check.
 
-                encodeDenyAction(encoder, caller, hasInstance, false, methodRef, targetClass,
+                encodeDenyAction(caller, hasInstance, false, methodRef, targetClass,
                                  e.getValue().denyAction(), resumeAddress,
                                  argSlots, doCastArg0, withArgs, denyAddresses);
 
@@ -1619,13 +1620,14 @@ final class ClassFileProcessor {
 
         int[] argSlots = proxyMethod.staticParamArgs(proxyDesc.asMethodTypeDesc());
 
-        BufferEncoder encoder = proxyMethod.codeEncoder;
         boolean hasInstance = hasInstance(op);
 
         StackMapTable.Entry withArgs = proxyMethod.smt.getEntry(0);
 
-        encodeDenyAction(encoder, proxyMethod, hasInstance, true, methodRef, methodRef.mClass,
+        encodeDenyAction(proxyMethod, hasInstance, true, methodRef, methodRef.mClass,
                          action, -1, argSlots, 0, withArgs, null);
+
+        BufferEncoder encoder = proxyMethod.codeEncoder;
 
         if (op == NEW) {
             encoder.write(NEW);
