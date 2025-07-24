@@ -1607,12 +1607,12 @@ final class ClassFileProcessor {
         if (op != INVOKESPECIAL) {
             instanceType = methodRef.mClass;
         } else {
-            instanceType = cp.findConstant(mThisClassIndex, C_Class.class);
+            instanceType = cp.findConstantClass(mThisClassIndex);
         }
 
         ConstantPool.C_UTF8 proxyDesc = cp.addWithFullSignature(op, instanceType, methodRef);
 
-        C_Class thisClass = cp.findConstant(mThisClassIndex, C_Class.class);
+        C_Class thisClass = cp.findConstantClass(mThisClassIndex);
         proxyMethod = new ProxyMethod(cp.addUniqueMethod(thisClass, proxyDesc));
         proxyMethod.prepareForModification(cp, mThisClassIndex, null);
         mProxyMethods.put(key, proxyMethod);
