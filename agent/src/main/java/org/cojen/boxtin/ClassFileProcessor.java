@@ -535,7 +535,7 @@ final class ClassFileProcessor {
             // Just throw an exception.
             var ctor = new ReplacedMethod(caller);
             ctor.prepareForModification(cp, mThisClassIndex, null);
-            encodeExceptionAction(ctor.codeEncoder, ctor, DenyAction.Standard.THE);
+            encodeExceptionAction(ctor, DenyAction.Standard.THE);
             storeReplacement(ctor.attrOffset, ctor);
             return;
         }
@@ -840,14 +840,13 @@ final class ClassFileProcessor {
     /**
      * @param returnOp must be a return operation
      */
-    private static void encodeBranchOrReturn(BufferEncoder encoder, CodeAttr method,
-                                             int address, byte returnOp)
+    private static void encodeBranchOrReturn(CodeAttr method, int address, byte returnOp)
         throws IOException
     {
         if (address >= 0) {
-            encodeBranch(encoder, address);
+            encodeBranch(method.codeEncoder, address);
         } else {
-            encoder.write(returnOp);
+            method.codeEncoder.write(returnOp);
             method.stackPop(popSizeForReturnOp(returnOp));
         }
     }
@@ -986,8 +985,7 @@ final class ClassFileProcessor {
         int checkedOffset = 0;
 
         if (action instanceof DenyAction.Checked checked) {
-            int returnOp = encodeMethodHandleInvoke
-                (encoder, caller, argSlots, castArg0, checked.predicate);
+            int returnOp = encodeMethodHandleInvoke(caller, argSlots, castArg0, checked.predicate);
             if (returnOp == 0) {
                 action = DenyAction.Standard.THE;
             } else {
@@ -1021,7 +1019,7 @@ final class ClassFileProcessor {
                 if (nat.mName.isConstructor()) {
                     if (action instanceof DenyAction.Custom cu) {
                         byte returnOp = encodeMethodHandleInvoke
-                            (encoder, caller, argSlots, castArg0, cu.mhi);
+                            (caller, argSlots, castArg0, cu.mhi);
                         if (returnOp != 0) {
                             encodeReturnPop(encoder, returnOp);
                         }
@@ -1031,18 +1029,17 @@ final class ClassFileProcessor {
                     byte returnOp;
 
                     if (action instanceof DenyAction.Value va) {
-                        returnOp = encodeValue(encoder, caller, va.value, nat.mTypeDesc);
+                        returnOp = encodeValue(caller, va.value, nat.mTypeDesc);
                     } else if (action instanceof DenyAction.Empty) {
-                        returnOp = encodeEmpty(encoder, caller, nat.mTypeDesc);
+                        returnOp = encodeEmpty(caller, nat.mTypeDesc);
                     } else if (action instanceof DenyAction.Custom cu) {
-                        returnOp = encodeMethodHandleInvoke
-                            (encoder, caller, argSlots, castArg0, cu.mhi);
+                        returnOp = encodeMethodHandleInvoke(caller, argSlots, castArg0, cu.mhi);
                     } else {
                         break doReturn;
                     }
 
                     if (returnOp != 0) {
-                        encodeBranchOrReturn(encoder, caller, resumeAddress, returnOp);
+                        encodeBranchOrReturn(caller, resumeAddress, returnOp);
                         break encode;
                     }
                 }
@@ -1053,7 +1050,7 @@ final class ClassFileProcessor {
 
             // Note: no need to pop the arguments because an exception will always be thrown.
 
-            encodeExceptionAction(encoder, caller, exAction);
+            encodeExceptionAction(caller, exAction);
         }
 
         if (nullCheckOffset != 0) {
@@ -1085,13 +1082,13 @@ final class ClassFileProcessor {
         encodeShortBE(encoder.buffer(), fromOffset, encoder.length() - fromOffset + 1);
     }
 
-    private void encodeExceptionAction(BufferEncoder encoder, CodeAttr caller,
-                                       DenyAction.Exception exAction)
+    private void encodeExceptionAction(CodeAttr caller, DenyAction.Exception exAction)
         throws IOException
     {
         ConstantPool cp = mConstantPool;
         int exClassIndex = cp.addClass(exAction.className).mIndex;
         ConstantPool.C_MemberRef exInitRef;
+        BufferEncoder encoder = caller.codeEncoder;
 
         if (exAction instanceof DenyAction.WithMessage wm) {
             exInitRef = cp.addMethodRef(exAction.className, "<init>", "(Ljava/lang/String;)V");
@@ -1117,16 +1114,15 @@ final class ClassFileProcessor {
     /**
      * @return a return opcode
      */
-    private byte encodeValue(BufferEncoder encoder, CodeAttr caller,
-                             Object value, ConstantPool.C_UTF8 desc)
+    private byte encodeValue(CodeAttr caller, Object value, ConstantPool.C_UTF8 desc)
         throws IOException
     {
-        byte op = tryEncodeValue(encoder, caller, value, desc.charAt(desc.length() - 1));
+        byte op = tryEncodeValue(caller, value, desc.charAt(desc.length() - 1));
 
         if (op == 0) {
-            op = tryEncodeObjectValue(encoder, caller, value, desc);
+            op = tryEncodeObjectValue(caller, value, desc);
             if (op == 0) {
-                encoder.writeByte(ACONST_NULL);
+                caller.codeEncoder.writeByte(ACONST_NULL);
                 caller.stackPush(1);
                 op = ARETURN;
             }
@@ -1140,9 +1136,9 @@ final class ClassFileProcessor {
      *
      * @return zero if failed, or else a return opcode
      */
-    private byte tryEncodeValue(BufferEncoder encoder, CodeAttr caller, Object value, char type)
-        throws IOException
-    {
+    private byte tryEncodeValue(CodeAttr caller, Object value, char type) throws IOException {
+        BufferEncoder encoder = caller.codeEncoder;
+
         byte op;
         int push;
 
@@ -1224,13 +1220,14 @@ final class ClassFileProcessor {
      *
      * @return zero if failed, or else a return opcode
      */
-    private byte tryEncodeObjectValue(BufferEncoder encoder, CodeAttr caller,
-                                      Object value, ConstantPool.C_UTF8 desc)
+    private byte tryEncodeObjectValue(CodeAttr caller, Object value, ConstantPool.C_UTF8 desc)
         throws IOException
     {
         if (value == null) {
             return 0;
         }
+
+        BufferEncoder encoder = caller.codeEncoder;
 
         if (value instanceof String str) {
             if (isCompatible(desc, String.class)) {
@@ -1362,9 +1359,9 @@ final class ClassFileProcessor {
     /**
      * @return a return opcode
      */
-    private byte encodeEmpty(BufferEncoder encoder, CodeAttr caller, ConstantPool.C_UTF8 desc)
-        throws IOException
-    {
+    private byte encodeEmpty(CodeAttr caller, ConstantPool.C_UTF8 desc) throws IOException {
+        BufferEncoder encoder = caller.codeEncoder;
+
         char type = desc.charAt(desc.length() - 1);
         char prefix = desc.charAt(desc.length() - 2);
 
@@ -1474,7 +1471,7 @@ final class ClassFileProcessor {
      * @param argSlots method arguments as local variables
      * @return a return opcode or else 0 if the method descriptor isn't compatible
      */
-    private byte encodeMethodHandleInvoke(BufferEncoder encoder, CodeAttr caller,
+    private byte encodeMethodHandleInvoke(CodeAttr caller,
                                           int[] argSlots, int castArg0, MethodHandleInfo mhi)
         throws IOException
     {
@@ -1489,11 +1486,13 @@ final class ClassFileProcessor {
             return 0;
         }
 
-        int slotNum = 0;
+        BufferEncoder encoder = caller.codeEncoder;
 
         encoder.writeByte(LDC_W);
         encoder.writeShort(mConstantPool.addMethodHandle(mhi).mIndex);
         int pushed = 1;
+
+        int slotNum = 0;
 
         for (int i=0; i<count; i++) {
             Class<?> type = mt.parameterType(i);
