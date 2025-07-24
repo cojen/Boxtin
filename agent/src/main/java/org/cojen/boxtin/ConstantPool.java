@@ -333,38 +333,33 @@ final class ConstantPool {
         }
     }
 
-    /**
-     * Must be called before adding new constants.
-     */
-    void extend() throws ClassFormatException {
-        try {
-            doExtend();
-        } catch (Exception e) {
-            throw ClassFormatException.from(e);
-        }
-    }
-
     boolean hasBeenExtended() {
         return mAddedConstants != null;
     }
 
-    private void doExtend() {
-        if (hasBeenExtended()) {
-            return;
+    private void extend() throws ClassFormatException {
+        if (!hasBeenExtended()) {
+            doExtend();
         }
+    }
 
-        // Resolve the existing constants, to reduce duplication. Only bother doing this for
-        // the types of constants which can be added.
+    private void doExtend() throws ClassFormatException {
+        try {
+            // Resolve the existing constants, to reduce duplication. Only bother doing this
+            // for the types of constants which can be added.
 
-        mMappedConstants = new HashMap<>(mOffsets.length << 1);
-        mAddedConstants = new ArrayList<>();
+            mMappedConstants = new HashMap<>(mOffsets.length << 1);
+            mAddedConstants = new ArrayList<>();
 
-        for (int i=0; i<mOffsets.length; i++) {
-            Constant c = findConstant(i + 1);
-            if (c != null && c.isWide()) {
-                // Occupies two slots.
-                i++;
+            for (int i=0; i<mOffsets.length; i++) {
+                Constant c = findConstant(i + 1);
+                if (c != null && c.isWide()) {
+                    // Occupies two slots.
+                    i++;
+                }
             }
+        } catch (Exception e) {
+            throw ClassFormatException.from(e);
         }
     }
 
@@ -536,6 +531,8 @@ final class ConstantPool {
      * already been called.
      */
     C_MemberRef addUniqueMethod(C_Class clazz, C_UTF8 typeDesc) {
+        extend();
+
         final int prefixLen = 8;
 
         var nameBuf = new byte[8 + 9]; // prefix length plus up to nine digits
@@ -570,6 +567,7 @@ final class ConstantPool {
 
     @SuppressWarnings("unchecked")
     private <C extends Constant> C addConstant(C constant) {
+        extend();
         Constant existing = mMappedConstants.putIfAbsent(constant, constant);
         if (existing == null) {
             registerNewConstant(constant);

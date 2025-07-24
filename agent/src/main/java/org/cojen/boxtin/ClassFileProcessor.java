@@ -186,7 +186,6 @@ final class ClassFileProcessor {
                 // Replace the superclass with Object. As a result, the constructors won't
                 // work, so replace them with simple ones which always throw an exception.
                 mDenyConstruction = true;
-                cp.extend();
                 var replacement = new SimpleReplacement(2);
                 replacement.writeShort(cp.addClass("java/lang/Object").mIndex);
                 storeReplacement(mSuperClassOffset, replacement);
@@ -201,7 +200,6 @@ final class ClassFileProcessor {
             if (!forClass.isSubtypingAllowed()) {
                 // Just drop the interface from the set.
                 removed++;
-                cp.extend();
                 storeReplacement(mSuperClassOffset + 4 + i * 2, new SimpleReplacement(2, 0));
             }
             var ifacesCount = new SimpleReplacement(2);
@@ -284,7 +282,6 @@ final class ClassFileProcessor {
         throws IOException, ClassFormatException
     {
         ConstantPool cp = mConstantPool;
-        cp.extend();
 
         // Require 6 bytes to encode the transform operation.
         method.prepareForModification(cp, mThisClassIndex, cp.buffer(), 6, 0);
@@ -536,7 +533,6 @@ final class ClassFileProcessor {
 
         if (mDenyConstruction && cp.findConstantUTF8(caller.nameIndex).isConstructor()) {
             // Just throw an exception.
-            cp.extend();
             var ctor = new ReplacedMethod(caller);
             ctor.prepareForModification(cp, mThisClassIndex, null);
             encodeExceptionAction(ctor.codeEncoder, ctor, DenyAction.Standard.THE);
@@ -678,7 +674,6 @@ final class ClassFileProcessor {
             // This point is reached if the code needs to be modified.
 
             if (caller.codeEncoder == null) {
-                cp.extend();
                 caller.prepareForModification(cp, mThisClassIndex, buffer);
             }
 
@@ -1598,7 +1593,6 @@ final class ClassFileProcessor {
 
         if (mProxyMethods == null) {
             mProxyMethods = new HashMap<>();
-            cp.extend();
         }
 
         Integer key = (op << 24) | methodRef.mIndex;
