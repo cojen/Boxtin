@@ -28,7 +28,7 @@ Rules cannot allow access to operations beyond the boundaries already establishe
 
 Rules cannot deny access to operations within a module. A caller is always allowed to call any target operation in its own module, restricted only by the usual private/protected checks. Any rule which would deny access within a module is ignored.
 
-Regarding qualified module exports and opens: TBD
+When a module exports a package P to a specific module B, then module B has access to all the public members of package P, regardless of what Boxtin rules have been defined. Although it might seem useful to define specific overrides, it makes configuration more confusing. A qualified export _is_ a type of access rule, which is why it's honored.
 
 ### MethodHandle constants
 
