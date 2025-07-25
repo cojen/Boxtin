@@ -17,7 +17,6 @@
 package org.cojen.boxtin;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -40,8 +39,8 @@ final class RuleSet implements Rules {
     // Default is selected when no map entry is found.
     private final Rule mDefaultRule;
 
-    // Set of all named packages available in the ModuleLayer.
-    private final Set<String> mModularPackages;
+    // Map of all named packages available in the ModuleLayer.
+    private final Map<String, Module> mModularPackages;
 
     // Maps method names to one or more ClassScope instances which have explicit denials.
     private final Map<String, Object> mDeniedMethodsIndex;
@@ -56,7 +55,7 @@ final class RuleSet implements Rules {
         mPackageScopes = Objects.requireNonNull(packageScopes);
         mDefaultRule = Objects.requireNonNull(defaultRule);
 
-        addModularPackages(layer, mModularPackages = new HashSet<String>());
+        addModularPackages(layer, mModularPackages = new HashMap<>());
 
         var index = new HashMap<String, Object>();
 
@@ -67,11 +66,11 @@ final class RuleSet implements Rules {
         mDeniedMethodsIndex = index;
     }
 
-    private static void addModularPackages(ModuleLayer layer, Set<String> modularPackages) {
+    private static void addModularPackages(ModuleLayer layer, Map<String, Module> modularPackages) {
         for (Module mod : layer.modules()) {
             if (mod.isNamed()) {
                 for (String pname : mod.getPackages()) {
-                    modularPackages.add(pname.replace('.', '/').intern());
+                    modularPackages.put(pname.replace('.', '/').intern(), mod);
                 }
             }
         }
@@ -101,20 +100,37 @@ final class RuleSet implements Rules {
 
     @Override
     public ForClass forClass(Module caller, CharSequence packageName, CharSequence className) {
-        if (!mModularPackages.contains(packageName)) {
+        Module target = mModularPackages.get(packageName);
+
+        if (target == null) {
             // Denial rules are only applicable to packages which are provided by named
             // modules. If the package isn't provided this way, then allow the operation.
             return Rule.allow();
         }
+
+        ForClass forClass;
         PackageScope scope = mPackageScopes.get(packageName);
+
         if (scope == null) {
-            return mDefaultRule;
+            forClass = mDefaultRule;
+        } else {
+            if (scope.module().equals(caller)) {
+                // Allow calls within the same module.
+                return Rule.allow();
+            }
+            forClass = scope.forClass(className);
         }
-        if (scope.module().equals(caller)) {
-            // Allow calls within the same module.
-            return Rule.allow();
+
+        if (!forClass.isAllAllowed()) {
+            // Check if a qualified package export is defined by the target module to the
+            // caller module. If so, allow the package.
+            String dottedName = packageName.toString().replace('/', '.');
+            if (!target.isExported(dottedName) && target.isExported(dottedName, caller)) {
+                return Rule.allow();
+            }
         }
-        return scope.forClass(className);
+
+        return forClass;
     }
 
     @Override
