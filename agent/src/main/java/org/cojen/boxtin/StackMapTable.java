@@ -423,12 +423,13 @@ final class StackMapTable {
      *
      * @param thisClassIndex used for TAG_UNINIT_THIS
      * @param address address to insert an entry at
+     * @param insertion amount of bytes inserted before the first original operation
      * @param buffer refers to the bytecode
      * @param offset buffer offset to the first bytecode operation
      * @return false if an entry already existed
      */
-    boolean insertEntry(ConstantPool cp, int thisClassIndex,
-                        int address, byte[] buffer, int offset)
+    boolean insertEntry(ConstantPool cp, int thisClassIndex, int address,
+                        int insertion, byte[] buffer, int offset)
     {
         Integer key = address;
         Map.Entry<Integer, Entry> e = mEntries.floorEntry(key); // find less than or equal
@@ -438,9 +439,9 @@ final class StackMapTable {
             return false;
         }
 
-        int endOffset = offset + address;
+        int endOffset = offset + (address - insertion);
         int startOffset = offset;
-        offset += prevAddress;
+        offset = Math.max(startOffset, offset + (prevAddress - insertion));
 
         Entry prevEntry = e.getValue();
         IntArray localTypes = expandTypes(prevEntry.localTypes());

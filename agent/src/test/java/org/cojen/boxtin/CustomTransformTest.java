@@ -88,7 +88,7 @@ public class CustomTransformTest extends TransformTest {
             .denyMethod(custom(Object.class, "c_op17",
                                CustomOperations.class, int.class), "op17")
             .denyMethod(custom(Object[].class, "c_op18",
-                               Class.class, CustomOperations.class, int.class), "op18")
+                               Caller.class, CustomOperations.class, int.class), "op18")
             ;
 
         b.forModule("java.base").allowAll();
@@ -194,8 +194,8 @@ public class CustomTransformTest extends TransformTest {
         return obj;
     }
 
-    public static Object[] c_op18(Class<?> caller, CustomOperations obj, int a) {
-        return new Object[] {caller, obj};
+    public static Object[] c_op18(Caller caller, CustomOperations obj, int a) {
+        return new Object[] {caller.validate(), obj};
     }
 
     @Test

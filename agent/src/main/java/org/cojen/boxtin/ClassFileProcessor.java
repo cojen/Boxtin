@@ -23,7 +23,11 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandleInfo;
 import java.lang.invoke.MethodType;
 
+import java.lang.ref.SoftReference;
+
 import java.lang.reflect.Modifier;
+
+import java.security.SecureRandom;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -80,11 +84,25 @@ final class ClassFileProcessor {
         return new ClassFileProcessor(decoder);
     }
 
+    private static volatile SoftReference<SecureRandom> cRndRef;
+
+    private static SecureRandom rnd() {
+        SoftReference<SecureRandom> ref = cRndRef;
+        SecureRandom rnd;
+        if (ref == null || (rnd = ref.get()) == null) {
+            rnd = new SecureRandom();
+            ref = new SoftReference<>(rnd);
+        }
+        return rnd;
+    }
+
     private final ConstantPool mConstantPool;
     private final int mThisClassIndex;
     private final int mSuperClassOffset, mSuperClassIndex;
     private final int[] mInterfaceIndexes;
     private final BufferDecoder mDecoder;
+    private final int mFieldsStartOffset;
+    private final int mFieldsCount;
     private final int mMethodsStartOffset;
     private final int mMethodsCount;
 
@@ -102,8 +120,15 @@ final class ClassFileProcessor {
     // Keys are original code offsets.
     private Map<Integer, ProxyMethod> mReplacedMethodHandles;
 
+    // Static initializer, as found by insertCallerChecks and initially skipped.
+    private CodeAttr mClinit;
+
     // Work objects used by the rulesForClass method.
     private ConstantPool.C_UTF8 mPackageName, mClassName;
+
+    // Field and identifier are used when a Caller instance is needed.
+    private C_MemberRef mCallerFieldRef;
+    private long mCallerIdK, mCallerIdV;
 
     private ClassFileProcessor(BufferDecoder decoder) throws IOException {
         mConstantPool = ConstantPool.decode(decoder);
@@ -126,14 +151,18 @@ final class ClassFileProcessor {
             }
         }
 
+        mDecoder = decoder;
+
+        mFieldsStartOffset = decoder.offset();
+        mFieldsCount = decoder.readUnsignedShort();
+
         // Skip the fields.
-        for (int i = decoder.readUnsignedShort(); --i >= 0;) {
+        for (int i = mFieldsCount; --i >= 0;) {
             // Skip access_flags, name_index, and descriptor_index.
             decoder.skipNBytes(2 + 2 + 2);
             decoder.skipAttributes();
         }
 
-        mDecoder = decoder;
         mMethodsStartOffset = decoder.offset();
         mMethodsCount = decoder.readUnsignedShort();
     }
@@ -144,7 +173,14 @@ final class ClassFileProcessor {
      * @param module the module which contains the class being transformed
      */
     public byte[] transform(Module module, Rules rules) throws IOException, ClassFormatException {
-        return check(module, rules) ? redefine() : null;
+        try {
+            return check(module, rules) ? redefine() : null;
+        } catch (Throwable e) {
+            if (mCallerFieldRef != null) {
+                SecurityAgent.removeCaller(mCallerIdK, mCallerIdV);
+            }
+            throw e;
+        }
     }
 
     /**
@@ -154,7 +190,7 @@ final class ClassFileProcessor {
      * @param module the module which contains the class being transformed
      * @return true if the class requires modification
      */
-    public boolean check(Module module, Rules rules) throws IOException, ClassFormatException {
+    private boolean check(Module module, Rules rules) throws IOException, ClassFormatException {
         mModule = module;
         mRules = rules;
 
@@ -246,7 +282,26 @@ final class ClassFileProcessor {
 
         forAllMethods(null, this::insertCallerChecks);
 
+        insertAssignCallerField();
+
+        if (mClinit != null) {
+            insertCallerChecks(mClinit);
+        }
+
         int methodsEndOffset = decoder.offset();
+
+        if (mCallerFieldRef != null) {
+            // Define the field by "replacing" what is logically an empty field just after the
+            // field table.
+            var fieldDef = new SimpleReplacement(0, 8);
+            // 0x1000 == synthetic
+            int accessFlags = Modifier.PRIVATE | Modifier.STATIC | Modifier.FINAL | 0x1000;
+            fieldDef.writeShort(accessFlags);
+            fieldDef.writeShort(mCallerFieldRef.mNameAndType.mName.mIndex); // name_index
+            fieldDef.writeShort(mCallerFieldRef.mNameAndType.mTypeDesc.mIndex); // descriptor_index
+            fieldDef.writeShort(0); // attributes_count
+            storeReplacement(mMethodsStartOffset, fieldDef);
+        }
 
         if (mProxyMethods != null) {
             // Append the new methods by "replacing" what is logically an empty method just
@@ -392,7 +447,7 @@ final class ClassFileProcessor {
      * @return null if no modifications were made
      * @throws ClassFormatException if the redefined class has too many constants or methods
      */
-    public byte[] redefine() throws IOException, ClassFormatException {
+    private byte[] redefine() throws IOException, ClassFormatException {
         if (!mConstantPool.hasBeenExtended() && mReplacements == null) {
             return null;
         }
@@ -453,13 +508,26 @@ final class ClassFileProcessor {
             throw new AssertionError();
         }
 
+        int growth = (int) cpGrowth;
+
+        if (mCallerFieldRef != null) {
+            // Update the fields_count field.
+            int numFields = mFieldsCount + 1;
+            if (numFields >= 65536) {
+                throw new ClassFormatException();
+            }
+            int fieldsStartOffset = mFieldsStartOffset + growth;
+            encodeShortBE(buffer, fieldsStartOffset, numFields);
+            growth += 1 * 8;
+        }
+
         if (mProxyMethods != null) {
             // Update the methods_count field.
             int numMethods = mMethodsCount + mProxyMethods.size();
             if (numMethods >= 65536 || numMethods < 0) {
                 throw new ClassFormatException();
             }
-            int methodsStartOffset = mMethodsStartOffset + (int) cpGrowth;
+            int methodsStartOffset = mMethodsStartOffset + growth;
             encodeShortBE(buffer, methodsStartOffset, numMethods);
         }
 
@@ -531,12 +599,20 @@ final class ClassFileProcessor {
     private void insertCallerChecks(CodeAttr caller) throws IOException, ClassFormatException {
         final ConstantPool cp = mConstantPool;
 
-        if (mDenyConstruction && cp.findConstantUTF8(caller.nameIndex).isConstructor()) {
+        ConstantPool.C_UTF8 name = cp.findConstantUTF8(caller.nameIndex);
+
+        if (mDenyConstruction && name.isConstructor()) {
             // Just throw an exception.
             var ctor = new ReplacedMethod(caller);
             ctor.prepareForModification(cp, mThisClassIndex, null);
             encodeExceptionAction(ctor, DenyAction.Standard.THE);
             storeReplacement(ctor.attrOffset, ctor);
+            return;
+        }
+
+        if (mClinit == null && name.isClinit()) {
+            // Skip for now, in case code needs to be inserted at the start.
+            mClinit = caller;
             return;
         }
 
@@ -677,17 +753,23 @@ final class ClassFileProcessor {
                 caller.prepareForModification(cp, mThisClassIndex, buffer);
             }
 
-            int opAddress = opOffset - caller.codeOffset;   // address of the op being replaced
-            int resumeAddress = offset - caller.codeOffset; // address after the op being replaced
+            int codeOffset = caller.codeOffset;
+            int insertion = caller.insertion;
+
+            // Address of the op being replaced.
+            int opAddress = opOffset - codeOffset + insertion;
+            // Address after the op being replaced.
+            int resumeAddress = offset - codeOffset + insertion;
 
             // Insert an entry at the operation being replaced, which is then moved or copied
             // to the address of the deny code.
             boolean inserted = caller.smt.insertEntry
-                (cp, mThisClassIndex, opAddress, buffer, caller.codeOffset);
+                (cp, mThisClassIndex, opAddress, insertion, buffer, codeOffset);
 
             // The deny code will jump back to the address immediately after the operation
             // being replaced, so a stack map table entry is needed for it.
-            caller.smt.insertEntry(cp, mThisClassIndex, resumeAddress, buffer, caller.codeOffset);
+            caller.smt.insertEntry
+                (cp, mThisClassIndex, resumeAddress, insertion, buffer, codeOffset);
 
             BufferEncoder encoder = caller.codeEncoder;
             byte[] encoderBuffer = encoder.buffer();
@@ -1477,19 +1559,40 @@ final class ClassFileProcessor {
     {
         MethodType mt = mhi.getMethodType();
         int count = mt.parameterCount();
-
+        boolean needCaller = false;
         int availableArgs = argSlots.length;
-        if (count > 0 && mt.parameterType(0) == Class.class) {
+
+        if (count > 0 && mt.parameterType(0) == Caller.class) {
+            needCaller = true;
             availableArgs++;
         }
+
         if (count > availableArgs) {
             return 0;
+        }
+
+        ConstantPool cp = mConstantPool;
+
+        if (needCaller && mCallerFieldRef == null) {
+            mCallerFieldRef = cp.addUniqueField(cp.findConstantClass(mThisClassIndex),
+                                                cp.addUTF8(Caller.class.descriptorString()));
+
+            SecureRandom rnd = rnd();
+
+            long k, v;
+            do {
+                k = rnd.nextLong();
+                v = rnd.nextLong();
+            } while (!SecurityAgent.registerCaller(k, v));
+
+            mCallerIdK = k;
+            mCallerIdV = v;
         }
 
         BufferEncoder encoder = caller.codeEncoder;
 
         encoder.writeByte(LDC_W);
-        encoder.writeShort(mConstantPool.addMethodHandle(mhi).mIndex);
+        encoder.writeShort(cp.addMethodHandle(mhi).mIndex);
         int pushed = 1;
 
         int slotNum = 0;
@@ -1518,10 +1621,10 @@ final class ClassFileProcessor {
                 }
                 CodeAttr.encodeVarOp(encoder, op, argSlots[slotNum++]);
             } else {
-                if (i == 0 && type == Class.class) {
-                    // Pass the caller class.
-                    encoder.writeByte(LDC_W);
-                    encoder.writeShort(mThisClassIndex);
+                if (i == 0 && type == Caller.class) {
+                    // Pass the caller.
+                    encoder.writeByte(GETSTATIC);
+                    encoder.writeShort(mCallerFieldRef.mIndex);
                 } else {
                     CodeAttr.encodeVarOp(encoder, ALOAD, argSlots[slotNum++]);
                     if (i == 0 && castArg0 != 0) {
@@ -1535,7 +1638,7 @@ final class ClassFileProcessor {
 
         caller.stackPushPop(pushed);
 
-        C_MemberRef invokeRef = mConstantPool.addMethodRef
+        C_MemberRef invokeRef = cp.addMethodRef
             (MethodHandle.class.getName().replace('.', '/'), "invoke", mt.descriptorString());
 
         encoder.writeByte(INVOKEVIRTUAL);
@@ -1577,6 +1680,70 @@ final class ClassFileProcessor {
         caller.stackPush(size);
 
         return op;
+    }
+
+    /**
+     * If necessary, inserts code to assign the Caller field at the start of the clinit method.
+     * If the mClinit field is null, then a new clinit method is added, but the original
+     * mClinit field is left alone.
+     */
+    private void insertAssignCallerField() throws IOException {
+        if (mCallerFieldRef == null) {
+            return;
+        }
+
+        // Amount of bytes to be inserted.
+        final int insertion = 15;
+
+        ConstantPool cp = mConstantPool;
+        CodeAttr clinit = mClinit;
+
+        if (clinit != null) {
+            clinit.prepareForModification(cp, mThisClassIndex, cp.buffer(), insertion, 100);
+        } else {
+            clinit = new ProxyMethod(cp.addUTF8("<clinit>"), cp.addUTF8("()V"));
+            clinit.prepareForModification(cp, mThisClassIndex, null, 0, insertion + 1);
+            clinit.codeEncoder.skip(insertion);
+            clinit.codeEncoder.reset();
+        }
+
+        C_Class agentClass = cp.addClass(SecurityAgent.class);
+        C_MemberRef ref = cp.addMethodRef(agentClass, "obtainCaller",
+                                          "(JJLjava/lang/Class;)Lorg/cojen/boxtin/Caller;");
+
+        byte[] buffer = clinit.codeEncoder.buffer();
+
+        int offset = 0;
+        buffer[offset++] = LDC2_W;
+        encodeShortBE(buffer, offset, cp.addLong(mCallerIdK).mIndex); offset += 2;
+        buffer[offset++] = LDC2_W;
+        encodeShortBE(buffer, offset, cp.addLong(mCallerIdV).mIndex); offset += 2;
+        buffer[offset++] = LDC_W;
+        encodeShortBE(buffer, offset, mThisClassIndex); offset += 2;
+        buffer[offset++] = INVOKESTATIC;
+        encodeShortBE(buffer, offset, ref.mIndex); offset += 2;
+        buffer[offset++] = PUTSTATIC;
+        encodeShortBE(buffer, offset, mCallerFieldRef.mIndex); offset += 2;
+        clinit.stackPushPop(5);
+
+        assert offset == insertion;
+
+        if (!(clinit instanceof ProxyMethod pm)) {
+            storeReplacement(clinit.attrOffset, clinit);
+            return;
+        }
+
+        buffer[offset++] = RETURN;
+
+        pm.codeEncoder.skip(offset);
+
+        if (mProxyMethods == null) {
+            mProxyMethods = new HashMap<>();
+        }
+
+        if (mProxyMethods.putIfAbsent(0, pm) != null) {
+            throw new IllegalStateException();
+        }
     }
 
     /**
@@ -1672,6 +1839,13 @@ final class ClassFileProcessor {
             accessFlags = Modifier.PRIVATE | Modifier.STATIC | 0x1000; // | synthetic
             nameIndex = methodRef.mNameAndType.mName.mIndex;
             descIndex = methodRef.mNameAndType.mTypeDesc.mIndex;
+        }
+
+        ProxyMethod(ConstantPool.C_UTF8 name, ConstantPool.C_UTF8 typeDesc) {
+            mMethodRef = null;
+            accessFlags = Modifier.PRIVATE | Modifier.STATIC | 0x1000; // | synthetic
+            nameIndex = name.mIndex;
+            descIndex = typeDesc.mIndex;
         }
 
         /**

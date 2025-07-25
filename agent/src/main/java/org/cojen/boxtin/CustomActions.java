@@ -63,33 +63,33 @@ public final class CustomActions {
     }
 
     // Custom deny action for System.getProperties.
-    public static Properties getProperties(Class<?> caller) {
-        return FilteredProperties.getProperties(caller.getModule());
+    public static Properties getProperties(Caller caller) {
+        return FilteredProperties.getProperties(caller.validate().getModule());
     }
 
     // Custom deny action for System.getProperty.
-    public static String getProperty(Class<?> caller, String name) {
-        return FilteredProperties.getProperty(caller.getModule(), name);
+    public static String getProperty(Caller caller, String name) {
+        return FilteredProperties.getProperty(caller.validate().getModule(), name);
     }
 
     // Custom deny action for System.getProperty.
-    public static String getProperty(Class<?> caller, String name, String def) {
-        return FilteredProperties.getProperty(caller.getModule(), name, def);
+    public static String getProperty(Caller caller, String name, String def) {
+        return FilteredProperties.getProperty(caller.validate().getModule(), name, def);
     }
 
     // Custom deny action for System.setProperties.
-    public static void setProperties(Class<?> caller, Properties props) {
-        FilteredProperties.setProperties(caller.getModule(), props);
+    public static void setProperties(Caller caller, Properties props) {
+        FilteredProperties.setProperties(caller.validate().getModule(), props);
     }
 
     // Custom deny action for System.setProperty.
-    public static String setProperty(Class<?> caller, String name, String value) {
-        return FilteredProperties.setProperty(caller.getModule(), name, value);
+    public static String setProperty(Caller caller, String name, String value) {
+        return FilteredProperties.setProperty(caller.validate().getModule(), name, value);
     }
 
     // Custom deny action for System.clearProperty.
-    public static String clearProperty(Class<?> caller, String name) {
-        return FilteredProperties.clearProperty(caller.getModule(), name);
+    public static String clearProperty(Caller caller, String name) {
+        return FilteredProperties.clearProperty(caller.validate().getModule(), name);
     }
 
     // Check for various Thread operations.
@@ -99,162 +99,179 @@ public final class CustomActions {
     }
 
     // Check for ClassLoader.defineClass.
-    public static boolean checkDefineClass(Class<?> caller, ClassLoader loader,
+    public static boolean checkDefineClass(Caller caller, ClassLoader loader,
                                            String name, byte[] b, int off, int len,
                                            ProtectionDomain protectionDomain)
     {
+        caller.validate();
         // Allowed when no ProtectionDomain is given.
         return protectionDomain == null;
     }
 
     // Check for ClassLoader.defineClass.
-    public static boolean checkDefineClass(Class<?> caller, ClassLoader loader,
+    public static boolean checkDefineClass(Caller caller, ClassLoader loader,
                                            String name, ByteBuffer b,
                                            ProtectionDomain protectionDomain)
     {
+        caller.validate();
         // Allowed when no ProtectionDomain is given.
         return protectionDomain == null;
     }
 
     // Check for Class.forName(String, boolean, ClassLoader).
-    public static boolean checkForName(Class<?> caller,
+    public static boolean checkForName(Caller caller,
                                        String name, boolean initialize, ClassLoader loader)
     {
+        Class<?> callerClass = caller.validate();
         // Allowed when not asked to initialize or when the caller's loader is the same.
-        return !initialize || caller.getClassLoader() == loader;
+        return !initialize || callerClass.getClassLoader() == loader;
     }
 
     // Check for Class.getResource and getResourceAsStream.
-    public static boolean checkGetResource(Class<?> caller, Class<?> clazz) {
+    public static boolean checkGetResource(Caller caller, Class<?> clazz) {
         Module module = clazz.getModule();
         return module.isNamed() ? checkGetResource(caller, module)
             : checkGetResource(caller, clazz.getClassLoader());
     }
 
     // Check for ClassLoader.getResource, getResourceAsStream, getResources, and resources.
-    public static boolean checkGetResource(Class<?> caller, ClassLoader loader) {
+    public static boolean checkGetResource(Caller caller, ClassLoader loader) {
         // Allowed when the caller ClassLoader is the same as the ClassLoader being invoked.
-        return caller.getClassLoader() == loader;
+        return caller.validate().getClassLoader() == loader;
     }
 
     // Check for Module.getResourceAsStream.
-    public static boolean checkGetResource(Class<?> caller, Module module) {
+    public static boolean checkGetResource(Caller caller, Module module) {
         // Allowed when the caller Module is the same as the Module being invoked.
-        return caller.getModule() == module;
+        return caller.validate().getModule() == module;
     }
 
     // Check for @Restricted methods: ModuleLayer.enableNativeAccess,
     // AddressLayout.withTargetLayout, Linker.downcallHandle, Linker.upcallStub,
     // MemorySegment.reinterpret, and SymbolLookup.libraryLookup, Runtime.load,
     // Runtime.loadLibrary, System.load, and System.loadLibrary
-    public static boolean checkNativeAccess(Class<?> caller) {
+    public static boolean checkNativeAccess(Caller caller) {
+        Class<?> callerClass = caller.validate();
         // Allowed for named modules for which access has been granted using the
         // --enable-native-access option.
         if (Runtime.getRuntime().version().feature() < 22) {
             return false;
         }
-        Module module = caller.getModule();
+        Module module = callerClass.getModule();
         return module.isNamed() && module.isNativeAccessEnabled();
     }
 
     // Check for AccessibleObject.setAccessible.
-    public static boolean checkSetAccessible(Class<?> caller, Object obj, boolean set) {
+    public static boolean checkSetAccessible(Caller caller, Object obj, boolean set) {
+        Class<?> callerClass = caller.validate();
         if (!set) {
             // Allowed when not enabling access.
             return true;
         }
         if (obj instanceof Member m) {
             // Allowed when the caller Module is the same as the Module being accessed.
-            return caller.getModule() == m.getDeclaringClass().getModule();
+            return callerClass.getModule() == m.getDeclaringClass().getModule();
         }
         return false;
     }
 
     // Custom deny action for Class.getConstructor.
-    public static <T> Constructor<T> getConstructor(Class<?> caller,
+    public static <T> Constructor<T> getConstructor(Caller caller,
                                                     Class<T> clazz, Class<?>... paramTypes)
         throws NoSuchMethodException
     {
+        Class<?> callerClass = caller.validate();
         Constructor<T> ctor = clazz.getConstructor(paramTypes);
-        checkEx(caller, ctor, null);
+        checkEx(callerClass, ctor, null);
         return ctor;
     }
 
     // Custom deny action for Class.getConstructors.
-    public static Constructor<?>[] getConstructors(Class<?> caller, Class<?> clazz) {
-        return filter(caller, clazz, clazz.getConstructors());
+    public static Constructor<?>[] getConstructors(Caller caller, Class<?> clazz) {
+        Class<?> callerClass = caller.validate();
+        return filter(callerClass, clazz, clazz.getConstructors());
     }
 
     // Custom deny action for Class.getDeclaredConstructor.
     public static <T> Constructor<T> getDeclaredConstructor
-        (Class<?> caller, Class<T> clazz, Class<?>... paramTypes)
+        (Caller caller, Class<T> clazz, Class<?>... paramTypes)
         throws NoSuchMethodException
     {
+        Class<?> callerClass = caller.validate();
         Constructor<T> ctor = clazz.getDeclaredConstructor(paramTypes);
-        checkEx(caller, ctor, null);
+        checkEx(callerClass, ctor, null);
         return ctor;
     }
 
     // Custom deny action for Class.getDeclaredConstructors.
-    public static Constructor<?>[] getDeclaredConstructors(Class<?> caller, Class<?> clazz) {
-        return filter(caller, clazz, clazz.getDeclaredConstructors());
+    public static Constructor<?>[] getDeclaredConstructors(Caller caller, Class<?> clazz) {
+        Class<?> callerClass = caller.validate();
+        return filter(callerClass, clazz, clazz.getDeclaredConstructors());
     }
 
     // Custom deny action for Class.getDeclaredMethod.
-    public static Method getDeclaredMethod(Class<?> caller, Class<?> clazz,
+    public static Method getDeclaredMethod(Caller caller, Class<?> clazz,
                                            String name, Class<?>... paramTypes)
         throws NoSuchMethodException
     {
+        Class<?> callerClass = caller.validate();
         Method method = clazz.getDeclaredMethod(name, paramTypes);
-        checkEx(caller, method, name);
+        checkEx(callerClass, method, name);
         return method;
     }
 
     // Custom deny action for Class.getDeclaredMethods.
-    public static Method[] getDeclaredMethods(Class<?> caller, Class<?> clazz) {
-        return filter(caller, clazz, clazz.getDeclaredMethods());
+    public static Method[] getDeclaredMethods(Caller caller, Class<?> clazz) {
+        Class<?> callerClass = caller.validate();
+        return filter(callerClass, clazz, clazz.getDeclaredMethods());
     }
 
     // Custom deny action for Class.getEnclosingConstructor.
-    public static Constructor<?> getEnclosingConstructor(Class<?> caller, Class<?> clazz) {
+    public static Constructor<?> getEnclosingConstructor(Caller caller, Class<?> clazz) {
+        Class<?> callerClass = caller.validate();
         Constructor<?> ctor = clazz.getEnclosingConstructor();
         if (ctor != null) {
-            checkErr(caller, ctor.getDeclaringClass(), null,
+            checkErr(callerClass, ctor.getDeclaringClass(), null,
                      Utils.partialDescriptorFor(ctor.getParameterTypes()));
         }
         return ctor;
     }
 
     // Custom deny action for Class.getEnclosingMethod.
-    public static Method getEnclosingMethod(Class<?> caller, Class<?> clazz) {
+    public static Method getEnclosingMethod(Caller caller, Class<?> clazz) {
+        Class<?> callerClass = caller.validate();
         Method method = clazz.getEnclosingMethod();
         if (method != null) {
-            checkErr(caller, method.getDeclaringClass(), method.getName(),
+            checkErr(callerClass, method.getDeclaringClass(), method.getName(),
                      Utils.partialDescriptorFor(method.getParameterTypes()));
         }
         return method;
     }
 
     // Custom deny action for Class.getMethod.
-    public static Method getMethod(Class<?> caller, Class<?> clazz,
+    public static Method getMethod(Caller caller, Class<?> clazz,
                                    String name, Class<?>... paramTypes)
         throws NoSuchMethodException
     {
+        Class<?> callerClass = caller.validate();
         Method method = clazz.getMethod(name, paramTypes);
-        checkEx(caller, method, name);
+        checkEx(callerClass, method, name);
         return method;
     }
 
     // Custom deny action for Class.getMethods.
-    public static Method[] getMethods(Class<?> caller, Class<?> clazz) {
-        return filter(caller, null, clazz.getMethods());
+    public static Method[] getMethods(Caller caller, Class<?> clazz) {
+        Class<?> callerClass = caller.validate();
+        return filter(callerClass, null, clazz.getMethods());
     }
 
     // Custom deny action for Class.getRecordComponents.
-    public static RecordComponent[] getRecordComponents(Class<?> caller, Class<?> clazz) {
+    public static RecordComponent[] getRecordComponents(Caller caller, Class<?> clazz) {
+        Class<?> callerClass = caller.validate();
+
         RecordComponent[] components = clazz.getRecordComponents();
 
-        if (caller.getModule() == clazz.getModule()) {
+        if (callerClass.getModule() == clazz.getModule()) {
             return components;
         }
 
@@ -265,7 +282,7 @@ public final class CustomActions {
             RecordComponent rc = components[i];
             Method m = rc.getAccessor();
             String desc = Utils.partialDescriptorFor(m.getParameterTypes());
-            if (SecurityAgent.isAllowed(caller, clazz, m.getName(), desc)) {
+            if (SecurityAgent.isAllowed(callerClass, clazz, m.getName(), desc)) {
                 if (filtered != null) {
                     filtered[fpos++] = rc;
                 }
@@ -283,102 +300,107 @@ public final class CustomActions {
     }
 
     // Custom deny action for MethodHandle.Lookup.bind.
-    public static MethodHandle lookupBind(Class<?> caller, MethodHandles.Lookup lookup,
+    public static MethodHandle lookupBind(Caller caller, MethodHandles.Lookup lookup,
                                           Object receiver, String name, MethodType mt)
         throws NoSuchMethodException, IllegalAccessException
     {
+        Class<?> callerClass = caller.validate();
         MethodHandle mh = lookup.bind(receiver, name, mt);
-        checkEx(caller, receiver.getClass(), name, mh.type());
+        checkEx(callerClass, receiver.getClass(), name, mh.type());
         return mh;
     }
 
     // Custom deny action for MethodHandle.Lookup.findConstructor
-    public static MethodHandle lookupFindConstructor(Class<?> caller, MethodHandles.Lookup lookup,
+    public static MethodHandle lookupFindConstructor(Caller caller, MethodHandles.Lookup lookup,
                                                      Class<?> clazz, MethodType mt)
         throws NoSuchMethodException, IllegalAccessException
     {
+        Class<?> callerClass = caller.validate();
         MethodHandle mh = lookup.findConstructor(clazz, mt);
-        checkEx(caller, lookup, mh);
+        checkEx(callerClass, lookup, mh);
         return mh;
     }
 
     // Custom deny action for MethodHandle.Lookup.findSpecial
-    public static MethodHandle lookupFindSpecial(Class<?> caller, MethodHandles.Lookup lookup,
+    public static MethodHandle lookupFindSpecial(Caller caller, MethodHandles.Lookup lookup,
                                                  Class<?> clazz, String name, MethodType mt,
                                                  Class<?> specialCaller)
         throws NoSuchMethodException, IllegalAccessException
     {
+        Class<?> callerClass = caller.validate();
         MethodHandle mh = lookup.findSpecial(clazz, name, mt, specialCaller);
-        checkEx(caller, lookup, mh);
+        checkEx(callerClass, lookup, mh);
         return mh;
     }
 
     // Custom deny action for MethodHandle.Lookup.findStatic
-    public static MethodHandle lookupFindStatic(Class<?> caller, MethodHandles.Lookup lookup,
+    public static MethodHandle lookupFindStatic(Caller caller, MethodHandles.Lookup lookup,
                                                 Class<?> clazz, String name, MethodType mt)
         throws NoSuchMethodException, IllegalAccessException
     {
+        Class<?> callerClass = caller.validate();
         MethodHandle mh = lookup.findStatic(clazz, name, mt);
-        checkEx(caller, lookup, mh);
+        checkEx(callerClass, lookup, mh);
         return mh;
     }
 
     // Custom deny action for MethodHandle.Lookup.findVirtual
-    public static MethodHandle lookupFindVirtual(Class<?> caller, MethodHandles.Lookup lookup,
+    public static MethodHandle lookupFindVirtual(Caller caller, MethodHandles.Lookup lookup,
                                                  Class<?> clazz, String name, MethodType mt)
         throws NoSuchMethodException, IllegalAccessException
     {
+        Class<?> callerClass = caller.validate();
         MethodHandle mh = lookup.findVirtual(clazz, name, mt);
-        checkEx(caller, lookup, mh);
+        checkEx(callerClass, lookup, mh);
         return mh;
     }
 
-    private static void checkErr(Class<?> caller, Class<?> target, String name, String desc)
+    private static void checkErr(Class<?> callerClass, Class<?> target, String name, String desc)
         throws NoSuchMethodError
     {
-        if (caller.getModule() != target.getModule() &&
-            !SecurityAgent.isAllowed(caller, target, name, desc))
+        if (callerClass.getModule() != target.getModule() &&
+            !SecurityAgent.isAllowed(callerClass, target, name, desc))
         {
             throw new NoSuchMethodError();
         }
     }
 
-    private static void checkEx(Class<?> caller, Class<?> target, String name, String desc)
+    private static void checkEx(Class<?> callerClass, Class<?> target, String name, String desc)
         throws NoSuchMethodException
     {
-        if (caller.getModule() != target.getModule() &&
-            !SecurityAgent.isAllowed(caller, target, name, desc))
+        if (callerClass.getModule() != target.getModule() &&
+            !SecurityAgent.isAllowed(callerClass, target, name, desc))
         {
             throw new NoSuchMethodException();
         }
     }
 
-    private static void checkEx(Class<?> caller, Class<?> target, String name, MethodType mt)
+    private static void checkEx(Class<?> callerClass, Class<?> target, String name, MethodType mt)
         throws NoSuchMethodException
     {
-        checkEx(caller, target, name, Utils.partialDescriptorFor(mt));
+        checkEx(callerClass, target, name, Utils.partialDescriptorFor(mt));
     }
 
-    private static void checkEx(Class<?> caller, Executable exec, String name)
+    private static void checkEx(Class<?> callerClass, Executable exec, String name)
         throws NoSuchMethodException
     {
-        checkEx(caller, exec.getDeclaringClass(), name,
+        checkEx(callerClass, exec.getDeclaringClass(), name,
                 Utils.partialDescriptorFor(exec.getParameterTypes()));
     }
 
-    private static void checkEx(Class<?> caller, MethodHandles.Lookup lookup, MethodHandle mh)
+    private static void checkEx(Class<?> callerClass, MethodHandles.Lookup lookup, MethodHandle mh)
         throws NoSuchMethodException
     {
         MethodHandleInfo info = lookup.revealDirect(mh);
-        checkEx(caller, info.getDeclaringClass(), info.getName(), info.getMethodType());
+        checkEx(callerClass, info.getDeclaringClass(), info.getName(), info.getMethodType());
     }
 
     /**
      * @param ctors can be trashed as a side effect
      */
-    private static Constructor<?>[] filter(Class<?> caller,
+    private static Constructor<?>[] filter(Class<?> callerClass,
                                            Class<?> clazz, Constructor<?>[] ctors) {
-        if (caller.getModule() == clazz.getModule()) {
+        if (callerClass.getModule() == clazz.getModule()) {
             return ctors;
         }
 
@@ -388,7 +410,7 @@ public final class CustomActions {
         for (int i=0; i<ctors.length; i++) {
             Constructor<?> ctor = ctors[i];
             String desc = Utils.partialDescriptorFor(ctor.getParameterTypes());
-            if (SecurityAgent.isAllowed(caller, clazz, null, desc)) {
+            if (SecurityAgent.isAllowed(callerClass, clazz, null, desc)) {
                 if (filtered != null) {
                     filtered[fpos++] = ctor;
                 }
@@ -409,8 +431,8 @@ public final class CustomActions {
      * @param clazz pass null if the declaring class of the methods can vary
      * @param methods can be trashed as a side effect
      */
-    private static Method[] filter(Class<?> caller, Class<?> clazz, Method[] methods) {
-        if (clazz != null && caller.getModule() == clazz.getModule()) {
+    private static Method[] filter(Class<?> callerClass, Class<?> clazz, Method[] methods) {
+        if (clazz != null && callerClass.getModule() == clazz.getModule()) {
             return methods;
         }
 
@@ -426,14 +448,14 @@ public final class CustomActions {
 
                 if (target == null) {
                     target = m.getDeclaringClass();
-                    if (caller.getModule() == target.getModule()) {
+                    if (callerClass.getModule() == target.getModule()) {
                         allowed = true;
                         break check;
                     }
                 }
 
                 String desc = Utils.partialDescriptorFor(m.getParameterTypes());
-                allowed = SecurityAgent.isAllowed(caller, target, m.getName(), desc);
+                allowed = SecurityAgent.isAllowed(callerClass, target, m.getName(), desc);
             }
 
             if (allowed) {

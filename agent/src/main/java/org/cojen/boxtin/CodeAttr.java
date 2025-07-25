@@ -301,7 +301,10 @@ class CodeAttr implements RegionReplacement {
         throws IOException
     {
         if (codeEncoder != null) {
-            throw new IllegalStateException();
+            if (insertion != 0) {
+                throw new IllegalStateException();
+            }
+            return;
         }
 
         codeEncoder = new BufferEncoder(Math.toIntExact(attrLength + insertion + growth));

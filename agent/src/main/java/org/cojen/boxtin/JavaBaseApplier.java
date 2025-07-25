@@ -76,78 +76,78 @@ final class JavaBaseApplier implements RulesApplier {
             lv1 = findMethod(lookup, "longValue", mt(Long.class, String.class, long.class));
             lv2 = findMethod(lookup, "longValue", mt(Long.class, String.class, Long.class));
 
-            fp1 = findMethod(lookup, "getProperties", mt(Properties.class, Class.class));
+            fp1 = findMethod(lookup, "getProperties", mt(Properties.class, Caller.class));
             fp2 = findMethod(lookup, "getProperty",
-                             mt(String.class, Class.class, String.class));
+                             mt(String.class, Caller.class, String.class));
             fp3 = findMethod(lookup, "getProperty",
-                             mt(String.class, Class.class, String.class, String.class));
+                             mt(String.class, Caller.class, String.class, String.class));
             fp4 = findMethod(lookup, "setProperties",
-                             mt(void.class, Class.class, Properties.class));
+                             mt(void.class, Caller.class, Properties.class));
             fp5 = findMethod(lookup, "setProperty",
-                             mt(String.class, Class.class, String.class, String.class));
-            fp6 = findMethod(lookup, "clearProperty", mt(String.class, Class.class, String.class));
+                             mt(String.class, Caller.class, String.class, String.class));
+            fp6 = findMethod(lookup, "clearProperty", mt(String.class, Caller.class, String.class));
 
             ctn = findMethod(lookup, "checkThreadNew", mt(boolean.class, Thread.class));
 
             cdc1 = findMethod(lookup, "checkDefineClass",
-                              mt(boolean.class, Class.class, ClassLoader.class, String.class,
+                              mt(boolean.class, Caller.class, ClassLoader.class, String.class,
                                  byte[].class, int.class, int.class, ProtectionDomain.class));
             cdc2 = findMethod(lookup, "checkDefineClass",
-                              mt(boolean.class, Class.class, ClassLoader.class, String.class,
+                              mt(boolean.class, Caller.class, ClassLoader.class, String.class,
                                  ByteBuffer.class, ProtectionDomain.class));
 
             cfn1 = findMethod(lookup, "checkForName",
-                              mt(boolean.class, Class.class, String.class, boolean.class,
+                              mt(boolean.class, Caller.class, String.class, boolean.class,
                                  ClassLoader.class));
 
             cgr1 = findMethod(lookup, "checkGetResource",
-                              mt(boolean.class, Class.class, Class.class));
+                              mt(boolean.class, Caller.class, Class.class));
             cgr2 = findMethod(lookup, "checkGetResource",
-                              mt(boolean.class, Class.class, ClassLoader.class));
+                              mt(boolean.class, Caller.class, ClassLoader.class));
             cgr3 = findMethod(lookup, "checkGetResource",
-                              mt(boolean.class, Class.class, Module.class));
+                              mt(boolean.class, Caller.class, Module.class));
 
-            cna1 = findMethod(lookup, "checkNativeAccess", mt(boolean.class, Class.class));
+            cna1 = findMethod(lookup, "checkNativeAccess", mt(boolean.class, Caller.class));
 
             cref1 = findMethod(lookup, "getConstructor",
-                               mt(Constructor.class, Class.class, Class.class, Class[].class));
+                               mt(Constructor.class, Caller.class, Class.class, Class[].class));
             cref2 = findMethod(lookup, "getConstructors",
-                               mt(Constructor[].class, Class.class, Class.class));
+                               mt(Constructor[].class, Caller.class, Class.class));
             cref3 = findMethod(lookup, "getDeclaredConstructor",
-                               mt(Constructor.class, Class.class, Class.class, Class[].class));
+                               mt(Constructor.class, Caller.class, Class.class, Class[].class));
             cref4 = findMethod(lookup, "getDeclaredConstructors",
-                               mt(Constructor[].class, Class.class, Class.class));
+                               mt(Constructor[].class, Caller.class, Class.class));
             cref5 = findMethod(lookup, "getDeclaredMethod",
-                               mt(Method.class, Class.class,
+                               mt(Method.class, Caller.class,
                                   Class.class, String.class, Class[].class));
             cref6 = findMethod(lookup, "getDeclaredMethods",
-                               mt(Method[].class, Class.class, Class.class));
+                               mt(Method[].class, Caller.class, Class.class));
             cref7 = findMethod(lookup, "getEnclosingConstructor",
-                               mt(Constructor.class, Class.class, Class.class));
+                               mt(Constructor.class, Caller.class, Class.class));
             cref8 = findMethod(lookup, "getEnclosingMethod",
-                               mt(Method.class, Class.class, Class.class));
+                               mt(Method.class, Caller.class, Class.class));
             cref9 = findMethod(lookup, "getMethod",
-                               mt(Method.class, Class.class, Class.class,
+                               mt(Method.class, Caller.class, Class.class,
                                   String.class, Class[].class));
             cref10 = findMethod(lookup, "getMethods",
-                                mt(Method[].class, Class.class, Class.class));
+                                mt(Method[].class, Caller.class, Class.class));
             cref11 = findMethod(lookup, "getRecordComponents",
-                                mt(RecordComponent[].class, Class.class, Class.class));
+                                mt(RecordComponent[].class, Caller.class, Class.class));
 
             cmh1 = findMethod(lookup, "lookupBind",
-                              mt(MethodHandle.class, Class.class, MethodHandles.Lookup.class,
+                              mt(MethodHandle.class, Caller.class, MethodHandles.Lookup.class,
                                  Object.class, String.class, MethodType.class));
             cmh2 = findMethod(lookup, "lookupFindConstructor",
-                              mt(MethodHandle.class, Class.class, MethodHandles.Lookup.class,
+                              mt(MethodHandle.class, Caller.class, MethodHandles.Lookup.class,
                                  Class.class, MethodType.class));
             cmh3 = findMethod(lookup, "lookupFindSpecial",
-                              mt(MethodHandle.class, Class.class, MethodHandles.Lookup.class,
+                              mt(MethodHandle.class, Caller.class, MethodHandles.Lookup.class,
                                  Class.class, String.class, MethodType.class, Class.class));
             cmh4 = findMethod(lookup, "lookupFindStatic",
-                              mt(MethodHandle.class, Class.class, MethodHandles.Lookup.class,
+                              mt(MethodHandle.class, Caller.class, MethodHandles.Lookup.class,
                                  Class.class, String.class, MethodType.class));
             cmh5 = findMethod(lookup, "lookupFindVirtual",
-                              mt(MethodHandle.class, Class.class, MethodHandles.Lookup.class,
+                              mt(MethodHandle.class, Caller.class, MethodHandles.Lookup.class,
                                  Class.class, String.class, MethodType.class));
 
             restricted = DenyAction.checked
@@ -155,7 +155,7 @@ final class JavaBaseApplier implements RulesApplier {
 
             inaccessible = DenyAction.checked
                 (findMethod(lookup, "checkSetAccessible",
-                            mt(boolean.class, Class.class, Object.class, boolean.class)),
+                            mt(boolean.class, Caller.class, Object.class, boolean.class)),
                  DenyAction.exception("java.lang.reflect.InaccessibleObjectException"));
 
         } catch (RuntimeException e) {

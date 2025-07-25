@@ -527,10 +527,24 @@ final class ConstantPool {
     }
 
     /**
+     * Adds a constant field reference, with an invented name. The `extend` method must have
+     * already been called.
+     */
+    C_MemberRef addUniqueField(C_Class clazz, C_UTF8 typeDesc) {
+        // CONSTANT_Fieldref tag is 9.
+        return addUniqueMember(clazz, typeDesc, 9);
+    }
+
+    /**
      * Adds a constant method reference, with an invented name. The `extend` method must have
      * already been called.
      */
     C_MemberRef addUniqueMethod(C_Class clazz, C_UTF8 typeDesc) {
+        // CONSTANT_Methodref tag is 10.
+        return addUniqueMember(clazz, typeDesc, 10);
+    }
+
+    private C_MemberRef addUniqueMember(C_Class clazz, C_UTF8 typeDesc, int tag) {
         extend();
 
         final int prefixLen = 8;
@@ -561,8 +575,7 @@ final class ConstantPool {
 
         C_NameAndType nat = addConstant(new C_NameAndType(12, name, typeDesc));
 
-        // CONSTANT_Methodref tag is 10.
-        return addConstant(new C_MemberRef(10, clazz, nat));
+        return addConstant(new C_MemberRef(tag, clazz, nat));
     }
 
     @SuppressWarnings("unchecked")
@@ -705,8 +718,7 @@ final class ConstantPool {
          * Returns true if the value is <init>.
          */
         boolean isConstructor() {
-            int length = mLength;
-            if (length != 6) {
+            if (mLength != 6) {
                 return false;
             }
             byte[] buffer = mBuffer;
@@ -716,11 +728,20 @@ final class ConstantPool {
         }
 
         /**
+         * Returns true if the value is <clinit>.
+         */
+        boolean isClinit() {
+            if (mLength != 8) {
+                return false;
+            }
+            return Utils.decodeLongBE(mBuffer, mOffset) == 0x3c636c696e69743eL; // <clinit>
+        }
+
+        /**
          * Returns true if the value starts with "java/".
          */
         boolean isProhibitedPackage() {
-            int length = mLength;
-            if (length < 5) {
+            if (mLength < 5) {
                 return false;
             }
             byte[] buffer = mBuffer;

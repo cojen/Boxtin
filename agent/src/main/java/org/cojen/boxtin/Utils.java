@@ -38,6 +38,7 @@ import java.util.Map;
 final class Utils {
     private static final VarHandle cShortArrayBEHandle;
     private static final VarHandle cIntArrayBEHandle;
+    private static final VarHandle cLongArrayBEHandle;
 
     static {
         try {
@@ -45,6 +46,8 @@ final class Utils {
                 (short[].class, ByteOrder.BIG_ENDIAN);
             cIntArrayBEHandle = MethodHandles.byteArrayViewVarHandle
                 (int[].class, ByteOrder.BIG_ENDIAN);
+            cLongArrayBEHandle = MethodHandles.byteArrayViewVarHandle
+                (long[].class, ByteOrder.BIG_ENDIAN);
         } catch (Throwable e) {
             throw new ExceptionInInitializerError();
         }
@@ -64,6 +67,10 @@ final class Utils {
 
     static void encodeIntBE(byte[] b, int offset, int value) {
         cIntArrayBEHandle.set(b, offset, value);
+    }
+
+    static long decodeLongBE(byte[] b, int offset) {
+        return (long) cLongArrayBEHandle.get(b, offset);
     }
 
     public static int roundUpPower2(int i) {

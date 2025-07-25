@@ -29,6 +29,8 @@ import java.lang.reflect.InvocationTargetException;
 
 import java.security.ProtectionDomain;
 
+import java.util.HashMap;
+
 /**
  * The {@code SecurityAgent} is an instrumentation agent which transforms classes such that
  * access checks are enforced. For operations which are denied, a {@link SecurityException} is
@@ -252,8 +254,11 @@ public final class SecurityAgent {
 
     private final Controller mController;
 
+    private final HashMap<Long, Long> mRegisteredCallers;
+
     private SecurityAgent(Controller controller) {
         mController = controller;
+        mRegisteredCallers = new HashMap<>();
     }
 
     private ClassFileTransformer newTransformer() {
@@ -335,6 +340,49 @@ public final class SecurityAgent {
      */
     public static byte[] transformHiddenClass(MethodHandles.Lookup lookup, byte[] classBuffer) {
         return Proxy.transformHiddenClass(lookup, classBuffer);
+    }
+
+    /**
+     * Register an identifier for obtaining Caller instances, or else returns false if there
+     * was a conflict and a new identifier should be created.
+     */
+    static boolean registerCaller(long k, long v) {
+        SecurityAgent agent = agent();
+        if (agent == null) {
+            // Not really registered, but allow the call to obtainCaller to be made (and fail).
+            return true;
+        }
+        synchronized (agent.mRegisteredCallers) {
+            return agent.mRegisteredCallers.putIfAbsent(k, v) == null;
+        }
+    }
+
+    /**
+     * @return true if identifier was registered and is now removed
+     */
+    static boolean removeCaller(long k, long v) {
+        SecurityAgent agent = agent();
+        if (agent != null) {
+            synchronized (agent.mRegisteredCallers) {
+                return agent.mRegisteredCallers.remove(k, v);
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Returns a new Caller instance if the identifier is registered, or else throws an
+     * exception. The identifier is removed as a side-effect.
+     *
+     * @hidden
+     */
+    public static Caller obtainCaller(long k, long v, Class<?> callerClass)
+        throws SecurityException
+    {
+        if (removeCaller(k, v)) {
+            return new Caller(callerClass);
+        }
+        throw new SecurityException();
     }
 
     /**

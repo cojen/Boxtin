@@ -45,7 +45,7 @@ public class CheckedTransformTest extends TransformTest {
                                            DenyAction.standard()), "op1")
             .denyMethod(DenyAction.checked(find("c_op2", int.class, long.class),
                                            DenyAction.value(-1L)), "op2")
-            .denyMethod(DenyAction.checked(find("c_op3", Class.class, String.class),
+            .denyMethod(DenyAction.checked(find("c_op3", Caller.class, String.class),
                                            DenyAction.empty()), "op3");
         ;
 
@@ -72,8 +72,8 @@ public class CheckedTransformTest extends TransformTest {
         return a >= 0 && b >= 0; // deny negative inputs
     }
 
-    public static boolean c_op3(Class<?> caller, String a) {
-        assertSame(caller, CheckedTransformTest.class);
+    public static boolean c_op3(Caller caller, String a) {
+        assertSame(caller.validate(), CheckedTransformTest.class);
         return !"magic".equals(a); // deny magic string
     }
 

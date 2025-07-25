@@ -124,9 +124,9 @@ public abstract sealed class DenyAction {
 
     /**
      * Returns a deny action which performs a custom operation. The parameters given to the
-     * custom method are the caller class (if specified), the non-null instance (if
-     * applicable), and the original method parameters. The return type must exactly match the
-     * original method's return type. If the custom method type is incompatible, then a {@code
+     * custom method are the {@link Caller} (optional), the non-null instance (if applicable),
+     * and the original method parameters. The return type must exactly match the original
+     * method's return type. If the custom method type is incompatible, then a {@code
      * SecurityException} or {@code WrongMethodTypeException} can be thrown instead.
      *
      * <p>Note: This action has no effect for constructors, unless the custom operation throws
@@ -139,15 +139,15 @@ public abstract sealed class DenyAction {
 
     /**
      * Returns a deny action which checks a predicate to determine if the operation should
-     * actually be allowed. The parameters given to the predicate are the caller class (if
-     * specified), the non-null instance (if applicable), and the original method parameters.
+     * actually be allowed. The parameters given to the predicate are the {@link Caller}
+     * (optional), the non-null instance (if applicable), and the original method parameters.
      * The return type must be boolean. If the predicate format is incompatible, then a {@code
      * SecurityException} or {@code WrongMethodTypeException} can be thrown instead.
      *
      * @param predicate the predicate checking method which returns true when the operation is
      * allowed
      * @param action the action to perform when the operation is denied
-     * @throws IllegalArgumentException if the predicate doesn't return a boolean or if the
+     * @throws IllegalArgumentException if the predicate doesn't return a boolean, or if the
      * given action is checked
      */
     public static DenyAction checked(MethodHandleInfo predicate, DenyAction action) {
@@ -180,8 +180,8 @@ public abstract sealed class DenyAction {
         for (; toIx < toCount; toIx++) {
             Class<?> to = toMT.parameterType(toIx);
 
-            if (toIx == 0 && to == Class.class) {
-                // The optional caller class parameter has been consumed.
+            if (toIx == 0 && to == Caller.class) {
+                // The optional caller parameter has been consumed.
                 continue;
             }
 

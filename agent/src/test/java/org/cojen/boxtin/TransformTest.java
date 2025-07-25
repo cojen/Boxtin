@@ -65,6 +65,7 @@ public abstract class TransformTest {
 
         b.forModule("org.cojen.boxtin")
             .forPackage("org.cojen.boxtin")
+            .forClass("Caller").allowAll()
             .forClass("TransformTest").allowAll()
             .forClass("TestUtils").allowAll()
             ;
