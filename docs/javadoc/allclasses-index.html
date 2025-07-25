@@ -58,39 +58,43 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Class</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html" title="interface in org.cojen.boxtin">Controller</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="org.cojen.boxtin/org/cojen/boxtin/Caller.html" title="class in org.cojen.boxtin">Caller</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="block">Wraps a caller class, to be passed to a <a href="org.cojen.boxtin/org/cojen/boxtin/DenyAction.html#custom(java.lang.invoke.MethodHandleInfo)"><code>custom</code></a> or <a href="org.cojen.boxtin/org/cojen/boxtin/DenyAction.html#custom(java.lang.invoke.MethodHandleInfo)"><code>checked</code></a> deny action method.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html" title="interface in org.cojen.boxtin">Controller</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
 <div class="block">Decides what set of operations should be allowed or denied based on the caller's <code>
  Module</code>.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="org.cojen.boxtin/org/cojen/boxtin/DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="org.cojen.boxtin/org/cojen/boxtin/DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Specifies the action to take when access to an operation is denied.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="org.cojen.boxtin/org/cojen/boxtin/Rule.html" title="class in org.cojen.boxtin">Rule</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="org.cojen.boxtin/org/cojen/boxtin/Rule.html" title="class in org.cojen.boxtin">Rule</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Indicates if access to an operation is allowed or denied.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="org.cojen.boxtin/org/cojen/boxtin/Rules.html" title="interface in org.cojen.boxtin">Rules</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="org.cojen.boxtin/org/cojen/boxtin/Rules.html" title="interface in org.cojen.boxtin">Rules</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
 <div class="block">Checks if access to a class member is allowed or denied, defined by a set of rules, built
  using a <a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html" title="class in org.cojen.boxtin"><code>RulesBuilder</code></a>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="org.cojen.boxtin/org/cojen/boxtin/Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="org.cojen.boxtin/org/cojen/boxtin/Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
 <div class="block">Checks access to constructors or methods, for a specific class.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="org.cojen.boxtin/org/cojen/boxtin/RulesApplier.html" title="interface in org.cojen.boxtin">RulesApplier</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="org.cojen.boxtin/org/cojen/boxtin/RulesApplier.html" title="interface in org.cojen.boxtin">RulesApplier</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
 <div class="block">Defines and applies common sets of rules.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html" title="class in org.cojen.boxtin">RulesBuilder</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html" title="class in org.cojen.boxtin">RulesBuilder</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Is used to build up a set of access rules, which can then be <a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html#build()"><code>built</code></a> into a
  usable <a href="org.cojen.boxtin/org/cojen/boxtin/Rules.html" title="interface in org.cojen.boxtin"><code>Rules</code></a> instance.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="org.cojen.boxtin/org/cojen/boxtin/SecurityAgent.html" title="class in org.cojen.boxtin">SecurityAgent</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="org.cojen.boxtin/org/cojen/boxtin/SecurityAgent.html" title="class in org.cojen.boxtin">SecurityAgent</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">The <code>SecurityAgent</code> is an instrumentation agent which transforms classes such that
  access checks are enforced.</div>
 </div>

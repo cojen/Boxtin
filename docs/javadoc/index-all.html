@@ -120,6 +120,10 @@ loadScripts(document, 'script');</script>
 </dl>
 <h2 class="title" id="I:C">C</h2>
 <dl class="index">
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Caller.html" class="type-name-link" title="class in org.cojen.boxtin">Caller</a> - Class in <a href="org.cojen.boxtin/org/cojen/boxtin/package-summary.html">org.cojen.boxtin</a></dt>
+<dd>
+<div class="block">Wraps a caller class, to be passed to a <a href="org.cojen.boxtin/org/cojen/boxtin/DenyAction.html#custom(java.lang.invoke.MethodHandleInfo)"><code>custom</code></a> or <a href="org.cojen.boxtin/org/cojen/boxtin/DenyAction.html#custom(java.lang.invoke.MethodHandleInfo)"><code>checked</code></a> deny action method.</div>
+</dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/DenyAction.html#checked(java.lang.invoke.MethodHandleInfo,org.cojen.boxtin.DenyAction)" class="member-name-link">checked(MethodHandleInfo, DenyAction)</a> - Static method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></dt>
 <dd>
 <div class="block">Returns a deny action which checks a predicate to determine if the operation should
@@ -496,6 +500,11 @@ loadScripts(document, 'script');</script>
 </dl>
 <h2 class="title" id="I:V">V</h2>
 <dl class="index">
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/Caller.html#validate()" class="member-name-link">validate()</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/Caller.html" title="class in org.cojen.boxtin">Caller</a></dt>
+<dd>
+<div class="block">Custom and checked deny actions must invoke this method to validate this instance and to
+ obtain the actual caller class.</div>
+</dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html#validate()" class="member-name-link">validate()</a> - Method in class org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesBuilder.html" title="class in org.cojen.boxtin">RulesBuilder</a></dt>
 <dd>
 <div class="block">Validates that all classes are loadable, and that all class members are found.</div>

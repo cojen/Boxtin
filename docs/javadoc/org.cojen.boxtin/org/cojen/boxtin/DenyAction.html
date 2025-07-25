@@ -264,9 +264,9 @@ loadScripts(document, 'script');</script>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></span>&nbsp;<span class="element-name">custom</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/invoke/MethodHandleInfo.html" title="class or interface in java.lang.invoke" class="external-link">MethodHandleInfo</a>&nbsp;mhi)</span></div>
 <div class="block">Returns a deny action which performs a custom operation. The parameters given to the
- custom method are the caller class (if specified), the non-null instance (if
- applicable), and the original method parameters. The return type must exactly match the
- original method's return type. If the custom method type is incompatible, then a <code>
+ custom method are the <a href="Caller.html" title="class in org.cojen.boxtin"><code>Caller</code></a> (optional), the non-null instance (if applicable),
+ and the original method parameters. The return type must exactly match the original
+ method's return type. If the custom method type is incompatible, then a <code>
  SecurityException</code> or <code>WrongMethodTypeException</code> can be thrown instead.
 
  <p>Note: This action has no effect for constructors, unless the custom operation throws
@@ -282,8 +282,8 @@ loadScripts(document, 'script');</script>
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></span>&nbsp;<span class="element-name">checked</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/invoke/MethodHandleInfo.html" title="class or interface in java.lang.invoke" class="external-link">MethodHandleInfo</a>&nbsp;predicate,
  <a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</span></div>
 <div class="block">Returns a deny action which checks a predicate to determine if the operation should
- actually be allowed. The parameters given to the predicate are the caller class (if
- specified), the non-null instance (if applicable), and the original method parameters.
+ actually be allowed. The parameters given to the predicate are the <a href="Caller.html" title="class in org.cojen.boxtin"><code>Caller</code></a>
+ (optional), the non-null instance (if applicable), and the original method parameters.
  The return type must be boolean. If the predicate format is incompatible, then a <code>
  SecurityException</code> or <code>WrongMethodTypeException</code> can be thrown instead.</div>
 <dl class="notes">
@@ -292,7 +292,7 @@ loadScripts(document, 'script');</script>
  allowed</dd>
 <dd><code>action</code> - the action to perform when the operation is denied</dd>
 <dt>Throws:</dt>
-<dd><code><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/IllegalArgumentException.html" title="class or interface in java.lang" class="external-link">IllegalArgumentException</a></code> - if the predicate doesn't return a boolean or if the
+<dd><code><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/IllegalArgumentException.html" title="class or interface in java.lang" class="external-link">IllegalArgumentException</a></code> - if the predicate doesn't return a boolean, or if the
  given action is checked</dd>
 </dl>
 </div>
