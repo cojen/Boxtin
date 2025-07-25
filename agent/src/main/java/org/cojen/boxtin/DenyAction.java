@@ -232,7 +232,20 @@ public abstract sealed class DenyAction {
 
         @Override
         void validate(ClassLoader loader, Executable executable) throws ClassNotFoundException {
-            Class.forName(className.replace('/', '.'), false, loader);
+            Class<?> clazz = Class.forName(className.replace('/', '.'), false, loader);
+            if (!Throwable.class.isAssignableFrom(clazz)) {
+                throw new IllegalArgumentException("Not an exception class: " + className);
+            }
+            validateCtor(clazz);
+        }
+
+        void validateCtor(Class<?> clazz) {
+            try {
+                clazz.getConstructor();
+            } catch (NoSuchMethodException e) {
+                throw new IllegalArgumentException
+                    ("Exception class doesn't have a public no-arg constructor: " + className);
+            }
         }
 
         @Override
@@ -281,6 +294,17 @@ public abstract sealed class DenyAction {
         private WithMessage(String className, String message) {
             super(className);
             this.message = message;
+        }
+
+        @Override
+        void validateCtor(Class<?> clazz) {
+            try {
+                clazz.getConstructor(String.class);
+            } catch (NoSuchMethodException e) {
+                throw new IllegalArgumentException
+                    ("Exception class doesn't have a public constructor which accepts " +
+                     "just a message:" + className);
+            }
         }
 
         @Override
