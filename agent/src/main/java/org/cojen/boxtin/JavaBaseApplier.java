@@ -497,7 +497,7 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod(DenyAction.custom(cmh5), "findVirtual")
             .allowMethod("accessClass")
             .allowMethod("defineClass")
-            // Defining of hidden classes requires that special changes made to the
+            // Defining of hidden classes requires that special changes be made to the
             // MethodHandles.Lookup class itself. See SecurityAgent#doTransform.
             .allowMethod("defineHiddenClass")
             .allowMethod("defineHiddenClassWithClassData")
@@ -576,15 +576,6 @@ final class JavaBaseApplier implements RulesApplier {
             .forClass("HttpURLConnection")
             .denyMethod("setFollowRedirects")
             .denyMethod("setRequestMethod")
-
-            .forClass("InetAddress")
-            .denyMethod("getByName")
-            .denyMethod("getAllByName")
- 
-            .forClass("InetSocketAddress")
-            .denyAllConstructors()
-            .allowVariant(int.class)
-            .allowVariant("Ljava/net/InetAddress;I")
 
             .forClass("MulticastSocket")
             .denyAllConstructors()
