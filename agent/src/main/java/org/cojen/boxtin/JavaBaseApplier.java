@@ -824,7 +824,7 @@ final class JavaBaseApplier implements RulesApplier {
             // methods has no effect, just like ForkJoinPool.commonPool.
             .denyMethod(DenyAction.value(null), "close")
             .denyMethod(DenyAction.value(null), "shutdown")
-            .denyMethod(DenyAction.value(null), "shutdownNow")
+            .denyMethod(DenyAction.empty(), "shutdownNow")
 
             .forPackage("java.util.concurrent.atomic").allowAll()
 
