@@ -230,17 +230,21 @@ final class ClassFileProcessor {
 
         // Check if any super interfaces disallow subtyping
 
-        if (mInterfaceIndexes != null) for (int i=0; i<mInterfaceIndexes.length; i++) {
-            Rules.ForClass forClass = rulesForClass(cp.findConstantClass(mInterfaceIndexes[i]));
+        if (mInterfaceIndexes != null) {
             int removed = 0;
-            if (!forClass.isSubtypingAllowed()) {
-                // Just drop the interface from the set.
-                removed++;
-                storeReplacement(mSuperClassOffset + 4 + i * 2, new SimpleReplacement(2, 0));
+            for (int i=0; i<mInterfaceIndexes.length; i++) {
+                Rules.ForClass forClass = rulesForClass(cp.findConstantClass(mInterfaceIndexes[i]));
+                if (!forClass.isSubtypingAllowed()) {
+                    // Just drop the interface from the set.
+                    removed++;
+                    storeReplacement(mSuperClassOffset + 4 + i * 2, new SimpleReplacement(2, 0));
+                }
             }
-            var ifacesCount = new SimpleReplacement(2);
-            ifacesCount.writeShort(mInterfaceIndexes.length - removed);
-            storeReplacement(mSuperClassOffset + 2, ifacesCount);
+            if (removed != 0) {
+                var ifacesCount = new SimpleReplacement(2);
+                ifacesCount.writeShort(mInterfaceIndexes.length - removed);
+                storeReplacement(mSuperClassOffset + 2, ifacesCount);
+            }
         }
 
         // Check the MethodHandle constants.
