@@ -89,7 +89,7 @@ final class FilteredProperties {
                 "java.class.version",
                 "os.name", "os.arch", "os.version",
                 "file.separator", "path.separator", "line.separator",
-                "native.encoding", "stdout.encoding", "stderr.encoding"
+                "native.encoding", "stdin.encoding", "stdout.encoding", "stderr.encoding"
                 -> true;
         };
     }
