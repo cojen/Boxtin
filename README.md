@@ -84,5 +84,5 @@ Methods defined by `AccessibleObject` which enable access to class members are d
 
 ## Object methods
 
-Methods declared in the root `Object` class cannot be denied, even when done so explicitly. This makes it easier to deny all methods in a class without breaking these fundamental operations. Even if these operations could be denied, the caller check would be bypassed when they're invoked by any of the classes in the `java.base` module.
+Methods declared in the root `Object` class cannot be denied, even when done so explicitly. This makes it easier to deny all methods in a class without breaking these fundamental operations. Even if these operations could be denied, the caller check would be bypassed when any of these methods are invoked by any of the classes in the `java.base` module. For example: `String.valueOf(obj)` calls `toString()`.
 
