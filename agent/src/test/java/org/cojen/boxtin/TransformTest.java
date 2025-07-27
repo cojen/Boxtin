@@ -63,12 +63,16 @@ public abstract class TransformTest {
             return false;
         }
 
-        b.forModule("org.cojen.boxtin")
-            .forPackage("org.cojen.boxtin")
-            .forClass("Caller").allowAll()
-            .forClass("TransformTest").allowAll()
-            .forClass("TestUtils").allowAll()
-            ;
+        try {
+            b.forModule("org.cojen.boxtin")
+                .forPackage("org.cojen.boxtin")
+                .forClass("Caller").allowAll()
+                .forClass("TransformTest").allowAll()
+                .forClass("TestUtils").allowAll()
+                ;
+        } catch (IllegalArgumentException e) {
+            // Allow the test to run when Boxtin isn't loaded as a module.
+        }
 
         Rules rules = b.build();
 
