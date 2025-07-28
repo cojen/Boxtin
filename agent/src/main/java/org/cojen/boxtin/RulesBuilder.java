@@ -73,6 +73,13 @@ public final class RulesBuilder {
     }
 
     /**
+     * Returns the {@code ModuleLayer} used by this builder.
+     */
+    public ModuleLayer moduleLayer() {
+        return mLayer;
+    }
+
+    /**
      * Applies a set of rules to this builder.
      *
      * @return this
