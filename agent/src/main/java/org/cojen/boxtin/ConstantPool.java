@@ -527,15 +527,6 @@ final class ConstantPool {
     }
 
     /**
-     * Adds a constant field reference, with an invented name. The `extend` method must have
-     * already been called.
-     */
-    C_MemberRef addUniqueField(C_Class clazz, C_UTF8 typeDesc) {
-        // CONSTANT_Fieldref tag is 9.
-        return addUniqueMember(clazz, typeDesc, 9);
-    }
-
-    /**
      * Adds a constant method reference, with an invented name. The `extend` method must have
      * already been called.
      */
@@ -725,16 +716,6 @@ final class ConstantPool {
             int offset = mOffset;
             return Utils.decodeIntBE(buffer, offset) == 0x3c696e69 // <ini
                 && Utils.decodeUnsignedShortBE(buffer, offset + 4) == 0x743e; // t>
-        }
-
-        /**
-         * Returns true if the value is <clinit>.
-         */
-        boolean isClinit() {
-            if (mLength != 8) {
-                return false;
-            }
-            return Utils.decodeLongBE(mBuffer, mOffset) == 0x3c636c696e69743eL; // <clinit>
         }
 
         /**

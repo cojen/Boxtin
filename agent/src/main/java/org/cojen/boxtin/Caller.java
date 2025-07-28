@@ -25,6 +25,12 @@ import java.util.Objects;
  * @author Brian S. O'Neill
  */
 public final class Caller {
+    /* 
+       Design note: Passing the caller Class directly is simpler, but any Class could be passed
+       in, easily bypassing an access check. Direct access to the custom or checked deny action
+       methods themselves can be denied, but this is a detail which might be easily overlooked.
+     */
+
     private final Class<?> mCallerClass;
 
     Caller(Class<?> callerClass) {
