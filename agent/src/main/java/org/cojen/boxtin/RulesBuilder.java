@@ -16,6 +16,8 @@
 
 package org.cojen.boxtin;
 
+import java.lang.module.ModuleDescriptor;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
@@ -113,15 +115,79 @@ public final class RulesBuilder {
      * @throws IllegalArgumentException if the module isn't found
      */
     public ModuleScope forModule(String name) {
+        return forModule(name, null, null);
+    }
+
+    /**
+     * Define specific rules against the given module, which can supersede all previous rules.
+     *
+     * @param name fully qualified module name
+     * @param minVersion optional minimum {@link ModuleDescriptor.Version module version
+     * number} to support (inclusive)
+     * @param maxVersion optional maximum {@link ModuleDescriptor.Version module version
+     * number} to support (exclusive)
+     * @throws IllegalArgumentException if the module isn't found, or if the version is out of
+     * bounds, or if the min/max versions provided aren't parseable
+     */
+    public ModuleScope forModule(String name, String minVersion, String maxVersion) {
         Objects.requireNonNull(name);
         Module module = mLayer.findModule(name).orElseThrow(IllegalArgumentException::new);
+
+        if (minVersion != null || maxVersion != null) {
+            ModuleDescriptor.Version version = module.getDescriptor().version().orElse(null);
+            if (version != null) {
+                // Only consider the "version number" component.
+                version = parseVersion(version.toString());
+
+                if (minVersion != null) {
+                    ModuleDescriptor.Version minv = parseVersion(minVersion);
+                    if (version.compareTo(minv) < 0) {
+                        throw new IllegalArgumentException
+                            ("Version number for module " + name + " is too low: " +
+                             version + " < " + minv);
+                    }
+                }
+
+                if (maxVersion != null) {
+                    ModuleDescriptor.Version maxv = parseVersion(maxVersion);
+                    if (version.compareTo(maxv) >= 0) {
+                        throw new IllegalArgumentException
+                            ("Version number for module " + name + " is too high: " +
+                             version + " >= " + maxv);
+                    }
+                }
+            }
+        }
+
         Map<String, ModuleScope> modules = mModules;
         if (modules == null) {
             mModules = modules = new LinkedHashMap<>();
         }
+
         return modules.computeIfAbsent(name, k -> {
             return new ModuleScope(module).ruleForAll(mDefaultRule);
         });
+    }
+
+    private static ModuleDescriptor.Version parseVersion(String str) {
+        int ix = str.indexOf('-');
+        if (ix > 0) {
+            int ix2 = str.indexOf('+', ix);
+            if (ix2 >= 0) {
+                ix = Math.min(ix, ix2);
+            }
+        }
+        if (ix >= 0) {
+            str = str.substring(0, ix);
+        }
+
+        ModuleDescriptor.Version version = ModuleDescriptor.Version.parse(str);
+
+        if (version == null) {
+            throw new IllegalArgumentException("Unparseable version: " + str);
+        }
+
+        return version;
     }
 
     /**
@@ -435,9 +501,28 @@ public final class RulesBuilder {
         /**
          * End the current rules for this module and begin a new module scope. More rules can
          * be added to the scope later if desired.
+         *
+         * @param name fully qualified module name
+         * @throws IllegalArgumentException if the module isn't found
          */
         public ModuleScope forModule(String name) {
-            return end().forModule(name);
+            return ModuleScope.this.forModule(name, null, null);
+        }
+
+        /**
+         * End the current rules for this module and begin a new module scope. More rules can
+         * be added to the scope later if desired.
+         *
+         * @param name fully qualified module name
+         * @param minVersion optional minimum {@link ModuleDescriptor.Version module version
+         * number} to support (inclusive)
+         * @param maxVersion optional maximum {@link ModuleDescriptor.Version module version
+         * number} to support (exclusive)
+         * @throws IllegalArgumentException if the module isn't found, or if the version is out of
+         * bounds, or if the min/max versions provided aren't parseable
+         */
+        public ModuleScope forModule(String name, String minVersion, String maxVersion) {
+            return end().forModule(name, minVersion, maxVersion);
         }
 
         void preValidate(Set<String> packageNames, Consumer<String> reporter) {
@@ -611,9 +696,28 @@ public final class RulesBuilder {
         /**
          * End the current rules for this package and module, and begin a new module scope.
          * More rules can be added to the scope later if desired.
+         *
+         * @param name fully qualified module name
+         * @throws IllegalArgumentException if the module isn't found
          */
         public ModuleScope forModule(String name) {
-            return end().forModule(name);
+            return PackageScope.this.forModule(name, null, null);
+        }
+
+        /**
+         * End the current rules for this package and module, and begin a new module scope.
+         * More rules can be added to the scope later if desired.
+         *
+         * @param name fully qualified module name
+         * @param minVersion optional minimum {@link ModuleDescriptor.Version module version
+         * number} to support (inclusive)
+         * @param maxVersion optional maximum {@link ModuleDescriptor.Version module version
+         * number} to support (exclusive)
+         * @throws IllegalArgumentException if the module isn't found, or if the version is out of
+         * bounds, or if the min/max versions provided aren't parseable
+         */
+        public ModuleScope forModule(String name, String minVersion, String maxVersion) {
+            return end().forModule(name, minVersion, maxVersion);
         }
 
         /**
@@ -969,9 +1073,28 @@ public final class RulesBuilder {
         /**
          * End the current rules for this class, package and module, and begin a new module
          * scope. More rules can be added to the scope later if desired.
+         *
+         * @param name fully qualified module name
+         * @throws IllegalArgumentException if the module isn't found
          */
         public ModuleScope forModule(String name) {
-            return end().forModule(name);
+            return ClassScope.this.forModule(name, null, null);
+        }
+
+        /**
+         * End the current rules for this class, package and module, and begin a new module
+         * scope. More rules can be added to the scope later if desired.
+         *
+         * @param name fully qualified module name
+         * @param minVersion optional minimum {@link ModuleDescriptor.Version module version
+         * number} to support (inclusive)
+         * @param maxVersion optional maximum {@link ModuleDescriptor.Version module version
+         * number} to support (exclusive)
+         * @throws IllegalArgumentException if the module isn't found, or if the version is out of
+         * bounds, or if the min/max versions provided aren't parseable
+         */
+        public ModuleScope forModule(String name, String minVersion, String maxVersion) {
+            return end().forModule(name, minVersion, maxVersion);
         }
 
         /**

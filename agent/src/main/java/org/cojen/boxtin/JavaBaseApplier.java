@@ -164,7 +164,7 @@ final class JavaBaseApplier implements RulesApplier {
             throw new RuntimeException(e);
         }
 
-        b.forModule("java.base")
+        b.forModule("java.base", null, "26")
 
             .forPackage("java.io")
             .allowAll()
