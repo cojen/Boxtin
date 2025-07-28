@@ -21,7 +21,9 @@ import java.io.IOException;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.MethodTypeDesc;
 
+import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandleInfo;
+import java.lang.invoke.MethodType;
 
 import java.util.Arrays;
 import java.util.ArrayList;
@@ -263,6 +265,12 @@ final class ConstantPool {
                 int kind = decoder.readUnsignedByte();
                 int reference_index = decoder.readUnsignedShort();
                 c = new C_MethodHandle(tag, kind, (C_MemberRef) findConstant(reference_index));
+            }
+
+            // CONSTANT_MethodType
+            case 16 -> {
+                int descriptor_index = decoder.readUnsignedShort();
+                c = new C_MethodType(tag, (C_UTF8) findConstant(descriptor_index));
             }
 
             // CONSTANT_Dynamic, CONSTANT_InvokeDynamic
@@ -1229,6 +1237,11 @@ final class ConstantPool {
         }
 
         @Override
+        int smTag(ConstantPool cp) throws ClassFormatException {
+            return StackMapTable.tagForType(cp.addClass(MethodHandle.class));
+        }
+
+        @Override
         long size() {
             return 1 + 3;
         }
@@ -1238,6 +1251,42 @@ final class ConstantPool {
             encoder.writeByte(mTag);
             encoder.writeByte(mKind);
             encoder.writeShort(mRef.mIndex);
+        }
+    }
+
+    static final class C_MethodType extends Constant {
+        final C_UTF8 mDesc;
+
+        C_MethodType(int tag, C_UTF8 desc) {
+            super(tag);
+            mDesc = desc;
+        }
+
+        @Override
+        public int hashCode() {
+            return mDesc.hashCode() * 31 + mTag;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return this == obj || obj instanceof C_MethodType other
+                && mTag == other.mTag && mDesc.equals(other.mDesc);
+        }
+
+        @Override
+        int smTag(ConstantPool cp) throws ClassFormatException {
+            return StackMapTable.tagForType(cp.addClass(MethodType.class));
+        }
+
+        @Override
+        long size() {
+            return 1 + 2;
+        }
+
+        @Override
+        void writeTo(BufferEncoder encoder) throws IOException {
+            encoder.writeByte(mTag);
+            encoder.writeShort(mDesc.mIndex);
         }
     }
 
