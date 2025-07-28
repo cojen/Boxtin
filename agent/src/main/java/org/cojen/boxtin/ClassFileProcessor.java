@@ -895,6 +895,10 @@ final class ClassFileProcessor {
 
         target.split(packageName, className);
 
+        if (packageName.equals("org/cojen/boxtin") && className.equals("SecurityAgent")) {
+            return Rule.deny();
+        }
+
         return mRules.forClass(mModule, packageName, className);
     }
 

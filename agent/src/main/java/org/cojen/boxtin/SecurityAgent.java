@@ -59,6 +59,13 @@ import java.util.HashMap;
  * @author Brian S. O'Neill
  */
 public final class SecurityAgent {
+    /* 
+       Note: Some of the public methods in this class are documented as hidden, but there's no
+       expecation that this offers any security. The intent is to keep the documentation clean.
+       For the most part, calling these methods is harmless, and the ClassFileTransformer
+       explicitly denies access to them anyhow.
+     */
+
     static final boolean DEBUG = Boolean.getBoolean(SecurityAgent.class.getName() + ".DEBUG");
 
     private static final ClassLoader ALT_LOADER;
