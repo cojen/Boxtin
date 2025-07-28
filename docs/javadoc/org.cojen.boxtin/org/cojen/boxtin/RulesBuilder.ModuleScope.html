@@ -72,6 +72,7 @@ loadScripts(document, 'script');</script>
 <li><a href="#forPackage(java.lang.String)" tabindex="0">forPackage(String)</a></li>
 <li><a href="#end()" tabindex="0">end()</a></li>
 <li><a href="#forModule(java.lang.String)" tabindex="0">forModule(String)</a></li>
+<li><a href="#forModule(java.lang.String,java.lang.String,java.lang.String)" tabindex="0">forModule(String, String, String)</a></li>
 </ol>
 </li>
 </ol>
@@ -134,9 +135,16 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">End the current rules for this module and begin a new module scope.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.PackageScope.html" title="class in org.cojen.boxtin">RulesBuilder.PackageScope</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#forPackage(java.lang.String)" class="member-name-link">forPackage</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name)</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.ModuleScope.html" title="class in org.cojen.boxtin">RulesBuilder.ModuleScope</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#forModule(java.lang.String,java.lang.String,java.lang.String)" class="member-name-link">forModule</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name,
+ <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;minVersion,
+ <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;maxVersion)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">End the current rules for this module and begin a new module scope.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.PackageScope.html" title="class in org.cojen.boxtin">RulesBuilder.PackageScope</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#forPackage(java.lang.String)" class="member-name-link">forPackage</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Define specific rules against the given package, which can supersede all previous
  rules.</div>
 </div>
@@ -232,6 +240,35 @@ loadScripts(document, 'script');</script>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RulesBuilder.ModuleScope.html" title="class in org.cojen.boxtin">RulesBuilder.ModuleScope</a></span>&nbsp;<span class="element-name">forModule</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name)</span></div>
 <div class="block">End the current rules for this module and begin a new module scope. More rules can
  be added to the scope later if desired.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>name</code> - fully qualified module name</dd>
+<dt>Throws:</dt>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/IllegalArgumentException.html" title="class or interface in java.lang" class="external-link">IllegalArgumentException</a></code> - if the module isn't found</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="forModule(java.lang.String,java.lang.String,java.lang.String)">
+<h3>forModule</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RulesBuilder.ModuleScope.html" title="class in org.cojen.boxtin">RulesBuilder.ModuleScope</a></span>&nbsp;<span class="element-name">forModule</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name,
+ <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;minVersion,
+ <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;maxVersion)</span></div>
+<div class="block">End the current rules for this module and begin a new module scope. More rules can
+ be added to the scope later if desired.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>name</code> - fully qualified module name</dd>
+<dd><code>minVersion</code> - optional minimum <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/module/ModuleDescriptor.Version.html" title="class or interface in java.lang.module" class="external-link"><code>module version
+ number</code></a> to support (inclusive)</dd>
+<dd><code>maxVersion</code> - optional maximum <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/module/ModuleDescriptor.Version.html" title="class or interface in java.lang.module" class="external-link"><code>module version
+ number</code></a> to support (exclusive)</dd>
+<dt>Throws:</dt>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/IllegalArgumentException.html" title="class or interface in java.lang" class="external-link">IllegalArgumentException</a></code> - if the module isn't found, or if the version is out of
+ bounds, or if the min/max versions provided aren't parseable</dd>
+</dl>
 </div>
 </section>
 </li>
