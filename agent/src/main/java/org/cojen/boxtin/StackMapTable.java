@@ -921,7 +921,6 @@ final class StackMapTable {
                             break doWide;
                         }
                         case RET -> {
-                            offset++;
                             break doWide;
                         }
                         case ISTORE, FSTORE, ASTORE, LSTORE, DSTORE -> {
