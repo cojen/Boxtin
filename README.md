@@ -14,7 +14,7 @@ If the controller is specified as "default", then a default is selected which on
 Boxtin is designed to restrict operations for "plugins", much like the original security manager was designed for restricting applet permissions. There are a few key differences, however:
 
 - Boxtin is a shallow sandbox, which means it only checks the immediate caller to see if an operation is denied. It does this by modifying the caller class.
-- The original Java security manager implemented a deep sandbox, by examining the entire stack trace into a target operation. This seemed like a good idea at the time, but in practice it was too complicated and inefficient. The [`AccessController.doPrivileged`](https://docs.oracle.com/en/java/javase/23/docs/api/java.base/java/security/AccessController.html) methods were intended for handling special cases, but they were actually used over 1200 times in the JDK.
+- The original Java security manager implemented a deep sandbox, by walking the stack. This seemed like a good idea at the time, but in practice it was too complicated and inefficient. The [`AccessController.doPrivileged`](https://docs.oracle.com/en/java/javase/23/docs/api/java.base/java/security/AccessController.html) methods were intended for handling special cases, but they were actually used over 1200 times in the JDK.
 - With Boxtin, rules are defined entirely by the host environment, and so the libraries it depends on don't require any modifications.
 - Rules are selected by module, not by code source or protection domain.
 - The standard deny action is to throw a `SecurityException`, but alternative [deny actions](https://cojen.github.io/Boxtin/javadoc/org.cojen.boxtin/org/cojen/boxtin/DenyAction.html) can be configured instead.
