@@ -9,7 +9,7 @@ Boxtin provides an [instrumentation agent](https://docs.oracle.com/en/java/javas
 java -javaagent:Boxtin.jar=my.app.SecurityController ...
 ```
 
-If the controller is specified as "default", then a default is selected which only allows limited access to the [`java.base`](https://cojen.github.io/Boxtin/javadoc/org.cojen.boxtin/org/cojen/boxtin/RulesApplier.html#java_base()) module. If no controller is specified, then the [`activate`](https://cojen.github.io/Boxtin/javadoc/org.cojen.boxtin/org/cojen/boxtin/SecurityAgent.html#activate(org.cojen.boxtin.Controller)) method must be called later, preferably from the main method.
+If the controller is specified as "default", then a default is selected which only allows limited access to the [`java.base`](https://cojen.github.io/Boxtin/javadoc/org.cojen.boxtin/org/cojen/boxtin/RulesApplier.html#java_base()) module. If no controller is specified at all, then the [`activate`](https://cojen.github.io/Boxtin/javadoc/org.cojen.boxtin/org/cojen/boxtin/SecurityAgent.html#activate(org.cojen.boxtin.Controller)) method must be called later, preferably from the main method.
 
 Boxtin is designed to restrict operations for "plugins", much like the original security manager was designed for restricting applet permissions. There are a few key differences, however:
 
