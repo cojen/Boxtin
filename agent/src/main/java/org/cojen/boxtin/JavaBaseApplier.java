@@ -667,6 +667,7 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forClass("Path")
             .denyMethod("of")
+            .allowVariant("Ljava/lang/String;[Ljava/lang/String;")
             .denyMethod("register")
             .denyMethod("toAbsolutePath")
             .denyMethod("toRealPath")
