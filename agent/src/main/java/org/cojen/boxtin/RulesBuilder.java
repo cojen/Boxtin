@@ -1326,7 +1326,7 @@ public final class RulesBuilder {
                 }
 
                 if (count == 0) {
-                    reporter.accept("Constructor not found: " + clazz);
+                    reporter.accept("Constructor isn't found: " + clazz);
                 }
 
                 return;
@@ -1367,9 +1367,11 @@ public final class RulesBuilder {
                     validateExecutable(loader, method, rule, reporter);
                 });
             } else {
+                var toFind = new HashMap<>(mVariants);
+
                 count = forAllMethods(clazz, name, method -> {
-                    String desc = paramDescriptorFor(method.getParameterTypes());
-                    Rule rule = mVariants.get(desc);
+                    String desc = partialDescriptorFor(method.getParameterTypes());
+                    Rule rule = toFind.remove(desc);
                     if (rule == null) {
                         rule = mDefaultRule;
                     }
@@ -1377,10 +1379,17 @@ public final class RulesBuilder {
                         validateExecutable(loader, method, rule, reporter);
                     }
                 });
+
+                if (count != 0 && !toFind.isEmpty()) {
+                    for (CharSequence desc : toFind.keySet()) {
+                        reporter.accept("Method isn't found: " + clazz.getName() +
+                                        "." + name + desc);
+                    }
+                }
             }
 
             if (count == 0) {
-                reporter.accept("Method not found: " + clazz + "." + name);
+                reporter.accept("Method isn't found: " + clazz.getName() + "." + name);
             }
         }
 
