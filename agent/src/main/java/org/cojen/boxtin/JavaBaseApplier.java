@@ -459,7 +459,14 @@ final class JavaBaseApplier implements RulesApplier {
             .forClass("AnnotationTypeMismatchException")
             .denyMethod("element")
 
-            .forPackage("java.lang.classfile").allowAll()
+            .forPackage("java.lang.classfile")
+            .allowAll()
+
+            .forClass("ClassFile")
+            .denyMethod("buildModuleTo")
+            .denyMethod("buildTo")
+            .denyMethod("parse").allowVariant("[B")
+            .denyMethod("verify").allowVariant("[B")
 
             .forPackage("java.lang.classfile.attribute").allowAll()
 
