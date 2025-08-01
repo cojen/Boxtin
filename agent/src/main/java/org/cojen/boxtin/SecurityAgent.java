@@ -29,6 +29,8 @@ import java.lang.reflect.InvocationTargetException;
 
 import java.security.ProtectionDomain;
 
+import java.util.Map;
+
 /**
  * The {@code SecurityAgent} is an instrumentation agent which transforms classes such that
  * access checks are enforced. For operations which are denied, a {@link SecurityException} is
@@ -455,6 +457,9 @@ public final class SecurityAgent {
      * @hidden
      */
     public boolean isAllowed2(Class<?> caller, Class<?> target, String name, String desc) {
+        // Note: Any changes to this method might need to be reflected in the
+        // ClassFileProcessor.ruleForConstructor or ruleForMethod methods.
+
         if (!target.getModule().isNamed()) {
             // Unnamed modules cannot have rules defined.
             return true;
@@ -469,14 +474,33 @@ public final class SecurityAgent {
 
         Rules.ForClass forClass = rules.forClass(module, target);
 
-        Rule rule;
         if (name == null || name.equals("<init>")) {
-            rule = forClass.ruleForConstructor(desc);
-        } else {
-            rule = forClass.ruleForMethod(name, desc);
+            return forClass.ruleForConstructor(desc).isAllowed();
         }
 
-        return rule.isAllowed();
+        if (!forClass.ruleForMethod(name, desc).isAllowed()) {
+            return false;
+        }
+
+        Map<String, Rule> denials = rules.denialsForMethod(name, desc);
+
+        if (!denials.isEmpty()) {
+            ClassLoader loader = target.getClassLoader();
+
+            for (String className : denials.keySet()) {
+                Class<?> clazz;
+                try {
+                    clazz = Class.forName(className.replace('/', '.'), false, loader);
+                } catch (ClassNotFoundException e) {
+                    continue;
+                }
+                if (clazz.isAssignableFrom(target)) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     /**

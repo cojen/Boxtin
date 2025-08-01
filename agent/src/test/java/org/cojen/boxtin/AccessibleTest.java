@@ -167,4 +167,43 @@ public class AccessibleTest extends TransformTest {
 
     private void m1() {
     }
+
+    @Test
+    public void reflection() throws Exception {
+        if (runTransformed()) {
+            return;
+        }
+
+        try {
+            AccessibleObject.class.getMethod("setAccessible", boolean.class);
+            fail();
+        } catch (NoSuchMethodException e) {
+            assertThrownByCustomCheck(e);
+        }
+
+        try {
+            Constructor.class.getMethod("setAccessible", boolean.class);
+            fail();
+        } catch (NoSuchMethodException e) {
+            assertThrownByCustomCheck(e);
+        }
+
+        try {
+            Field.class.getMethod("setAccessible", boolean.class);
+            fail();
+        } catch (NoSuchMethodException e) {
+            assertThrownByCustomCheck(e);
+        }
+
+        try {
+            Method.class.getMethod("setAccessible", boolean.class);
+            fail();
+        } catch (NoSuchMethodException e) {
+            assertThrownByCustomCheck(e);
+        }
+    }
+
+    private static void assertThrownByCustomCheck(NoSuchMethodException e) {
+        assertEquals("org.cojen.boxtin.CustomActions", e.getStackTrace()[0].getClassName());
+    }
 }

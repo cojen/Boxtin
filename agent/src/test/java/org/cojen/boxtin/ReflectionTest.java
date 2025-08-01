@@ -347,16 +347,7 @@ public class ReflectionTest extends TransformTest {
         MethodHandles.Lookup lookup = SubFile.lookup;
 
         MethodType mt = MethodType.methodType(boolean.class);
-
-        try {
-            lookup.findSpecial(File.class, "delete", mt, SubFile.class);
-            fail();
-        } catch (NoSuchMethodException e) {
-            // Expected.
-            assertThrownByCustomCheck(e);
-        }
-
-        MethodHandle mh = lookup.findSpecial(SubFile.class, "delete", mt, SubFile.class);
+        MethodHandle mh = lookup.findSpecial(SubFile.class, "isAbsolute", mt, SubFile.class);
 
         assertTrue((boolean) mh.invoke(new SubFile("xxx")));
     }
@@ -369,8 +360,7 @@ public class ReflectionTest extends TransformTest {
         }
 
         @Override
-        public boolean delete() {
-            // do nothing, but return true anyhow
+        public boolean isAbsolute() {
             return true;
         }
     }

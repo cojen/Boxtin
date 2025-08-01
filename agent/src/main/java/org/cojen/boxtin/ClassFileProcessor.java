@@ -767,6 +767,9 @@ final class ClassFileProcessor {
      * @param methodRef target constructor
      */
     private Rule ruleForConstructor(C_MemberRef methodRef) {
+        // Note: Any changes to this method might need to be reflected in the
+        // SecurityAgent.isAllowed2 method.
+
         if (isInvokingThisClass(methodRef) && mDeclaredMethods.find(methodRef) != null) {
             return Rule.allow();
         }
@@ -777,9 +780,12 @@ final class ClassFileProcessor {
     /**
      * Return a rule from the calling side, to a target.
      *
-     * @param methodRef target constructor
+     * @param methodRef target method
      */
     private Rule ruleForMethod(C_MemberRef methodRef) {
+        // Note: Any changes to this method might need to be reflected in the
+        // SecurityAgent.isAllowed2 method.
+
         boolean invokingThis = isInvokingThisClass(methodRef);
 
         if (invokingThis && mDeclaredMethods.find(methodRef) != null) {
@@ -812,6 +818,9 @@ final class ClassFileProcessor {
      * @param target target class
      */
     private Rules.ForClass rulesForClass(C_Class target) {
+        // Note: Any changes to this method might need to be reflected in the
+        // SecurityAgent.isAllowed2 method.
+
         ConstantPool.C_UTF8 packageName = mPackageName;
         ConstantPool.C_UTF8 className = mClassName;
 
