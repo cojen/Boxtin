@@ -460,6 +460,10 @@ public final class SecurityAgent {
         // Note: Any changes to this method might need to be reflected in the
         // ClassFileProcessor.ruleForConstructor or ruleForMethod methods.
 
+        if (target.getName().equals(SecurityAgent.class.getName())) {
+            return false;
+        }
+
         if (!target.getModule().isNamed()) {
             // Unnamed modules cannot have rules defined.
             return true;
