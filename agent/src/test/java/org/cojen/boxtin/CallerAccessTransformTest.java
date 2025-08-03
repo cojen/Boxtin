@@ -35,6 +35,20 @@ public class CallerAccessTransformTest extends TransformTest {
     }
 
     @Test
+    public void direct() throws Exception {
+        if (runTransformed()) {
+            return;
+        }
+
+        try {
+            SecurityAgent.callerFor(CallerAccessTransformTest.class);
+            fail();
+        } catch (SecurityException e) {
+            // Expected.
+        }
+    }
+
+    @Test
     public void reflection() throws Exception {
         if (runTransformed()) {
             return;
