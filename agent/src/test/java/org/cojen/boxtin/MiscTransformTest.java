@@ -126,4 +126,24 @@ public class MiscTransformTest extends TransformTest {
             }
         }
     }
+
+    @Test
+    public void multi() throws Exception {
+        if (runTransformed(Task.class)) {
+            return;
+        }
+
+        var t = new Task();
+        t.start();
+        t.setDaemon(true);
+        assertFalse(t.isDaemon());
+        t.interrupt();
+        t.join();
+    }
+
+    public static class Task extends Thread {
+        public void run() {
+            while (!interrupted());
+        }
+    }
 }
