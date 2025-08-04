@@ -21,8 +21,12 @@ import java.io.FileNotFoundException;
 
 import java.net.Socket;
 
-import java.util.Formatter;
+import java.security.SecureRandom;
 
+import java.util.Formatter;
+import java.util.Map;
+
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import org.junit.*;
@@ -121,6 +125,16 @@ public class MiscTransformTest extends TransformTest {
             Supplier<Object> s = g::getParent;
             try {
                 s.get();
+                fail();
+            } catch (SecurityException e) {
+            }
+        }
+
+        {
+            Map<Object, Object> m = new SecureRandom().getProvider();
+            BiConsumer<Object, Object> c = m::put;
+            try {
+                c.accept("a", "b");
                 fail();
             } catch (SecurityException e) {
             }

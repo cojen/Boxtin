@@ -1675,7 +1675,7 @@ final class ClassFileProcessor {
         encoder.writeShort(methodRef.mIndex);
 
         if (op == INVOKEINTERFACE) {
-            encoder.writeByte(pushed);
+            encoder.writeByte(1 + pushed);
             encoder.writeByte(0);
         }
 
