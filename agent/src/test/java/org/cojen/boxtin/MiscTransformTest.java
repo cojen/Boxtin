@@ -16,6 +16,7 @@
 
 package org.cojen.boxtin;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 
@@ -28,6 +29,8 @@ import java.util.Map;
 
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+
+import org.cojen.maker.ClassMaker;
 
 import org.junit.*;
 import static org.junit.Assert.*;
@@ -139,6 +142,27 @@ public class MiscTransformTest extends TransformTest {
             } catch (SecurityException e) {
             }
         }
+    }
+
+    @Test
+    public void superMethodHandle() throws Throwable {
+        String className = getClass() + "$$Super";
+
+        var cm = ClassMaker.beginExternal(className).public_().static_().extend(File.class);
+        var mm = cm.addConstructor(String.class).public_();
+        mm.invokeSuperConstructor(mm.param(0));
+
+        mm = cm.addMethod(String[].class, "test").public_();
+        var mhVar = mm.super_().methodHandle(String[].class, "list");
+        mm.return_(mhVar.invoke(String[].class, "invoke", null, mm.this_()));
+
+        byte[] bytes = cm.finishBytes();
+        Class<?> clazz = inject(className, bytes);
+
+        var obj = clazz.getConstructor(String.class).newInstance("wbs(i3k0)WH8Vl*(76au");
+        var result = (String[]) clazz.getMethod("test").invoke(obj);
+
+        assertEquals(0, result.length);
     }
 
     @Test

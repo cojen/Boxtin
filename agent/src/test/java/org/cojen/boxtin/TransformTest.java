@@ -25,6 +25,8 @@ import java.util.Set;
 
 import org.junit.Ignore;
 
+import static org.junit.Assert.*;
+
 /**
  * 
  *
@@ -44,24 +46,8 @@ public abstract class TransformTest {
 
     protected abstract RulesBuilder builder() throws Exception;
 
-    /**
-     * Transforms the current class using a SecurityAgent, and then runs the caller's test
-     * method. Note that any before and after test actions aren't performed.
-     *
-     * @return true if the test should simply return because it already ran
-     */
-    protected boolean runTransformed(Class... dependencies) throws Exception {
-        if (cRunning.get()) {
-            return false;
-        }
-
-        RulesBuilder b;
-        try {
-            b = builder();
-        } catch (SecurityException e) {
-            // Access to the RulesBuilder class is denied.
-            return false;
-        }
+    protected Controller newController() throws Exception {
+        RulesBuilder b = builder();
 
         try {
             b.forModule("org.cojen.boxtin")
@@ -76,6 +62,28 @@ public abstract class TransformTest {
 
         Rules rules = b.build();
 
+        return (Controller) module -> rules;
+    }
+
+    /**
+     * Transforms the current class using a SecurityAgent, and then runs the caller's test
+     * method. Note that any before and after test actions aren't performed.
+     *
+     * @return true if the test should simply return because it already ran
+     */
+    protected boolean runTransformed(Class... dependencies) throws Exception {
+        if (cRunning.get()) {
+            return false;
+        }
+
+        Controller controller;
+        try {
+            controller = newController();
+        } catch (SecurityException e) {
+            // Access to the RulesBuilder class is denied.
+            return false;
+        }
+
         var frame = WALKER.walk(s -> s.skip(1).findFirst()).get();
         Class<?> original = frame.getDeclaringClass();
 
@@ -86,21 +94,16 @@ public abstract class TransformTest {
 
         Class<?> transformed = cTransformed.get(key);
 
-        var agent = SecurityAgent.testActivate(module -> rules);
+        assertFalse(SecurityAgent.isActivated());
+        var agent = SecurityAgent.testActivate(controller);
 
         try {
             if (transformed == null) {
-                try {
-                    var injector = new Injector(original.getClassLoader(), agent);
-                    transformed = injector.inject(original);
+                var injector = new Injector(original.getClassLoader(), agent);
+                transformed = injector.inject(original);
 
-                    for (Class c : dependencies) {
-                        injector.inject(c);
-                    }
-                } catch (RuntimeException e) {
-                    throw e;
-                } catch (Throwable e) {
-                    throw new RuntimeException(e);
+                for (Class c : dependencies) {
+                    injector.inject(c);
                 }
 
                 cTransformed.put(key, transformed);
@@ -130,6 +133,16 @@ public abstract class TransformTest {
         }
     }
 
+    protected Class<?> inject(String className, byte[] bytes) throws Exception {
+        assertFalse(SecurityAgent.isActivated());
+        var agent = SecurityAgent.testActivate(newController());
+        try {
+            return new Injector(getClass().getClassLoader(), agent).inject(className, bytes);
+        } finally {
+            SecurityAgent.testActivate(null);
+        }
+    }
+
     protected Class<?> inject(Class<?> original) throws Throwable {
         return ((Injector) getClass().getClassLoader()).inject(original);
     }
@@ -142,27 +155,36 @@ public abstract class TransformTest {
             mAgent = agent;
         }
 
-        Class<?> inject(Class<?> original) throws Throwable {
-            return loadAndTransformClass(original.getName());
+        Class<?> inject(Class<?> original) throws Exception {
+            return loadAndTransformClass(original.getName(), null);
         }
 
-        private Class<?> loadAndTransformClass(String className)
-            throws Throwable
-        {
-            String pathName = className.replace('.', '/');
+        Class<?> inject(String className, byte[] bytes) throws Exception {
+            return loadAndTransformClass(className, bytes);
+        }
 
-            byte[] bytes;
-            try (InputStream in = getParent().getResourceAsStream(pathName + ".class")) {
-                bytes = in.readAllBytes();
+        private Class<?> loadAndTransformClass(String className, byte[] bytes) throws Exception {
+            try {
+                String pathName = className.replace('.', '/');
+
+                if (bytes == null) {
+                    try (InputStream in = getParent().getResourceAsStream(pathName + ".class")) {
+                        bytes = in.readAllBytes();
+                    }
+                }
+
+                byte[] xbytes = mAgent.doTransform(getUnnamedModule(), pathName, bytes);
+
+                if (xbytes == null) {
+                    xbytes = bytes;
+                }
+
+                return defineClass(className, xbytes, 0, xbytes.length);
+            } catch (Exception e) {
+                throw e;
+            } catch (Throwable e) {
+                throw new RuntimeException(e);
             }
-
-            byte[] xbytes = mAgent.doTransform(getUnnamedModule(), pathName, bytes);
-
-            if (xbytes == null) {
-                xbytes = bytes;
-            }
-
-            return defineClass(className, xbytes, 0, xbytes.length);
         }
     }
 }
