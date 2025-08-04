@@ -521,7 +521,7 @@ public final class SecurityAgent {
      * @hidden
      */
     public byte[] transformHiddenClass2(MethodHandles.Lookup lookup, byte[] classBuffer) {
-        byte[] bytes = agent().transform(lookup.lookupClass().getModule(), null, classBuffer);
+        byte[] bytes = transform(lookup.lookupClass().getModule(), null, classBuffer);
         return bytes == null ? classBuffer : bytes;
     }
 

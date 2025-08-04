@@ -70,7 +70,7 @@ final class ClassFileProcessor {
             // supporting ldc of classes, require Java 6+ for the StackMapTable attribute, and
             // require Java 7+ for supporting CONSTANT_MethodHandle.
             if (major < 51) {
-                throw new ClassFormatException("" + major);
+                throw new ClassFormatException("Unsupported class version: " + major);
             }
         } catch (EOFException e) {
             // Can be ignored because the class cannot be loaded anyhow.
@@ -305,6 +305,7 @@ final class ClassFileProcessor {
         buffer[offset++] = INVOKESTATIC;
         encodeShortBE(buffer, offset, ref.mIndex); offset += 2;
         buffer[offset++] = ASTORE_1;
+        method.stackPushPop(2);
 
         storeReplacement(method.attrOffset, method);
     }
