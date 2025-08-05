@@ -104,8 +104,8 @@ loadScripts(document, 'script');</script>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1"><code>static <a href="RulesApplier.html" title="interface in org.cojen.boxtin">RulesApplier</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab1"><code><a href="#java_base()" class="member-name-link">java_base</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1">
-<div class="block">Returns an applier of rules for the java.base module, which denies operations which
- could be considered harmful.</div>
+<div class="block">Returns an applier of rules for the java.base module, which denies operations that are
+ considered harmful.</div>
 </div>
 </div>
 </div>
@@ -135,9 +135,38 @@ loadScripts(document, 'script');</script>
 <h3>java_base</h3>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="modifiers">static</span>&nbsp;<span class="return-type"><a href="RulesApplier.html" title="interface in org.cojen.boxtin">RulesApplier</a></span>&nbsp;<span class="element-name">java_base</span>()</div>
-<div class="block">Returns an applier of rules for the java.base module, which denies operations which
- could be considered harmful. This includes file I/O, network I/O, exiting the current
- process, launching processes, etc.</div>
+<div class="block">Returns an applier of rules for the java.base module, which denies operations that are
+ considered harmful. This consists of:
+
+ <p>
+ <ul>
+ <li>Reading and writing arbitrary files, directly or indirectly
+ <li>Creating network sockets
+ <li>Opening URLs
+ <li>Starting processes
+ <li>Loading native code
+ <li>Using reflection to bypass any rules
+ <li>Reading resources from other ClassLoaders or Modules
+ <li>Accessing sensitive system properties
+ <li>Altering shared settings (current locale, time zone, etc.)
+ <li>Creating ObjectInputStreams
+ <li>Defining new Modules
+ <li>Exiting the current process
+ <li>Changing sensitive thread settings (priority, etc.)
+ <li>Calling restricted FFM operations
+ <li>Using the spi packages in the java.base module
+ <li>Altering Provider properties
+ <li>Closing or shutting down ForkJoinPools
+ <li>Loading classes into ProtectionDomains
+ <li>Calling some deprecated security operations
+ </ul>
+
+ <p>Altering system properties is allowed, but the changes are only visible to the module
+ that changed them. This restriction doesn't apply to modules which are permitted to
+ fully access system properties.
+
+ <p>A few thread settings can be changed if the thread hasn't started yet: name, daemon
+ status, the context ClassLoader, and the thread's own uncaught exception handler.</div>
 </div>
 </section>
 </li>
