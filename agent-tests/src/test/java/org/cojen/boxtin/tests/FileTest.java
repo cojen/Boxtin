@@ -65,7 +65,7 @@ public class FileTest {
 
         assertFalse(f.delete());
 
-        assertEquals(0, File.listRoots().length);
+        assertNull(File.listRoots());
 
         class Sub extends File {
             Sub(String path) {

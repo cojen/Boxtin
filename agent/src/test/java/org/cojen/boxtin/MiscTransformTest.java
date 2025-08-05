@@ -159,10 +159,10 @@ public class MiscTransformTest extends TransformTest {
         byte[] bytes = cm.finishBytes();
         Class<?> clazz = inject(className, bytes);
 
-        var obj = clazz.getConstructor(String.class).newInstance("wbs(i3k0)WH8Vl*(76au");
+        var obj = clazz.getConstructor(String.class).newInstance("/");
         var result = (String[]) clazz.getMethod("test").invoke(obj);
 
-        assertEquals(0, result.length);
+        assertNull(result);
     }
 
     @Test
