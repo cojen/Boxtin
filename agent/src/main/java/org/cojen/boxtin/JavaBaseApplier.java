@@ -698,9 +698,6 @@ final class JavaBaseApplier implements RulesApplier {
             .forPackage("java.security")
             .allowAll()
 
-            .forClass("AccessControlContext") // deprecated
-            .denyAll()
-
             .forClass("AuthProvider")
             .denyMethod("login")
             .denyMethod("logout")
@@ -712,15 +709,9 @@ final class JavaBaseApplier implements RulesApplier {
             .forClass("GuardedObject")
             .denyMethod("getObject")
 
-            .forClass("Identity") // deprecated
-            .denyAll()
-            .allowMethod("getName")
-            .allowMethod("implies")
-
-            .forClass("IdentityScope") // deprecated
-            .denyAll()
-            .allowMethod("getName")
-            .allowMethod("implies")
+            .forClass("IdentityScope")
+            .denyMethod("getSystemScope")
+            .denyMethod("setSystemScope")
 
             .forClass("KeyStore")
             .denyMethod("getInstance")
@@ -780,11 +771,6 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("insertProviderAt")
             .denyMethod("removeProvider")
             .denyMethod("setProperty")
-
-            .forClass("Signer") // deprecated
-            .denyAll()
-            .allowMethod("getName")
-            .allowMethod("implies")
 
             .forPackage("java.security.cert").allowAll()
 

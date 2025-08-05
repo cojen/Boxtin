@@ -51,7 +51,6 @@ public interface RulesApplier {
      * <li>Altering Provider properties
      * <li>Closing or shutting down ForkJoinPools
      * <li>Loading classes into ProtectionDomains
-     * <li>Calling some deprecated security operations
      * </ul>
      *
      * <p>Altering system properties is allowed, but the changes are only visible to the module
