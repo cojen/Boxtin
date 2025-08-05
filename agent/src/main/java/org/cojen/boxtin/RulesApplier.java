@@ -28,6 +28,20 @@ public interface RulesApplier {
     public void applyRulesTo(RulesBuilder builder);
 
     /**
+     * Returns an applier which first applies the rules of this applier, and then it applies
+     * the rules of the given {@code after} applier.
+     */
+    /*
+    public default RulesApplier andThen(RulesApplier after) {
+        Objects.requireNonNull(after);
+        return builder -> {
+            this.applyRulesTo(builder);
+            after.applyRulesTo(builder);
+        };
+    }
+    */
+
+    /**
      * Returns an applier of rules for the java.base module, which denies operations that are
      * considered harmful. This consists of:
      *
@@ -37,28 +51,35 @@ public interface RulesApplier {
      * <li>Creating network sockets
      * <li>Opening URLs
      * <li>Starting processes
-     * <li>Loading native code
+     * <li>Loading native code or calling restricted FFM operations (*)
      * <li>Using reflection to bypass any rules
      * <li>Reading resources from other ClassLoaders or Modules
-     * <li>Accessing sensitive system properties
+     * <li>Accessing sensitive system properties (**)
      * <li>Altering shared settings (current locale, time zone, etc.)
      * <li>Creating ObjectInputStreams
      * <li>Defining new Modules
      * <li>Exiting the current process
-     * <li>Changing sensitive thread settings (priority, etc.)
-     * <li>Calling restricted FFM operations
+     * <li>Changing sensitive thread settings (priority, etc. ***)
      * <li>Using the spi packages in the java.base module
      * <li>Altering Provider properties
      * <li>Closing or shutting down ForkJoinPools
      * <li>Loading classes into ProtectionDomains
      * </ul>
      *
-     * <p>Altering system properties is allowed, but the changes are only visible to the module
-     * that changed them. This restriction doesn't apply to modules which are permitted to
-     * fully access system properties.
+     * <p>* Loading native code or calling restricted FFM operations is allowed when:
+     * <ul>
+     * <li>the {@code --enable-native-access} option is used
+     * <li>the caller is a named module
+     * <li>and the Java version is at least 22. (see also <a
+     * href=https://openjdk.org/jeps/454>JEP 454</a>)
+     * </ul>
      *
-     * <p>A few thread settings can be changed if the thread hasn't started yet: name, daemon
-     * status, the context ClassLoader, and the thread's own uncaught exception handler.
+     * <p>** Altering system properties is allowed, but the changes are only visible to the
+     * module that changed them. This restriction doesn't apply to modules which are permitted
+     * to fully access system properties.
+     *
+     * <p>*** A few thread settings can be changed if the thread hasn't started yet: name,
+     * daemon status, the context ClassLoader, and the thread's own uncaught exception handler.
      */
     public static RulesApplier java_base() {
         return new JavaBaseApplier();
