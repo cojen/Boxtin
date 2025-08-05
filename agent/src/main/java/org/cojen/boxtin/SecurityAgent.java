@@ -107,7 +107,7 @@ public final class SecurityAgent {
         }
     }
 
-    private static Controller initController(String agentArgs) {
+    static Controller initController(String agentArgs) {
         if (agentArgs == null || agentArgs.isEmpty()) {
             return null;
         }
@@ -133,12 +133,12 @@ public final class SecurityAgent {
         try {
             controllerClass = ClassLoader.getSystemClassLoader().loadClass(controllerName);
         } catch (ClassNotFoundException e) {
-            throw new IllegalArgumentException("Controller class isn't found", e);
+            throw new IllegalArgumentException("Controller class isn't found: " + controllerName);
         }
 
         if (!Controller.class.isAssignableFrom(controllerClass)) {
             throw new IllegalArgumentException
-                ("Controller class doesn't implement the Controller interface");
+                ("Controller class doesn't implement the Controller interface: " + controllerName);
         }
 
         Constructor<?> ctor1, ctor2;
@@ -157,7 +157,8 @@ public final class SecurityAgent {
 
         if (ctor1 == null && ctor2 == null) {
             throw new IllegalArgumentException
-                ("Controller class doesn't have an appropriate public constructor");
+                ("Controller class doesn't have an appropriate public constructor: " +
+                 controllerName);
         }
 
         try {
@@ -171,7 +172,8 @@ public final class SecurityAgent {
             if (e instanceof InvocationTargetException) {
                 cause = e.getCause();
             }
-            throw new IllegalStateException("Unable to construct the Controller", cause);
+            throw new IllegalArgumentException
+                ("Unable to construct the Controller: " + controllerName, cause);
         }
     }
 
@@ -230,7 +232,7 @@ public final class SecurityAgent {
         return cAgent != null;
     }
 
-    private static void logException(Throwable ex) {
+    static void logException(Throwable ex) {
         String message = ex.getMessage();
         if (message == null) {
             message = ex.toString();
@@ -238,7 +240,7 @@ public final class SecurityAgent {
         logException(message, ex);
     }
 
-    private static void logException(String message, Throwable ex) {
+    static void logException(String message, Throwable ex) {
         log(System.Logger.Level.ERROR, message, ex);
     }
 

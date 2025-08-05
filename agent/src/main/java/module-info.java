@@ -6,4 +6,6 @@ module org.cojen.boxtin {
     exports org.cojen.boxtin;
 
     requires java.instrument;
+
+    requires static java.logging;
 }
