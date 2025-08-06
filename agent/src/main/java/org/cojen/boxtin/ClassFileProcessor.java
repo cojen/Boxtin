@@ -978,7 +978,9 @@ final class ClassFileProcessor {
         //     perform the deny action...
 
         int offset;
-        if (targetClass.mValue.isProhibitedPackage()) {
+        if (targetClass.mValue.isProhibitedPackage() &&
+            !mConstantPool.findConstantClass(mThisClassIndex).mValue.isProhibitedPackage())
+        {
             // Module check will always yield false, so always deny the action.
             offset = 0;
         } else {
