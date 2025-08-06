@@ -73,6 +73,8 @@ The purpose of the module check is to allow invocations within a module. As was 
 
 In practice, the module check will be optimized away by the JVM, and so there's no additional runtime cost. The invocation will always be denied or it will always be allowed.
 
+If the class file transformer can prove that the caller class cannot be in the same module as the target class, then the module check is elided, and the operation is always denied. It currently only does this when the target class is in a "java.*" package, but the caller class isn't.
+
 ### MethodHandle constants
 
 The Java classfile format supports defining [`MethodHandle`](https://docs.oracle.com/javase/specs/jvms/se24/html/jvms-4.html#jvms-4.4.8) constants, which are primarily used by Java lambdas. When necessary, Boxtin transforms these constants such that a security check is put in place. It does this by replacing the original constant with one that calls a synthetic proxy method.
