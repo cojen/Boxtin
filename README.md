@@ -31,6 +31,48 @@ Rules cannot deny access to operations within a module. A caller is always allow
 
 When a module exports a package P to a specific module B, then module B has access to all the public members of package P, regardless of what Boxtin rules have been defined. Although it might seem useful to define specific overrides, it makes configuration more confusing. A qualified export _is_ a type of access rule, which is why it's honored.
 
+### Code transformations
+
+The `SecurityAgent` installs a [`ClassFileTransformer`](https://docs.oracle.com/en/java/javase/24/docs/api/java.instrument/java/lang/instrument/ClassFileTransformer.html) which transforms classes and interfaces which have any denied operations. Classes and interfaces loaded by the bootstrap class loader are allowed to call anything, and so they're exempt from transformation.
+
+The `Code` attribute of each method is scanned, searching for `invokevirtual`, `invokespecial`, `invokestatic` and `invokeinterface` bytecode operations. If it's determined that the invocation refers to the class itself, then the operation is allowed. Otherwise, a corresponding rule is selected from the [`rules`](https://cojen.github.io/Boxtin/javadoc/org.cojen.boxtin/org/cojen/boxtin/Rules.html) provided by the controller. If the rule indicates that the operation is denied, then a series of checks are logically inserted immediately before the invoke operation.
+
+If multiple denial rules are applicable, then selection checks are performed to determine which rule to actually apply. These checks are necessary when a denied method signature exists in multiple classes, and the inheritance hierarchy isn't precisely known at the time the class is being transformed. An example is the `close()` method defined in the `URLClassLoader` and `ForkJoinPool` classes, both of which are denied by the `java.base` rules. For example:
+
+```java
+    // An object which has a `close()` method.
+    SomeObject obj = ...
+
+    invoke: {
+        // These are the inserted selection checks...
+        if (obj instanceof java.net.URLClassLoader) {
+            // Denied.
+            throw new java.lang.SecurityException();
+        } else if (obj instanceof java.util.concurrent.ForkJoinPool) {
+            // Denied. The deny action indicates that `close()` should do nothing.
+            break invoke;
+        }
+
+        // Original invocation.
+        obj.close();
+    }
+```
+
+If the method being invoked is static, then the [`isAssignable`](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html#isAssignableFrom(java.lang.Class)) method is used instead of the `instanceof` operator. In either case, these checks are optimized by the JVM such that they are effectively eliminated. The resulting code will always perform a specific deny operation, or it will always allow the original invocation.
+
+In the above example, no additional checks are made before performing a denial operation. Additional checks can be inserted to test the target module, or to perform a [`checked`](https://cojen.github.io/Boxtin/javadoc/org.cojen.boxtin/org/cojen/boxtin/DenyAction.html#checked(java.lang.invoke.MethodHandleInfo,org.cojen.boxtin.DenyAction)) deny action.
+
+The purpose of the module check is to allow invocations within a module. As was stated earlier, a caller is always allowed to call any target operation in its own module. The module check is inserted because the exact module that the target is loaded into isn't known at the time the class is being transformed.
+
+```java
+    if (thisClass.getModule() != targetClass.getModule()) {
+        // Perform the deny action.
+        ...
+    }
+```
+
+In practice, the module check will be optimized away by the JVM, and so there's no additional runtime cost. The invocation will always be denied or it will always be allowed.
+
 ### MethodHandle constants
 
 The Java classfile format supports defining [`MethodHandle`](https://docs.oracle.com/javase/specs/jvms/se24/html/jvms-4.html#jvms-4.4.8) constants, which are primarily used by Java lambdas. When necessary, Boxtin transforms these constants such that a security check is put in place. It does this by replacing the original constant with one that calls a synthetic proxy method.
