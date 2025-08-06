@@ -129,6 +129,10 @@ Methods defined by `AccessibleObject` which enable access to class members are d
 
 The JVM doesn't pass hidden classes to instrumentation agents, and so this would permit hidden classes to completely bypass any rules. Boxtin could simply deny access to the `defineHiddenClass` and `defineHiddenClassWithClassData` methods, but instead it alters them such that hidden classes can be transformed just like any other class. Any class definition which is passed to these methods is first passed to the `SecurityAgent` for applying any necessary transformations. Code within the JDK itself is permitted to define hidden classes without going through these public methods, and so these classes won't be transformed. This isn't an issue because it doesn't permit arbitrary hidden classes to be defined.
 
+### Fail secure behavior
+
+When a `ClassFileTransformer` throws an exception, the instrumentation agent ignores it and continues on with the original untransformed class. If the Boxtin transformation fails in an unexpected way, then this could provide a rogue class a means to bypass the security checks. Instead, any unhandled exception during transformation is logged, and the class which is produced is empty. This prevents a rogue class from causing harm, but it also disables safe classes due to Boxtin bugs. Failing in all cases is the safer option.
+
 ## Object methods
 
 Methods declared in the root `Object` class cannot be denied, even when done so explicitly. This makes it easier to deny all methods in a class without breaking these fundamental operations. Even if these operations could be denied, the caller check would be bypassed when any of these methods are invoked by any of the classes in the `java.base` module. For example: `String.valueOf(obj)` calls `toString()`.
