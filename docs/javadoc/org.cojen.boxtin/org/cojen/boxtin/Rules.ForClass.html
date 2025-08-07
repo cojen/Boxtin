@@ -67,7 +67,7 @@ loadScripts(document, 'script');</script>
 <li><a href="#method-detail" tabindex="0">Method Details</a>
 <ol class="toc-list">
 <li><a href="#isAllAllowed()" tabindex="0">isAllAllowed()</a></li>
-<li><a href="#isSubtypingAllowed()" tabindex="0">isSubtypingAllowed()</a></li>
+<li><a href="#isAllDenied()" tabindex="0">isAllDenied()</a></li>
 <li><a href="#ruleForConstructor(java.lang.CharSequence)" tabindex="0">ruleForConstructor(CharSequence)</a></li>
 <li><a href="#ruleForConstructor(java.lang.Class...)" tabindex="0">ruleForConstructor(Class...)</a></li>
 <li><a href="#ruleForMethod(java.lang.CharSequence,java.lang.CharSequence)" tabindex="0">ruleForMethod(CharSequence, CharSequence)</a></li>
@@ -115,9 +115,9 @@ loadScripts(document, 'script');</script>
 <div class="block">Returns true if all operations are allowed.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default boolean</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#isSubtypingAllowed()" class="member-name-link">isSubtypingAllowed</a>()</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#isAllDenied()" class="member-name-link">isAllDenied</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
-<div class="block">Returns true if a class can be declared as a subtype of this class.</div>
+<div class="block">Returns true if all operations are denied, including subtyping of this class.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#ruleForConstructor(java.lang.CharSequence)" class="member-name-link">ruleForConstructor</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;descriptor)</code></div>
@@ -165,13 +165,13 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="isSubtypingAllowed()">
-<h3>isSubtypingAllowed</h3>
+<section class="detail" id="isAllDenied()">
+<h3>isAllDenied</h3>
 <div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">isSubtypingAllowed</span>()</div>
-<div class="block">Returns true if a class can be declared as a subtype of this class. This is
- generally true, except when all classes in a package are denied by default, and no
- explicit rule is defined for this class.</div>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">isAllDenied</span>()</div>
+<div class="block">Returns true if all operations are denied, including subtyping of this class.
+ Subtyping is usually allowed, except when all classes in a package are denied by
+ default, and no explicit rule is defined for this class.</div>
 </div>
 </section>
 </li>
