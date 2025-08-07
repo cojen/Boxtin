@@ -133,7 +133,7 @@ The JVM doesn't pass hidden classes to instrumentation agents, and so this would
 
 ### Fail secure behavior
 
-When a `ClassFileTransformer` throws an exception, the instrumentation agent ignores it and continues on with the original untransformed class. If the Boxtin transformation fails in an unexpected way, then this could provide a rogue class a means to bypass the security checks. Instead, any unhandled exception during transformation is logged, and an empty class is produced instead. This prevents a rogue class from causing harm, but it also disables safe classes due to Boxtin bugs. Failing in all cases is the safer option.
+When a `ClassFileTransformer` throws an exception, the instrumentation agent ignores it and continues on with the original untransformed class. If the Boxtin transformation fails in an unexpected way, then this could provide a rogue class a means to bypass the security checks. Instead, any unhandled exception during transformation is logged, and an empty class is produced instead. This prevents a rogue class from causing harm, but bugs in Boxtin can completely disable valid classes. Failing in all cases is the safer option.
 
 ## Object methods
 
