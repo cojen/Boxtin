@@ -185,7 +185,7 @@ final class ClassFileProcessor {
 
         if (mSuperClassIndex != 0) {
             Rules.ForClass forClass = rulesForClass(cp.findConstantClass(mSuperClassIndex));
-            if (!forClass.isSubtypingAllowed()) {
+            if (forClass.isAllDenied()) {
                 // Replace the superclass with Object. As a result, the constructors won't
                 // work, so replace them with simple ones which always throw an exception.
                 mDenyConstruction = true;
@@ -201,7 +201,7 @@ final class ClassFileProcessor {
             int removed = 0;
             for (int i=0; i<mInterfaceIndexes.length; i++) {
                 Rules.ForClass forClass = rulesForClass(cp.findConstantClass(mInterfaceIndexes[i]));
-                if (!forClass.isSubtypingAllowed()) {
+                if (forClass.isAllDenied()) {
                     // Just drop the interface from the set.
                     removed++;
                     storeReplacement(mSuperClassOffset + 4 + i * 2, new SimpleReplacement(2, 0));
