@@ -106,7 +106,7 @@ public class SubtypeTest extends TransformTest {
         try {
             new TProvider().description();
             fail();
-        } catch (NoSuchMethodError e) {
+        } catch (SecurityException e) {
             // Expected.
         }
 
