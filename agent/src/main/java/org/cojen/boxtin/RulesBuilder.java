@@ -264,13 +264,10 @@ public final class RulesBuilder {
         if (isEmpty(mModules)) {
             packageScopes = Map.of();
         } else {
-            var packageToModuleMap = new HashMap<String, String>();
-            for (ModuleScope ms : mModules.values()) {
-                ms.buildIntoPackageToModuleMap(packageToModuleMap);
-            }
+            Map<String, Module> packageToModule = PackageToModule.packageMapFor(mLayer);
             packageScopes = new LinkedHashMap<>();
             for (ModuleScope ms : mModules.values()) {
-                ms.buildIntoPackageScopes(packageScopes, packageToModuleMap);
+                ms.buildIntoPackageScopes(packageScopes, packageToModule);
             }
         }
 
@@ -561,25 +558,13 @@ public final class RulesBuilder {
             }
         }
 
-        private void buildIntoPackageToModuleMap(Map<String, String> packageToModuleMap) {
-            if (mPackages != null) {
-                String moduleName = mModule.getName().intern();
-                for (String packageName : mPackages.keySet()) {
-                    if (packageToModuleMap.putIfAbsent(packageName, moduleName) != null) {
-                        throw new IllegalStateException
-                            ("Package is defined in multiple modules: " + packageName);
-                    }
-                }
-            }
-        }
-
         private void buildIntoPackageScopes(Map<String, RuleSet.PackageScope> packageScopes,
-                                            Map<String, String> packageToModuleMap)
+                                            Map<String, Module> packageToModule)
         {
             if (mPackages != null) {
                 for (Map.Entry<String, PackageScope> e : mPackages.entrySet()) {
                     RuleSet.PackageScope scope = e.getValue()
-                        .build(mModule, mDefaultRule, packageToModuleMap);
+                        .build(mModule, mDefaultRule, packageToModule);
                     if (scope != null) {
                         packageScopes.put(scope.name(), scope);
                     }
@@ -591,7 +576,7 @@ public final class RulesBuilder {
     /**
      * Builder of rules at the package level.
      */
-    public final class PackageScope {
+    public static final class PackageScope {
         private final ModuleScope mParent;
         private final String mName;
 
@@ -750,7 +735,7 @@ public final class RulesBuilder {
          * @return null if redundant
          */
         private RuleSet.PackageScope build(Module module, Rule parentRule,
-                                           Map<String, String> packageToModuleMap)
+                                           Map<String, Module> packageToModule)
         {
             if (isEmpty(mClasses) && parentRule.equals(mDefaultRule)) {
                 return null;
@@ -763,7 +748,7 @@ public final class RulesBuilder {
             } else {
                 builtClasses = new LinkedHashMap<>();
                 for (Map.Entry<String, ClassScope> e : mClasses.entrySet()) {
-                    RuleSet.ClassScope scope = e.getValue().build(this, packageToModuleMap);
+                    RuleSet.ClassScope scope = e.getValue().build(this, packageToModule);
                     if (scope != null) {
                         builtClasses.put(e.getKey().intern(), scope);
                     }
@@ -777,7 +762,7 @@ public final class RulesBuilder {
     /**
      * Builder of rules at the class level.
      */
-    public final class ClassScope {
+    public static final class ClassScope {
         private final PackageScope mParent;
         private final String mName;
 
@@ -1149,7 +1134,7 @@ public final class RulesBuilder {
          * @return null if redundant
          */
         private RuleSet.ClassScope build(PackageScope packageScope,
-                                         Map<String, String> packageToModuleMap)
+                                         Map<String, Module> packageToModule)
         {
             Rule parentRule = packageScope.mDefaultRule;
 
@@ -1178,10 +1163,9 @@ public final class RulesBuilder {
                 final var fmethods = methods;
 
                 String fullClassName = fullName(packageName, mName);
-                ClassInfo info = ClassInfo.find
-                    (fullClassName, packageName, packageToModuleMap, mLayer);
+                ClassInfo info = ClassInfo.find(fullClassName, packageName, packageToModule);
 
-                if (info != null) info.forAllMethods(packageToModuleMap, mdesc -> {
+                if (info != null) info.forAllMethods(packageToModule, mdesc -> {
                     String name = mdesc.getKey();
 
                     MethodScope scope = fmethods.get(name);

@@ -41,35 +41,27 @@ final class ClassInfo {
 
     /**
      * @param fullClassName name must have '/' characters as separators
-     * @param packageToModule maps package names to module names
+     * @param packageToModule maps package names to modules
      * @param layer finds the module for providing the class data
      * @return null if not found
      */
-    static ClassInfo find(String fullClassName,
-                          Map<String, String> packageToModule, ModuleLayer layer)
+    static ClassInfo find(String fullClassName, Map<String, Module> packageToModule)
         throws UncheckedIOException, ClassFormatException
     {
-        return find(fullClassName, packageName(fullClassName), packageToModule, layer);
+        return find(fullClassName, packageName(fullClassName), packageToModule);
     }
 
     /**
      * @param fullClassName name must have '/' characters as separators
-     * @param packageToModule maps package names to module names
+     * @param packageToModule maps package names to modules
      * @param layer finds the module for providing the class data
      * @return null if not found
      */
     static ClassInfo find(String fullClassName, String packageName,
-                          Map<String, String> packageToModule, ModuleLayer layer)
+                          Map<String, Module> packageToModule)
         throws UncheckedIOException, ClassFormatException
     {
-        String moduleName = packageToModule.get(packageName);
-
-        if (moduleName == null) {
-            return null;
-        }
-
-        Module module = layer.findModule(moduleName).orElse(null);
-
+        Module module = packageToModule.get(packageName);
         return module == null ? null : find(fullClassName, module);
     }
 
@@ -104,7 +96,7 @@ final class ClassInfo {
                     }
                     classFile = in.readAllBytes();
                 }
-                info = new ClassInfo(module.getLayer(), fullClassName, classFile);
+                info = new ClassInfo(fullClassName, classFile);
                 infos.put(fullClassName.intern(), info);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
@@ -114,8 +106,6 @@ final class ClassInfo {
         return info;
     }
 
-    private final ModuleLayer mLayer;
-
     private final String mSuperClassName;
 
     private final Set<String> mInterfaceNames;
@@ -124,11 +114,7 @@ final class ClassInfo {
     // descriptors, in that they omit parenthesis and the return type.
     private final Map<String, Object> mInstanceMethods, mStaticMethods;
 
-    ClassInfo(ModuleLayer layer, String fullClassName, byte[] classFile)
-        throws IOException, ClassFormatException
-    {
-        mLayer = layer;
-
+    ClassInfo(String fullClassName, byte[] classFile) throws IOException, ClassFormatException {
         var decoder = new BufferDecoder(classFile);
 
         if (decoder.readInt() != 0xCAFEBABE) {
@@ -287,18 +273,18 @@ final class ClassInfo {
      * Iterates over all methods and passes to them to the given consumer as name/desc pairs,
      * including all inherited methods, but excluding methods declared in java.lang.Object.
      *
-     * @param packageToModule maps package names to module names
+     * @param packageToModule maps package names to modules
      * @param consumer receives all accessible method name/desc pairs for methods, including
      * inherited ones; the consumer can return false to stop the iteration
      */
-    boolean forAllMethods(Map<String, String> packageToModule,
+    boolean forAllMethods(Map<String, Module> packageToModule,
                           Predicate<Map.Entry<String, String>> consumer)
         throws UncheckedIOException, ClassFormatException
     {
         return forAllMethods(packageToModule, true, true, consumer);
     }
 
-    private boolean forAllMethods(Map<String, String> packageToModule,
+    private boolean forAllMethods(Map<String, Module> packageToModule,
                                   boolean staticMethods, boolean instanceMethods,
                                   Predicate<Map.Entry<String, String>> consumer)
         throws UncheckedIOException, ClassFormatException
@@ -319,7 +305,7 @@ final class ClassInfo {
 
         // Now do the inherited methods.
 
-        ClassInfo superInfo = find(superName, packageToModule, mLayer);
+        ClassInfo superInfo = find(superName, packageToModule);
         if (superInfo != null) {
             if (!superInfo.forAllMethods
                 (packageToModule, staticMethods, instanceMethods, consumer))
@@ -329,7 +315,7 @@ final class ClassInfo {
         }
 
         for (String ifaceName : mInterfaceNames) {
-            ClassInfo ifaceInfo = find(ifaceName, packageToModule, mLayer);
+            ClassInfo ifaceInfo = find(ifaceName, packageToModule);
             if (ifaceInfo != null) {
                 // Note that inherited statics are ignored, because static interface methods
                 // aren't really inherited.
