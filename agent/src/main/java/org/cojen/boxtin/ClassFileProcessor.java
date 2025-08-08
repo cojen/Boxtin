@@ -181,21 +181,54 @@ final class ClassFileProcessor {
         // Restore the offset for checking the methods again later.
         decoder.offset(methodsOffset);
 
-        // Check if any superclasses disallow subtyping.
+        // Check if any superclasses restrict subtyping.
 
         if (mSuperClassIndex != 0) {
-            Rules.ForClass forClass = rulesForClass(cp.findConstantClass(mSuperClassIndex));
+            C_Class superClass = cp.findConstantClass(mSuperClassIndex);
+            Rules.ForClass forClass = rulesForClass(superClass);
+
             if (forClass.isAllDenied()) {
-                // Replace the superclass with Object. As a result, the constructors won't
-                // work, so replace them with simple ones which always throw an exception.
-                mDenyConstruction = true;
-                var replacement = new SimpleReplacement(2);
-                replacement.writeShort(cp.addClass("java/lang/Object").mIndex);
-                storeReplacement(mSuperClassOffset, replacement);
+                // Access to the inherited static methods must be explictly denied.
+
+                Map<String, Module> packageToModule =
+                    PackageToModule.packageMapFor(rules.moduleLayer());
+
+                ClassInfo superInfo = ClassInfo.find(superClass.mValue.str(), packageToModule);
+
+                superInfo.forAllStaticMethods(packageToModule, entry -> {
+                    String name = entry.getKey();
+                    String desc = entry.getValue().fullDescriptor();
+
+                    C_NameAndType nat = cp.addNameAndType(name, desc);
+
+                    if (mDeclaredMethods.find(nat) != null) {
+                        // Is declared locally, so nothing to do.
+                        return true;
+                    }
+
+                    DenyAction action = forClass.ruleForMethod(name, desc).denyAction();
+
+                    if (action == null) {
+                        // Not expected.
+                        action = DenyAction.standard();
+                    }
+
+                    C_MemberRef superMethod = cp.addMethodRef(superClass, nat);
+
+                    int accessFlags = entry.getValue().accessFlags() | 0x1000; // | synthetic
+
+                    try {
+                        addProxyMethod(INVOKESTATIC, superMethod, action, accessFlags, name);
+                    } catch (IOException e) {
+                        throw Utils.rethrow(e);
+                    }
+
+                    return true;
+                });
             }
         }
 
-        // Check if any super interfaces disallow subtyping
+        // Check if any super interfaces restrict subtyping.
 
         if (mInterfaceIndexes != null) {
             for (int i=0; i<mInterfaceIndexes.length; i++) {
@@ -1618,6 +1651,17 @@ final class ClassFileProcessor {
     private ProxyMethod addProxyMethod(byte op, C_MemberRef methodRef, DenyAction action)
         throws IOException
     {
+        int accessFlags = Modifier.PRIVATE | Modifier.STATIC | 0x1000; // | synthetic
+        return addProxyMethod(op, methodRef, action, accessFlags, null);
+    }
+
+    /**
+     * @param proxyMethodName pass null to define a unique method name
+     */
+    private ProxyMethod addProxyMethod(byte op, C_MemberRef methodRef, DenyAction action,
+                                       int accessFlags, String proxyMethodName)
+        throws IOException
+    {
         ConstantPool cp = mConstantPool;
 
         if (mProxyMethods == null) {
@@ -1642,7 +1686,16 @@ final class ClassFileProcessor {
         ConstantPool.C_UTF8 proxyDesc = cp.addWithFullSignature(op, instanceType, methodRef);
 
         C_Class thisClass = cp.findConstantClass(mThisClassIndex);
-        proxyMethod = new ProxyMethod(cp.addUniqueMethod(thisClass, proxyDesc));
+        C_MemberRef proxyMethodRef;
+
+        if (proxyMethodName == null) {
+            proxyMethodRef = cp.addUniqueMethod(thisClass, proxyDesc);
+        } else {
+            proxyMethodRef = cp.addMethodRef
+                (thisClass, cp.addNameAndType(proxyMethodName, proxyDesc));
+        }
+
+        proxyMethod = new ProxyMethod(proxyMethodRef, accessFlags);
         proxyMethod.prepareForModification(cp, mThisClassIndex, null);
         mProxyMethods.put(key, proxyMethod);
 
@@ -1696,9 +1749,9 @@ final class ClassFileProcessor {
 
         private int mCodeAttrNameIndex;
 
-        ProxyMethod(C_MemberRef methodRef) {
+        ProxyMethod(C_MemberRef methodRef, int accessFlags) {
             mMethodRef = methodRef;
-            accessFlags = Modifier.PRIVATE | Modifier.STATIC | 0x1000; // | synthetic
+            this.accessFlags = accessFlags;
             nameIndex = methodRef.mNameAndType.mName.mIndex;
             descIndex = methodRef.mNameAndType.mTypeDesc.mIndex;
         }

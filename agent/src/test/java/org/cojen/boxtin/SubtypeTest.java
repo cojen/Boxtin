@@ -77,7 +77,7 @@ public class SubtypeTest extends TransformTest {
         try {
             FSProvider.installedProviders();
             fail();
-        } catch (NoSuchMethodError e) {
+        } catch (SecurityException e) {
             // Expected.
         }
 

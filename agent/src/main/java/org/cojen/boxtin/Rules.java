@@ -26,6 +26,12 @@ import java.util.Map;
  */
 public interface Rules {
     /**
+     * Returns the {@code ModuleLayer} that these rules apply to, which is applicable to the
+     * target classes.
+     */
+    public ModuleLayer moduleLayer();
+
+    /**
      * Returns the rules for a specific target class, as specified by its package name and
      * class name.
      *

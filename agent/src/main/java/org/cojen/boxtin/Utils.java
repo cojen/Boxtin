@@ -228,4 +228,13 @@ final class Utils {
         }
         return true;
     }
+
+    static RuntimeException rethrow(Throwable e) {
+        throw Utils.<RuntimeException>castAndThrow(e);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T extends Throwable> RuntimeException castAndThrow(Throwable e) throws T {
+        throw (T) e;
+    }
 }

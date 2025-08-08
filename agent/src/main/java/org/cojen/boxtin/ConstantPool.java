@@ -451,7 +451,11 @@ final class ConstantPool {
     }
 
     C_NameAndType addNameAndType(String name, String desc) {
-        return addConstant(new C_NameAndType(12, addUTF8(name), addUTF8(desc)));
+        return addNameAndType(name, addUTF8(desc));
+    }
+
+    C_NameAndType addNameAndType(String name, C_UTF8 desc) {
+        return addConstant(new C_NameAndType(12, addUTF8(name), desc));
     }
 
     C_MethodHandle addMethodHandle(MethodHandleInfo mhi) {

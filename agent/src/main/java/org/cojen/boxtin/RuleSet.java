@@ -82,6 +82,11 @@ final class RuleSet implements Rules {
     }
 
     @Override
+    public ModuleLayer moduleLayer() {
+        return mLayer;
+    }
+
+    @Override
     public ForClass forClass(Module caller, CharSequence packageName, CharSequence className) {
         Module target = PackageToModule.packageMapFor(mLayer).get(packageName);
 

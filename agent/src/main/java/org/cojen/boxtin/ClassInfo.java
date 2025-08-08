@@ -110,8 +110,7 @@ final class ClassInfo {
 
     private final Set<String> mInterfaceNames;
 
-    // Maps names of accessible methods to descriptor sets. The descriptors are parameter
-    // descriptors, in that they omit parenthesis and the return type.
+    // Maps names of accessible methods to Desc instances or sets of Desc instances.
     private final Map<String, Object> mInstanceMethods, mStaticMethods;
 
     ClassInfo(String fullClassName, byte[] classFile) throws IOException, ClassFormatException {
@@ -180,9 +179,9 @@ final class ClassInfo {
             String descStr = cp.findConstantUTF8(descIndex).str();
 
             if (!Modifier.isStatic(methodFlags)) {
-                instanceMethods = putMethod(instanceMethods, nameStr, descStr);
+                instanceMethods = putMethod(instanceMethods, methodFlags, nameStr, descStr);
             } else {
-                staticMethods = putMethod(staticMethods, nameStr, descStr);
+                staticMethods = putMethod(staticMethods, methodFlags, nameStr, descStr);
             }
         }
 
@@ -195,10 +194,13 @@ final class ClassInfo {
      * @return new or existing map
      */
     private static Map<String, Object> putMethod(Map<String, Object> methods,
-                                                 String name, String desc)
+                                                 int accessFlags, String name, String descStr)
     {
         name = name.intern();
-        desc = desc.substring(1, desc.lastIndexOf(')')).intern();
+
+        int ix = descStr.lastIndexOf(')');
+        Desc desc = new Desc(accessFlags, descStr.substring(1, ix).intern(),
+                             descStr.substring(ix + 1).intern());
 
         if (methods == null) {
             methods = new HashMap<>(4);
@@ -212,18 +214,18 @@ final class ClassInfo {
             return methods;
         }
 
-        if (value instanceof String s) {
-            if (!s.equals(desc)) {
-                methods.put(name, Set.of(s, desc));
+        if (value instanceof Desc d) {
+            if (!d.equals(desc)) {
+                methods.put(name, Set.of(d, desc));
             }
             return methods;
         }
 
         @SuppressWarnings("unchecked")
-        var descSet = (Set<String>) value;
+        var descSet = (Set<Desc>) value;
 
         if (descSet.size() == 2) {
-            var newSet = new HashSet<String>(4);
+            var newSet = new HashSet<Desc>(4);
             newSet.addAll(descSet);
             descSet = newSet;
             methods.put(name, descSet);
@@ -235,39 +237,14 @@ final class ClassInfo {
     }
 
     /**
-     * Iterates over all constructors and passes to them to the given consumer as descriptors.
-     *
-     * @param consumer receives all accessible constructor descriptors; the consumer can return
-     * false to stop the iteration
+     * @param paramDesc the parameter descriptor with no parens and no return type
+     * @parens returnType the return type descriptor
      */
-    /*
-    @SuppressWarnings("unchecked")
-    boolean forAllConstructors(Predicate<String> consumer) {
-        Iterator<Map.Entry<String, Object>> it = mInstanceMethods.entrySet().iterator();
-
-        while (it.hasNext()) {
-            Map.Entry entry = it.next();
-            var name = (String) entry.getKey();
-            if (!name.equals("<init>")) {
-                continue;
-            }
-            Object value = entry.getValue();
-            if (value instanceof String desc) {
-                if (!consumer.test(desc)) {
-                    return false;
-                }
-            } else {
-                for (String desc : ((Set<String>) value)) {
-                    if (!consumer.test(desc)) {
-                        return false;
-                    }
-                }
-            }
+    public record Desc(int accessFlags, String paramDesc, String returnType) {
+        public String fullDescriptor() {
+            return '(' + paramDesc + ')' + returnType;
         }
-
-        return true;
     }
-    */
 
     /**
      * Iterates over all methods and passes to them to the given consumer as name/desc pairs,
@@ -278,15 +255,31 @@ final class ClassInfo {
      * inherited ones; the consumer can return false to stop the iteration
      */
     boolean forAllMethods(Map<String, Module> packageToModule,
-                          Predicate<Map.Entry<String, String>> consumer)
+                          Predicate<Map.Entry<String, Desc>> consumer)
         throws UncheckedIOException, ClassFormatException
     {
         return forAllMethods(packageToModule, true, true, consumer);
     }
 
+    /**
+     * Iterates over all static methods and passes to them to the given consumer as name/desc
+     * pairs, including all inherited methods, but excluding methods declared in
+     * java.lang.Object.
+     *
+     * @param packageToModule maps package names to modules
+     * @param consumer receives all accessible method name/desc pairs for methods, including
+     * inherited ones; the consumer can return false to stop the iteration
+     */
+    boolean forAllStaticMethods(Map<String, Module> packageToModule,
+                                Predicate<Map.Entry<String, Desc>> consumer)
+        throws UncheckedIOException, ClassFormatException
+    {
+        return forAllMethods(packageToModule, true, false, consumer);
+    }
+
     private boolean forAllMethods(Map<String, Module> packageToModule,
                                   boolean staticMethods, boolean instanceMethods,
-                                  Predicate<Map.Entry<String, String>> consumer)
+                                  Predicate<Map.Entry<String, Desc>> consumer)
         throws UncheckedIOException, ClassFormatException
     {
         String superName = mSuperClassName;
@@ -330,7 +323,7 @@ final class ClassInfo {
 
     @SuppressWarnings("unchecked")
     private static boolean doForAllMethods(Map<String, Object> methods,
-                                           Predicate<Map.Entry<String, String>> consumer)
+                                           Predicate<Map.Entry<String, Desc>> consumer)
     {
 
         for (Map.Entry entry : methods.entrySet()) {
@@ -339,15 +332,17 @@ final class ClassInfo {
                 continue;
             }
             Object value = entry.getValue();
-            if (value instanceof String desc) {
-                if (!isObjectMethod(name, desc) &&
-                    !consumer.test((Map.Entry<String, String>) entry))
+            if (value instanceof Desc desc) {
+                if (!isObjectMethod(name, desc.paramDesc()) &&
+                    !consumer.test((Map.Entry<String, Desc>) entry))
                 {
                     return false;
                 }
             } else {
-                for (String desc : ((Set<String>) value)) {
-                    if (!isObjectMethod(name, desc) && !consumer.test(Map.entry(name, desc))) {
+                for (Desc desc : ((Set<Desc>) value)) {
+                    if (!isObjectMethod(name, desc.paramDesc()) &&
+                        !consumer.test(Map.entry(name, desc)))
+                    {
                         return false;
                     }
                 }

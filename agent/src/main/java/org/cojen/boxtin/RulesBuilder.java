@@ -1180,7 +1180,7 @@ public final class RulesBuilder {
                         return true;
                     }
 
-                    scope.explicitRuleForVariant(mdesc.getValue());
+                    scope.explicitRuleForVariant(mdesc.getValue().paramDesc());
 
                     return true;
                 });
