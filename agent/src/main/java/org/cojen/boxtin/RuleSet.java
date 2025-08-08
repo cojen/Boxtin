@@ -39,9 +39,6 @@ final class RuleSet implements Rules {
     // Default is selected when no map entry is found.
     private final Rule mDefaultRule;
 
-    // Map of all named packages available in the ModuleLayer.
-    private final Map<String, Module> mModularPackages;
-
     // Maps method names to one or more ClassScope instances which have explicit denials.
     private final Map<String, Object> mDeniedMethodsIndex;
 
@@ -55,8 +52,6 @@ final class RuleSet implements Rules {
         mPackageScopes = Objects.requireNonNull(packageScopes);
         mDefaultRule = Objects.requireNonNull(defaultRule);
 
-        addModularPackages(layer, mModularPackages = new HashMap<>());
-
         var index = new HashMap<String, Object>();
 
         for (PackageScope scope : packageScopes.values()) {
@@ -64,18 +59,6 @@ final class RuleSet implements Rules {
         }
 
         mDeniedMethodsIndex = index;
-    }
-
-    private static void addModularPackages(ModuleLayer layer, Map<String, Module> modularPackages) {
-        for (Module mod : layer.modules()) {
-            if (mod.isNamed()) {
-                for (String pname : mod.getPackages()) {
-                    modularPackages.put(pname.replace('.', '/').intern(), mod);
-                }
-            }
-        }
-
-        layer.parents().forEach(parentLayer -> addModularPackages(parentLayer, modularPackages));
     }
 
     @Override
@@ -100,7 +83,7 @@ final class RuleSet implements Rules {
 
     @Override
     public ForClass forClass(Module caller, CharSequence packageName, CharSequence className) {
-        Module target = mModularPackages.get(packageName);
+        Module target = PackageToModule.packageMapFor(mLayer).get(packageName);
 
         if (target == null) {
             // Denial rules are only applicable to packages which are provided by named
