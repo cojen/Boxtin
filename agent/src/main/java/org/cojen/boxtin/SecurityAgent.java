@@ -523,6 +523,11 @@ public final class SecurityAgent {
      * @hidden
      */
     public byte[] transformHiddenClass2(MethodHandles.Lookup lookup, byte[] classBuffer) {
+        // A copy of the class buffer is needed, to guard against a race condition in which the
+        // ClassFileProcessor thinks no transformation is needed, but the buffer is changed by
+        // another thread at just the right time. https://github.com/cojen/Boxtin/issues/17
+        classBuffer = classBuffer.clone();
+
         byte[] bytes = transform(lookup.lookupClass().getModule(), null, classBuffer);
         return bytes == null ? classBuffer : bytes;
     }
