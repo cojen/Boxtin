@@ -16,7 +16,6 @@
 
 package org.cojen.boxtin;
 
-import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -24,7 +23,7 @@ import java.util.Objects;
  *
  * @author Brian S. O'Neill
  */
-public sealed class Rule implements Rules, Rules.ForClass {
+public sealed class Rule implements Rules.ForClass {
     private static final Rule ALLOWED = new Rule();
 
     /**
@@ -59,7 +58,7 @@ public sealed class Rule implements Rules, Rules.ForClass {
     }
 
     /**
-     * Returns true if rule is always allowed.
+     * Returns true if the rule is always allowed.
      */
     public final boolean isAllowed() {
         return !isDenied();
@@ -95,31 +94,6 @@ public sealed class Rule implements Rules, Rules.ForClass {
     @Override
     public final boolean isAllDenied() {
         return isDenied();
-    }
-
-    /**
-     * Returns {@code this}.
-     */
-    @Override
-    public final ForClass forClass(Module caller, CharSequence packageName, CharSequence className)
-    {
-        return this;
-    }
-
-    /**
-     * Returns {@code this}.
-     */
-    @Override
-    public final ForClass forClass(Module caller, Class<?> clazz) {
-        return this;
-    }
-
-    /**
-     * Returns an empty map.
-     */
-    @Override
-    public Map<String, Rule> denialsForMethod(CharSequence name, CharSequence descriptor) {
-        return Map.of();
     }
 
     /**

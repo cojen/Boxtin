@@ -579,7 +579,7 @@ final class ClassFileProcessor {
                         rule = ruleForMethod(methodRef);
                     }
 
-                    if (rule.isAllAllowed()) {
+                    if (rule.isAllowed()) {
                         continue;
                     }
                 }
