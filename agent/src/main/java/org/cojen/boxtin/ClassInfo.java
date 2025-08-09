@@ -110,7 +110,7 @@ final class ClassInfo {
 
     private final Set<String> mInterfaceNames;
 
-    // Maps names of accessible methods to Desc instances or sets of Desc instances.
+    // Maps names of accessible methods to Method instances or sets of Method instances.
     private final Map<String, Object> mInstanceMethods, mStaticMethods;
 
     ClassInfo(String fullClassName, byte[] classFile) throws IOException, ClassFormatException {
@@ -199,39 +199,39 @@ final class ClassInfo {
         name = name.intern();
 
         int ix = descStr.lastIndexOf(')');
-        Desc desc = new Desc(accessFlags, descStr.substring(1, ix).intern(),
-                             descStr.substring(ix + 1).intern());
+        Method method = new Method(accessFlags, descStr.substring(1, ix).intern(),
+                                   descStr.substring(ix + 1).intern());
 
         if (methods == null) {
             methods = new HashMap<>(4);
-            methods.put(name, desc);
+            methods.put(name, method);
             return methods;
         }
 
         Object value = methods.get(name);
         if (value == null) {
-            methods.put(name, desc);
+            methods.put(name, method);
             return methods;
         }
 
-        if (value instanceof Desc d) {
-            if (!d.equals(desc)) {
-                methods.put(name, Set.of(d, desc));
+        if (value instanceof Method m) {
+            if (!m.equals(method)) {
+                methods.put(name, Set.of(m, method));
             }
             return methods;
         }
 
         @SuppressWarnings("unchecked")
-        var descSet = (Set<Desc>) value;
+        var methodSet = (Set<Method>) value;
 
-        if (descSet.size() == 2) {
-            var newSet = new HashSet<Desc>(4);
-            newSet.addAll(descSet);
-            descSet = newSet;
-            methods.put(name, descSet);
+        if (methodSet.size() == 2) {
+            var newSet = new HashSet<Method>(4);
+            newSet.addAll(methodSet);
+            methodSet = newSet;
+            methods.put(name, methodSet);
         }
 
-        descSet.add(desc);
+        methodSet.add(method);
 
         return methods;
     }
@@ -240,38 +240,38 @@ final class ClassInfo {
      * @param paramDesc the parameter descriptor with no parens and no return type
      * @parens returnType the return type descriptor
      */
-    public record Desc(int accessFlags, String paramDesc, String returnType) {
+    public record Method(int accessFlags, String paramDesc, String returnType) {
         public String fullDescriptor() {
             return '(' + paramDesc + ')' + returnType;
         }
     }
 
     /**
-     * Iterates over all methods and passes to them to the given consumer as name/desc pairs,
+     * Iterates over all methods and passes to them to the given consumer as name/method pairs,
      * including all inherited methods, but excluding methods declared in java.lang.Object.
      *
      * @param packageToModule maps package names to modules
-     * @param consumer receives all accessible method name/desc pairs for methods, including
+     * @param consumer receives all accessible method name/method pairs for methods, including
      * inherited ones; the consumer can return false to stop the iteration
      */
     boolean forAllMethods(Map<String, Module> packageToModule,
-                          Predicate<Map.Entry<String, Desc>> consumer)
+                          Predicate<Map.Entry<String, Method>> consumer)
         throws UncheckedIOException, ClassFormatException
     {
         return forAllMethods(packageToModule, true, true, consumer);
     }
 
     /**
-     * Iterates over all static methods and passes to them to the given consumer as name/desc
+     * Iterates over all static methods and passes to them to the given consumer as name/method
      * pairs, including all inherited methods, but excluding methods declared in
      * java.lang.Object.
      *
      * @param packageToModule maps package names to modules
-     * @param consumer receives all accessible method name/desc pairs for methods, including
+     * @param consumer receives all accessible method name/method pairs for methods, including
      * inherited ones; the consumer can return false to stop the iteration
      */
     boolean forAllStaticMethods(Map<String, Module> packageToModule,
-                                Predicate<Map.Entry<String, Desc>> consumer)
+                                Predicate<Map.Entry<String, Method>> consumer)
         throws UncheckedIOException, ClassFormatException
     {
         return forAllMethods(packageToModule, true, false, consumer);
@@ -279,7 +279,7 @@ final class ClassInfo {
 
     private boolean forAllMethods(Map<String, Module> packageToModule,
                                   boolean staticMethods, boolean instanceMethods,
-                                  Predicate<Map.Entry<String, Desc>> consumer)
+                                  Predicate<Map.Entry<String, Method>> consumer)
         throws UncheckedIOException, ClassFormatException
     {
         String superName = mSuperClassName;
@@ -323,7 +323,7 @@ final class ClassInfo {
 
     @SuppressWarnings("unchecked")
     private static boolean doForAllMethods(Map<String, Object> methods,
-                                           Predicate<Map.Entry<String, Desc>> consumer)
+                                           Predicate<Map.Entry<String, Method>> consumer)
     {
 
         for (Map.Entry entry : methods.entrySet()) {
@@ -332,16 +332,16 @@ final class ClassInfo {
                 continue;
             }
             Object value = entry.getValue();
-            if (value instanceof Desc desc) {
-                if (!isObjectMethod(name, desc.paramDesc()) &&
-                    !consumer.test((Map.Entry<String, Desc>) entry))
+            if (value instanceof Method method) {
+                if (!isObjectMethod(name, method.paramDesc()) &&
+                    !consumer.test((Map.Entry<String, Method>) entry))
                 {
                     return false;
                 }
             } else {
-                for (Desc desc : ((Set<Desc>) value)) {
-                    if (!isObjectMethod(name, desc.paramDesc()) &&
-                        !consumer.test(Map.entry(name, desc)))
+                for (Method method : ((Set<Method>) value)) {
+                    if (!isObjectMethod(name, method.paramDesc()) &&
+                        !consumer.test(Map.entry(name, method)))
                     {
                         return false;
                     }
