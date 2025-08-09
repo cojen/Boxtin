@@ -799,8 +799,8 @@ final class JavaBaseApplier implements RulesApplier {
             .denyAllConstructors()
             .allowVariant() // no args
             .allowVariant("Ljava/lang/Appendable;")
-            .allowVariant("Ljava/util/Locale;")
             .allowVariant("Ljava/lang/Appendable;Ljava/util/Locale;")
+            .allowVariant("Ljava/util/Locale;")
             .allowVariant("Ljava/io/PrintStream;")
             .allowVariant("Ljava/io/OutputStream;")
             .allowVariant("Ljava/io/OutputStream;Ljava/lang/String;")
@@ -823,6 +823,7 @@ final class JavaBaseApplier implements RulesApplier {
             .allowVariant("Ljava/io/InputStream;Ljava/lang.String;")
             .allowVariant("Ljava/io/InputStream;Ljava/nio/charset/Charset;")
             .allowVariant("Ljava/lang/Readable;")
+            .allowVariant("Ljava/lang/String;")
             .allowVariant("Ljava/nio/channels/ReadableByteChannel;")
             .allowVariant("Ljava/nio/channels/ReadableByteChannel;Ljava/lang.String;")
             .allowVariant("Ljava/nio/channels/ReadableByteChannel;Ljava/nio/charset/Charset;")
