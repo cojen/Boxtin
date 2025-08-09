@@ -181,6 +181,18 @@ final class ClassFileProcessor {
         // Restore the offset for checking the methods again later.
         decoder.offset(methodsOffset);
 
+        // Check if any super interfaces restrict subtyping.
+
+        if (mInterfaceIndexes != null) {
+            for (int i=0; i<mInterfaceIndexes.length; i++) {
+                Rules.ForClass forClass = rulesForClass(cp.findConstantClass(mInterfaceIndexes[i]));
+                if (forClass.isAllDenied()) {
+                    // Denying construction denies access to the inherited instance methods.
+                    mDenyConstruction = true;
+                }
+            }
+        }
+
         // Check if any superclasses restrict subtyping.
 
         if (mSuperClassIndex != 0) {
@@ -188,6 +200,9 @@ final class ClassFileProcessor {
             Rules.ForClass forClass = rulesForClass(superClass);
 
             if (forClass.isAllDenied()) {
+                // No need to explictly deny because the super class constructors will.
+                mDenyConstruction = false;
+
                 // Access to the inherited static methods must be explictly denied.
 
                 Map<String, Module> packageToModule =
@@ -225,18 +240,6 @@ final class ClassFileProcessor {
 
                     return true;
                 });
-            }
-        }
-
-        // Check if any super interfaces restrict subtyping.
-
-        if (mInterfaceIndexes != null) {
-            for (int i=0; i<mInterfaceIndexes.length; i++) {
-                Rules.ForClass forClass = rulesForClass(cp.findConstantClass(mInterfaceIndexes[i]));
-                if (forClass.isAllDenied()) {
-                    // Denying construction denies access to the inherited instance methods.
-                    mDenyConstruction = true;
-                }
             }
         }
 
