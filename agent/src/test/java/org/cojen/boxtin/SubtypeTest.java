@@ -37,6 +37,7 @@ import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileAttributeView;
 
 import java.nio.file.spi.FileSystemProvider;
+import java.nio.file.spi.FileTypeDetector;
 
 import java.util.Map;
 import java.util.Set;
@@ -82,12 +83,27 @@ public class SubtypeTest extends TransformTest {
         }
 
         try {
-            new FSProvider();
+            FSProvider p = null;
+            p.installedProviders();
             fail();
         } catch (SecurityException e) {
             // Expected.
         }
 
+        try {
+            FSProvider p = null;
+            ((FileSystemProvider) p).installedProviders();
+            fail();
+        } catch (SecurityException e) {
+            // Expected.
+        }
+
+        try {
+            new FSProvider();
+            fail();
+        } catch (SecurityException e) {
+            // Expected.
+        }
     }
 
     @Test
@@ -104,14 +120,28 @@ public class SubtypeTest extends TransformTest {
         }
 
         try {
-            new TProvider().description();
+            new TProvider();
             fail();
         } catch (SecurityException e) {
             // Expected.
         }
 
         try {
-            new TProvider().doFindFirst("x");
+            TProvider.doFindFirst("x");
+            fail();
+        } catch (SecurityException e) {
+            // Expected.
+        }
+    }
+
+    @Test
+    public void classAndInterface() throws Exception {
+        if (runTransformed(FTDetector.class)) {
+            return;
+        }
+
+        try {
+            new FTDetector();
             fail();
         } catch (SecurityException e) {
             // Expected.
@@ -232,8 +262,25 @@ public class SubtypeTest extends TransformTest {
             return 0;
         }
 
-        Object doFindFirst(String name) {
+        static Object doFindFirst(String name) {
             return ToolProvider.findFirst(name);
+        }
+    }
+
+    private static class FTDetector extends FileTypeDetector implements ToolProvider {
+        @Override
+        public String probeContentType(Path path) {
+            return null;
+        }
+
+        @Override
+        public String name() {
+            return null;
+        }
+
+        @Override
+        public int run(PrintWriter out, PrintWriter err, String... args) {
+            return 0;
         }
     }
 }
