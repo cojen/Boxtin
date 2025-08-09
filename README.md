@@ -75,6 +75,18 @@ In practice, the module check will be optimized away by the JVM, and so there's 
 
 If the class file transformer can prove that the caller class cannot be in the same module as the target class, then the module check is elided, and the operation is always denied. It currently only does this when the target class is in a "java.*" package, but the caller class isn't.
 
+### Subtyping restrictions
+
+When a class or interface is explicitly denied, the entire set of accessible methods it supports is expanded when the set of rules is built. This makes it possible for the `isAssignable` and `instanceof` checks to work, as described earlier. When a package (or module) is denied by default, all classes and interfaces contained within are implicitly denied. These classes and their methods aren't expanded, because it requires obtaining all of the classes in a package, and this cannot be performed reliably. Even if it were, the rules would become quite large, and the chain of `isAssignable` and `instanceof` checks would also become quite large. Without these checks, it's possible to extend a denied class and gain access to its inherited methods.
+
+To guard against this, classes which are defined as subtypes of implicitly denied classes have special restrictions applied. If the subtype implements an implicitly denied interface, then the code is transformed such that construction isn't possible. If necessary, all of the constructors are replaced with ones which just throw a new `SecurityException`. As a result, access to the inherited instance methods is denied because instantiation is now impossible. If the subtype extends an implicitly denied class, then all of the constructors are already denied as a side-effect of having to call the denied superclass constructor.
+
+Static methods require special attention, because they can be inherited and accessed without instantiation. Static methods defined in interfaces aren't inherited, and so nothing special needs to be done in that case. Special transformations are required for static methods which are inherited from an implicitly denied class.
+
+For each accessible static method (which isn't already declared locally in the subtype), a synthetic override is generated which matches the signature of the inherited method. The override applies the necessary security checks against the inherited method, and only if the operation is actually allowed will the original method be called. Ordinarily the operation is denied, but the deny action for the package might be [`checked`](https://cojen.github.io/Boxtin/javadoc/org.cojen.boxtin/org/cojen/boxtin/DenyAction.html#checked(java.lang.invoke.MethodHandleInfo,org.cojen.boxtin.DenyAction)).
+
+If the inherited static method is final, it still needs to be overridden to ensure that the access check is applied. Overriding such a method is perfectly legal as far as the JVM is concerned, and it's the Java compiler which restricts this.
+
 ### MethodHandle constants
 
 The Java classfile format supports defining [`MethodHandle`](https://docs.oracle.com/javase/specs/jvms/se24/html/jvms-4.html#jvms-4.4.8) constants, which are primarily used by Java lambdas. When necessary, Boxtin transforms these constants such that a security check is put in place. It does this by replacing the original constant with one that calls a synthetic proxy method.
