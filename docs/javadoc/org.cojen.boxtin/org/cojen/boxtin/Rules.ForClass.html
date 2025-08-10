@@ -117,7 +117,7 @@ loadScripts(document, 'script');</script>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default boolean</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#isAllDenied()" class="member-name-link">isAllDenied</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
-<div class="block">Returns true if all operations are denied, including subtyping of this class.</div>
+<div class="block">Returns true if all operations are implicitly denied.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="Rule.html" title="class in org.cojen.boxtin">Rule</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#ruleForConstructor(java.lang.CharSequence)" class="member-name-link">ruleForConstructor</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;descriptor)</code></div>
@@ -169,9 +169,8 @@ loadScripts(document, 'script');</script>
 <h3>isAllDenied</h3>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">isAllDenied</span>()</div>
-<div class="block">Returns true if all operations are denied, including subtyping of this class.
- Subtyping is usually allowed, except when all classes in a package are denied by
- default, and no explicit rule is defined for this class.</div>
+<div class="block">Returns true if all operations are implicitly denied. This is true when all classes
+ in a package are denied by default, and no explicit rule is defined for this class.</div>
 </div>
 </section>
 </li>
