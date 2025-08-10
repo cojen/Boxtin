@@ -164,15 +164,29 @@ public final class CustomActions {
     // Check for AccessibleObject.setAccessible.
     public static boolean checkSetAccessible(Caller caller, Object obj, boolean set) {
         Class<?> callerClass = caller.validate();
+
         if (!set) {
             // Allowed when not enabling access.
             return true;
         }
+
         if (obj instanceof Member m) {
-            // Allowed when the caller Module is the same as the Module being accessed.
-            return callerClass.getModule() == m.getDeclaringClass().getModule();
+            return checkSetAccessible(callerClass, m);
+        } else if (obj instanceof Object[] array) {
+            for (Object o : array) {
+                if (!(o instanceof Member m) || !checkSetAccessible(callerClass, m)) {
+                    return false;
+                }
+            }
+            return true;
         }
+
         return false;
+    }
+
+    private static boolean checkSetAccessible(Class<?> callerClass, Member m) {
+        // Allowed when the caller Module is the same as the Module being accessed.
+        return callerClass.getModule() == m.getDeclaringClass().getModule();
     }
 
     // Custom deny action for Class.getConstructor.

@@ -66,6 +66,12 @@ public class AccessibleTest extends TransformTest {
             fail();
         } catch (InaccessibleObjectException e) {
         }
+
+        try {
+            AccessibleObject.setAccessible(new AccessibleObject[] {f}, true);
+            fail();
+        } catch (InaccessibleObjectException e) {
+        }
     }
 
     @Test
@@ -92,6 +98,12 @@ public class AccessibleTest extends TransformTest {
 
         try {
             ((AccessibleObject) f).setAccessible(true);
+            fail();
+        } catch (InaccessibleObjectException e) {
+        }
+
+        try {
+            AccessibleObject.setAccessible(new AccessibleObject[] {f}, true);
             fail();
         } catch (InaccessibleObjectException e) {
         }
@@ -124,6 +136,12 @@ public class AccessibleTest extends TransformTest {
             fail();
         } catch (InaccessibleObjectException e) {
         }
+
+        try {
+            AccessibleObject.setAccessible(new AccessibleObject[] {m}, true);
+            fail();
+        } catch (InaccessibleObjectException e) {
+        }
     }
 
     @Test
@@ -153,6 +171,12 @@ public class AccessibleTest extends TransformTest {
             fail();
         } catch (InaccessibleObjectException e) {
         }
+
+        try {
+            AccessibleObject.setAccessible(new AccessibleObject[] {c}, true);
+            fail();
+        } catch (InaccessibleObjectException e) {
+        }
     }
 
     @Test
@@ -162,7 +186,9 @@ public class AccessibleTest extends TransformTest {
         }
 
         // It's in the same module, so it's okay.
-        AccessibleTest.class.getDeclaredMethod("m1").setAccessible(true);
+        Method m = AccessibleTest.class.getDeclaredMethod("m1");
+        m.setAccessible(true);
+        AccessibleObject.setAccessible(new AccessibleObject[] {m}, true);
     }
 
     private void m1() {
@@ -176,6 +202,14 @@ public class AccessibleTest extends TransformTest {
 
         try {
             AccessibleObject.class.getMethod("setAccessible", boolean.class);
+            fail();
+        } catch (NoSuchMethodException e) {
+            assertThrownByCustomCheck(e);
+        }
+
+        try {
+            AccessibleObject.class .getMethod("setAccessible",
+                                              AccessibleObject[].class, boolean.class);
             fail();
         } catch (NoSuchMethodException e) {
             assertThrownByCustomCheck(e);
