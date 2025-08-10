@@ -67,6 +67,18 @@ public class PropertiesTest extends TransformTest {
         assertTrue(System.getProperties().containsKey(name));
     }
 
+    @Test
+    public void numbers() throws Exception {
+        if (runTransformed()) {
+            return;
+        }
+
+        assertTrue(15 == Integer.getInteger("x", 15));
+        assertTrue(15 == Integer.getInteger("x", (Integer) 15));
+        assertTrue(15L == Long.getLong("x", 15L));
+        assertTrue(15L == Long.getLong("x", (Long) 15L));
+    }
+
     @AfterClass
     public static void finished() {
         assertNotNull(System.getProperty("file.separator"));
