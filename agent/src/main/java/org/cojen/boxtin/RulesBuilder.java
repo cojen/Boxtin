@@ -496,7 +496,7 @@ public final class RulesBuilder {
 
         /**
          * End the current rules for this module and return to the outermost scope. More rules
-         * can be added to the scope later if desired.
+         * can be added to this scope later if desired.
          */
         public RulesBuilder end() {
             return RulesBuilder.this;
@@ -670,8 +670,8 @@ public final class RulesBuilder {
         }
 
         /**
-         * End the current rules for this package and return to the outermost scope. More rules
-         * can be added to the scope later if desired.
+         * End the current rules for this package and return to the module scope. More rules
+         * can be added to this scope later if desired.
          */
         public ModuleScope end() {
             return mParent;
@@ -1031,7 +1031,7 @@ public final class RulesBuilder {
 
         /**
          * End the current rules for this class and return to the package scope. More rules can
-         * be added to the scope later if desired.
+         * be added to this scope later if desired.
          */
         public PackageScope end() {
             mVariantScope = null;
