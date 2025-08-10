@@ -77,9 +77,8 @@ public interface Rules {
         public boolean isAllAllowed();
 
         /**
-         * Returns true if all operations are denied, including subtyping of this class.
-         * Subtyping is usually allowed, except when all classes in a package are denied by
-         * default, and no explicit rule is defined for this class.
+         * Returns true if all operations are implicitly denied. This is true when all classes
+         * in a package are denied by default, and no explicit rule is defined for this class.
          */
         public default boolean isAllDenied() {
             return false;
