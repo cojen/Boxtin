@@ -938,6 +938,7 @@ final class ClassFileProcessor {
      * @param targetClass can be different than methodRef.mClass if isAssignableFrom is called
      * @param resumeAddress branch to this location if a value was generated; if negative then
      * return from the caller
+     * @param argSlots method arguments as local variables
      * @param castArg0 when non-zero, the first argument should be cast to the type represented
      * by this index when passed to a checked or custom method handle
      * @param withArgs smt entry with the argSlots defined as local variables
@@ -1527,6 +1528,8 @@ final class ClassFileProcessor {
 
     /**
      * @param argSlots method arguments as local variables
+     * @param castArg0 when non-zero, the first argument should be cast to the type represented
+     * by this index
      * @return a return opcode or else 0 if the method descriptor isn't compatible
      */
     private byte encodeMethodHandleInvoke(CodeAttr caller,
@@ -1600,8 +1603,10 @@ final class ClassFileProcessor {
 
         caller.stackPushPop(pushed);
 
+        MethodType lenient = lenient(mt);
+
         C_MemberRef invokeRef = cp.addMethodRef
-            (MethodHandle.class.getName().replace('.', '/'), "invoke", mt.descriptorString());
+            (MethodHandle.class.getName().replace('.', '/'), "invoke", lenient.descriptorString());
 
         encoder.writeByte(INVOKEVIRTUAL);
         encoder.writeShort(invokeRef.mIndex);
@@ -1642,6 +1647,25 @@ final class ClassFileProcessor {
         caller.stackPush(size);
 
         return op;
+    }
+
+    /**
+     * The denialsForMethod might mix static and instance methods together, which can cause
+     * method signature incompatibilities, which can then cause a VerifyError. The
+     * MethodHandle.invoke method by nature is lenient, so return a method type which accepts
+     * plain Objects where appropriate.
+     */
+    private static MethodType lenient(MethodType mt) {
+        Class<?>[] ptypes = mt.parameterArray();
+        for (int i=0; i<ptypes.length; i++) {
+            ptypes[i] = lenient(ptypes[i]);
+        }
+        return MethodType.methodType(mt.returnType(), ptypes);
+    }
+
+    private static Class<?> lenient(Class<?> ptype) {
+        return ptype.isPrimitive()
+            || ptype.isArray() || ptype == Caller.class ? ptype : Object.class;
     }
 
     /**

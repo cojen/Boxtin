@@ -64,6 +64,7 @@ public class PropertiesTest extends TransformTest {
         String name = PropertiesTest.class.getName();
         System.setProperty(name, "hello");
         assertEquals("hello", props.get(name));
+        assertEquals("hello", props.getProperty(name));
         assertTrue(System.getProperties().containsKey(name));
     }
 
