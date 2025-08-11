@@ -42,7 +42,6 @@ final class ClassInfo {
     /**
      * @param fullClassName name must have '/' characters as separators
      * @param packageToModule maps package names to modules
-     * @param layer finds the module for providing the class data
      * @return null if not found
      */
     static ClassInfo find(String fullClassName, Map<String, Module> packageToModule)
@@ -54,7 +53,6 @@ final class ClassInfo {
     /**
      * @param fullClassName name must have '/' characters as separators
      * @param packageToModule maps package names to modules
-     * @param layer finds the module for providing the class data
      * @return null if not found
      */
     static ClassInfo find(String fullClassName, String packageName,
@@ -238,7 +236,7 @@ final class ClassInfo {
 
     /**
      * @param paramDesc the parameter descriptor with no parens and no return type
-     * @parens returnType the return type descriptor
+     * @param returnType the return type descriptor
      */
     public record Method(int accessFlags, String paramDesc, String returnType) {
         public String fullDescriptor() {

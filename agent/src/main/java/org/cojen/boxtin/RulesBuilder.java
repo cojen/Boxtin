@@ -23,8 +23,6 @@ import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -188,13 +186,7 @@ public final class RulesBuilder {
             str = str.substring(0, ix);
         }
 
-        ModuleDescriptor.Version version = ModuleDescriptor.Version.parse(str);
-
-        if (version == null) {
-            throw new IllegalArgumentException("Unparseable version: " + str);
-        }
-
-        return version;
+        return ModuleDescriptor.Version.parse(str);
     }
 
     /**
@@ -286,10 +278,10 @@ public final class RulesBuilder {
         }
     }
 
-    private static int forAllConstructors(Class<?> clazz, Consumer<Constructor> consumer) {
+    private static int forAllConstructors(Class<?> clazz, Consumer<Constructor<?>> consumer) {
         int count = 0;
 
-        for (Constructor c : clazz.getDeclaredConstructors()) {
+        for (Constructor<?> c : clazz.getDeclaredConstructors()) {
             if (isAccessible(c)) {
                 count++;
                 consumer.accept(c);

@@ -208,7 +208,7 @@ public final class SecurityAgent {
 
         inst.addTransformer(agent.new Transformer(), false);
 
-        var redefiner = agent.new Redefiner();
+        var redefiner = new Redefiner();
         inst.addTransformer(redefiner, true);
 
         try {
@@ -272,7 +272,7 @@ public final class SecurityAgent {
         mController = controller;
     }
 
-    private class Redefiner implements ClassFileTransformer {
+    private static class Redefiner implements ClassFileTransformer {
         @Override
         public byte[] transform(Module module,
                                 ClassLoader loader,
