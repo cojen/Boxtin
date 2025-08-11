@@ -173,7 +173,7 @@ public abstract class TransformTest {
                     }
                 }
 
-                byte[] xbytes = mAgent.doTransform(getUnnamedModule(), pathName, bytes);
+                byte[] xbytes = mAgent.transform(getUnnamedModule(), pathName, bytes);
 
                 if (xbytes == null) {
                     xbytes = bytes;

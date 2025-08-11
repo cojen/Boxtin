@@ -206,7 +206,10 @@ public final class SecurityAgent {
             cAgent = agent = new SecurityAgent(controller);
         }
 
-        inst.addTransformer(agent.newTransformer(), true);
+        inst.addTransformer(agent.new Transformer(), false);
+
+        var redefiner = agent.new Redefiner();
+        inst.addTransformer(redefiner, true);
 
         try {
             // Transform the defineHiddenClass methods in order for them to apply transforms to
@@ -215,6 +218,8 @@ public final class SecurityAgent {
         } catch (UnmodifiableClassException e) {
             logException(e);
         }
+
+        inst.removeTransformer(redefiner);
     }
 
     /**
@@ -267,63 +272,82 @@ public final class SecurityAgent {
         mController = controller;
     }
 
-    private ClassFileTransformer newTransformer() {
-        return new ClassFileTransformer() {
-            @Override
-            public byte[] transform(Module module,
-                                    ClassLoader loader,
-                                    String className,
-                                    Class<?> classBeingRedefined,
-                                    ProtectionDomain protectionDomain,
-                                    byte[] classBuffer)
-            {
-                return SecurityAgent.this.transform(module, className, classBuffer);
-            }
-        };
-    }
-
-    private byte[] transform(Module module, String className, byte[] classBuffer) {
-        try {
-            return doTransform(module, className, classBuffer);
-        } catch (Throwable e) {
-            if (e instanceof ClassFormatException cfe && cfe.ignore) {
-                return classBuffer;
-            }
-
-            logException("Failed to transform class: " + className, e);
-
-            // Any exception thrown from this method is discarded, and the class won't be
-            // transformed. Instead, return a fake class to be fail-secure.
-
+    private class Redefiner implements ClassFileTransformer {
+        @Override
+        public byte[] transform(Module module,
+                                ClassLoader loader,
+                                String className,
+                                Class<?> classBeingRedefined,
+                                ProtectionDomain protectionDomain,
+                                byte[] classBuffer)
+        {
             try {
-                return EmptyClassMaker.make(className);
-            } catch (Throwable e2) {
-                // Everything is broken.
-                logException(e2);
-                Runtime.getRuntime().halt(1);
-                throw e2;
-            }
-        }
-    }
-
-    // Is package-private for testing.
-    byte[] doTransform(Module module, String className, byte[] classBuffer) throws Throwable {
-        if (module.getClassLoader() == null) {
-            // Classes loaded by the bootstrap class loader are allowed to call anything.
-
-            if ("java/lang/invoke/MethodHandles$Lookup".equals(className)) {
-                // The transform method isn't called for hidden classes. As a workaround,
-                // transform the defineHiddenClass methods to directly call into the
-                // SecurityAgent, which can then transform it.
-                return ClassFileProcessor.begin(classBuffer).transformHiddenClassCreation();
+                if ("java/lang/invoke/MethodHandles$Lookup".equals(className)) {
+                    // Hidden classes aren't passed to ClassFileTransformers. As a workaround,
+                    // redefine the defineHiddenClass methods to directly call into the
+                    // SecurityAgent, which can then transform it.
+                    return ClassFileProcessor.begin(classBuffer).transformHiddenClassCreation();
+                }
+            } catch (Throwable ex) {
+                return transformFailure(ex, className, classBuffer);
             }
 
             return null;
         }
+    }
 
-        Rules rules = mController.rulesForCaller(module);
-        return rules == null ? null
-            : ClassFileProcessor.begin(classBuffer).transform(module, rules);
+    private class Transformer implements ClassFileTransformer {
+        @Override
+        public byte[] transform(Module module,
+                                ClassLoader loader,
+                                String className,
+                                Class<?> classBeingRedefined,
+                                ProtectionDomain protectionDomain,
+                                byte[] classBuffer)
+        {
+            if (classBeingRedefined != null) {
+                return null;
+            }
+
+            return SecurityAgent.this.transform(module, className, classBuffer);
+        }
+    }
+
+    // Is package-private for testing.
+    byte[] transform(Module module, String className, byte[] classBuffer) {
+        try {
+            if (module.getClassLoader() == null) {
+                // Classes loaded by the bootstrap class loader are allowed to call anything.
+                return null;
+            }
+
+            Rules rules = mController.rulesForCaller(module);
+
+            return rules == null ? null
+                : ClassFileProcessor.begin(classBuffer).transform(module, rules);
+        } catch (Throwable ex) {
+            return transformFailure(ex, className, classBuffer);
+        }
+    }
+
+    private static byte[] transformFailure(Throwable ex, String className, byte[] classBuffer) {
+        if (ex instanceof ClassFormatException cfe && cfe.ignore) {
+            return classBuffer;
+        }
+
+        logException("Failed to transform class: " + className, ex);
+
+        // Any exception thrown from this method is discarded, and the class won't be
+        // transformed. Instead, return a fake class to be fail-secure.
+
+        try {
+            return EmptyClassMaker.make(className);
+        } catch (Throwable e2) {
+            // Everything is broken.
+            logException(e2);
+            Runtime.getRuntime().halt(1);
+            throw e2;
+        }
     }
 
     /**
