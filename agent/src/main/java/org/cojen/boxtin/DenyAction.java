@@ -162,12 +162,19 @@ public abstract sealed class DenyAction {
     private DenyAction() {
     }
 
+    /**
+     * @param executable is null if not applicable
+     */
     abstract void validate(ClassLoader loader, Executable executable)
         throws ClassNotFoundException, IllegalArgumentException;
 
     private static void validateHookParameters(Executable executable, MethodHandleInfo hook)
         throws IllegalArgumentException
     {
+        if (executable == null) {
+            return;
+        }
+
         Class<?>[] fromTypes = executable.getParameterTypes();
 
         MethodType toMT = hook.getMethodType();

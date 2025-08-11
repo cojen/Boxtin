@@ -246,6 +246,22 @@ public final class RulesBuilder {
     }
 
     /**
+     * @param executable is null if not applicable
+     */
+    private static void validateRuleAction(Rule rule, ClassLoader loader, Executable executable,
+                                           Consumer<String> reporter)
+    {
+        DenyAction action = rule.denyAction();
+        if (action != null) {
+            try {
+                action.validate(loader, executable);
+            } catch (Exception e) {
+                reporter.accept(e.toString());
+            }
+        }        
+    }
+
+    /**
      * Returns an immutable set of rules based on what's been defined so far.
      *
      * @throws IllegalStateException if a package is defined in multiple modules
@@ -448,9 +464,11 @@ public final class RulesBuilder {
         }
 
         void preValidate(Set<String> packageNames, Consumer<String> reporter) {
-            for (String name : mPackages.keySet()) {
-                if (!packageNames.add(name)) {
-                    reporter.accept("Package is defined in multiple modules: " + name);
+            if (mPackages != null) {
+                for (String name : mPackages.keySet()) {
+                    if (!packageNames.add(name)) {
+                        reporter.accept("Package is defined in multiple modules: " + name);
+                    }
                 }
             }
         }
@@ -466,6 +484,8 @@ public final class RulesBuilder {
                 reporter.accept("Module loader isn't found: " + mModule.getName());
                 return;
             }
+
+            validateRuleAction(mDefaultRule, loader, null, reporter);
 
             Set<String> packages = mModule.getPackages();
 
@@ -576,7 +596,7 @@ public final class RulesBuilder {
          * class is unsupported: anonymous, array, hidden, local, or primitive
          */
         public ClassScope forClass(Class<?> clazz) {
-            if (!mName.equals(clazz.getPackageName())) {
+            if (!mName.replace('/', '.').equals(clazz.getPackageName())) {
                 throw new IllegalArgumentException("Wrong package");
             }
             if (clazz.isAnonymousClass() || clazz.isArray() || clazz.isHidden() ||
@@ -634,6 +654,8 @@ public final class RulesBuilder {
          * Validates that all classes are loadable, and that all class members are found.
          */
         void validate(Set<String> packages, ClassLoader loader, Consumer<String> reporter) {
+            validateRuleAction(mDefaultRule, loader, null, reporter);
+
             String dottedName = mName.replace('/', '.');
 
             if (!packages.contains(dottedName)) {
@@ -1011,6 +1033,9 @@ public final class RulesBuilder {
          * Validates all class members.
          */
         void validate(ClassLoader loader, Consumer<String> reporter) {
+            validateRuleAction(mDefaultConstructorRule, loader, null, reporter);
+            validateRuleAction(mDefaultMethodRule, loader, null, reporter);
+
             String className = mName;
             String pkg = mParent.mName;
             if (!pkg.isEmpty()) {
@@ -1221,7 +1246,7 @@ public final class RulesBuilder {
             if (isEmpty(mVariants)) {
                 Rule rule = mDefaultRule;
                 count = forAllConstructors(clazz, ctor -> {
-                    validateExecutable(loader, ctor, rule, reporter);
+                    validateRuleAction(rule, loader, ctor, reporter);
                 });
             } else {
                 var toFind = new HashMap<>(mVariants);
@@ -1232,7 +1257,7 @@ public final class RulesBuilder {
                     if (rule == null) {
                         rule = mDefaultRule;
                     }
-                    validateExecutable(loader, ctor, rule, reporter);
+                    validateRuleAction(rule, loader, ctor, reporter);
                 });
 
                 if (count != 0 && !toFind.isEmpty()) {
@@ -1255,7 +1280,7 @@ public final class RulesBuilder {
             if (isEmpty(mVariants)) {
                 Rule rule = mDefaultRule;
                 count = forAllMethods(clazz, name, method -> {
-                    validateExecutable(loader, method, rule, reporter);
+                    validateRuleAction(rule, loader, method, reporter);
                 });
             } else {
                 var toFind = new HashMap<>(mVariants);
@@ -1266,7 +1291,7 @@ public final class RulesBuilder {
                     if (rule == null) {
                         rule = mDefaultRule;
                     }
-                    validateExecutable(loader, method, rule, reporter);
+                    validateRuleAction(rule, loader, method, reporter);
                 });
 
                 if (count != 0 && !toFind.isEmpty()) {
@@ -1279,19 +1304,6 @@ public final class RulesBuilder {
 
             if (count == 0) {
                 reporter.accept("Method isn't found: " + clazz.getName() + "." + name);
-            }
-        }
-
-        private static void validateExecutable(ClassLoader loader, Executable executable,
-                                               Rule rule, Consumer<String> reporter)
-        {
-            DenyAction action = rule.denyAction();
-            if (action != null) {
-                try {
-                    action.validate(loader, executable);
-                } catch (Exception e) {
-                    reporter.accept(e.toString());
-                }
             }
         }
 
