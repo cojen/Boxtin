@@ -16,7 +16,16 @@
 
 package org.cojen.boxtin;
 
+import java.lang.instrument.ClassDefinition;
+import java.lang.instrument.ClassFileTransformer;
+import java.lang.instrument.Instrumentation;
+
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import java.util.jar.JarFile;
 
 import java.util.logging.Handler;
 import java.util.logging.Logger;
@@ -200,5 +209,154 @@ public class SecurityAgentTest {
 
         assertEquals("hello", records.get(2).getMessage());
         assertEquals(IllegalArgumentException.class, records.get(2).getThrown().getClass());
+    }
+
+    @Test
+    public void activate() throws Exception {
+        try {
+            SecurityAgent.activate(null);
+            fail();
+        } catch (IllegalStateException e) {
+        }
+
+        try {
+            SecurityAgent.activate(new DefaultController());
+            fail();
+        } catch (IllegalStateException e) {
+        }
+
+        try {
+            SecurityAgent.premain("", null);
+            fail();
+        } catch (NullPointerException e) {
+        }
+
+        var fake = new FakeInstrumentation();
+        SecurityAgent.premain(null, fake);
+
+        try {
+            SecurityAgent.premain(null, fake);
+            fail();
+        } catch (SecurityException e) {
+        }
+
+        SecurityAgent.activate(null);
+
+        try {
+            SecurityAgent.activate(null);
+            fail();
+        } catch (SecurityException e) {
+        }
+
+        SecurityAgent.testActivate(null);
+
+        assertEquals(2, fake.mAdded.size());
+        assertEquals(1, fake.mRemoved.size());
+        assertTrue(fake.mAdded.contains(fake.mRemoved.get(0)));
+        assertEquals(1, fake.mRetransformed.size());
+        assertEquals(java.lang.invoke.MethodHandles.Lookup.class, fake.mRetransformed.get(0));
+    }
+
+    static class FakeInstrumentation implements Instrumentation {
+        final List<ClassFileTransformer> mAdded = new ArrayList<>();
+        final List<ClassFileTransformer> mRemoved = new ArrayList<>();
+        final List<Class> mRetransformed = new ArrayList<>();
+
+        @Override
+        public void addTransformer(ClassFileTransformer transformer, boolean canRetransform) {
+            mAdded.add(transformer);
+        }
+
+        @Override
+        public void addTransformer(ClassFileTransformer transformer) {
+            mAdded.add(transformer);
+        }
+
+        @Override
+        public boolean removeTransformer(ClassFileTransformer transformer) {
+            if (mAdded.contains(transformer)) {
+                mRemoved.add(transformer);
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public boolean isRetransformClassesSupported() {
+            return false;
+        }
+
+        @Override
+        public void retransformClasses(Class<?>... classes) {
+            for (Class clazz : classes) {
+                mRetransformed.add(clazz);
+            }
+        }
+
+        @Override
+        public boolean isRedefineClassesSupported() {
+            return false;
+        }
+
+        @Override
+        public void redefineClasses(ClassDefinition... definitions) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean isModifiableClass(Class<?> theClass) {
+            return false;
+        }
+
+        @Override
+        public Class[] getAllLoadedClasses() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Class[] getInitiatedClasses(ClassLoader loader) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long getObjectSize(Object objectToSize) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void appendToBootstrapClassLoaderSearch(JarFile jarfile) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void appendToSystemClassLoaderSearch(JarFile jarfile) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean isNativeMethodPrefixSupported() {
+            return false;
+        }
+
+        @Override
+        public void setNativeMethodPrefix(ClassFileTransformer transformer, String prefix) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void redefineModule(Module module,
+                                   Set<Module> extraReads,
+                                   Map<String, Set<Module>> extraExports,
+                                   Map<String, Set<Module>> extraOpens,
+                                   Set<Class<?>> extraUses,
+                                   Map<Class<?>, List<Class<?>>> extraProvides)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean isModifiableModule(Module module) {
+            return false;
+        }
     }
 }
