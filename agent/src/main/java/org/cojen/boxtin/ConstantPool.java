@@ -31,8 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.SplittableRandom;
 
 import static java.lang.invoke.MethodHandleInfo.*;
 
@@ -100,6 +99,7 @@ final class ConstantPool {
     private Constant[] mConstants;
     private Map<Constant, Constant> mMappedConstants;
     private List<Constant> mAddedConstants;
+    private SplittableRandom mRandom;
 
     private ConstantPool(BufferDecoder decoder, int[] offsets, int[] methodHandleOffsets) {
         mDecoder = decoder;
@@ -559,7 +559,12 @@ final class ConstantPool {
 
         int nameLength = prefixLen + 1; // start with one random digit
 
-        var rnd = ThreadLocalRandom.current();
+        var rnd = mRandom;
+
+        if (rnd == null) {
+            mRandom = rnd = new SplittableRandom(5781062989886553836L);
+        }
+
         C_UTF8 name;
 
         while (true) {
