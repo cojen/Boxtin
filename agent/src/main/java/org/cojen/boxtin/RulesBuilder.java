@@ -286,91 +286,17 @@ public final class RulesBuilder {
         }
     }
 
-    private static Class<?>[] paramTypesFor(ClassLoader loader, String descriptor)
-        throws ClassNotFoundException, NoSuchMethodException
-    {
-        if (descriptor.isEmpty()) {
-            return new Class<?>[0];
-        }
+    private static int forAllConstructors(Class<?> clazz, Consumer<Constructor> consumer) {
+        int count = 0;
 
-        var paramTypes = new ArrayList<Class<?>>(4);
-
-        for (int pos = 0; pos < descriptor.length(); ) {
-            char c = descriptor.charAt(pos);
-            if (c == '(') {
-                pos++;
-                c = descriptor.charAt(pos);
-            }
-            if (c == ')') {
-                break;
-            }
-            pos = addParamType(paramTypes, loader, descriptor, pos);
-        }
-
-        return paramTypes.toArray(Class<?>[]::new);
-    }
-
-    /**
-     * @return updated pos
-     */
-    private static int addParamType(ArrayList<Class<?>> paramTypes,
-                                    ClassLoader loader, String descriptor, int pos)
-        throws ClassNotFoundException, NoSuchMethodException
-    {
-        char first = descriptor.charAt(pos);
-
-        parse: {
-            Class<?> type;
-
-            switch (first) {
-                default -> {
-                    break parse;
-                }
-
-                case 'Z' -> type = boolean.class;
-                case 'B' -> type = byte.class;
-                case 'S' -> type = short.class;
-                case 'C' -> type = char.class;
-                case 'I' -> type = int.class;
-                case 'F' -> type = float.class;
-                case 'D' -> type = double.class;
-                case 'J' -> type = long.class;
-                case 'V' -> type = void.class;
-
-                case '[' -> {
-                    pos = addParamType(paramTypes, loader, descriptor, pos + 1);
-                    int ix = paramTypes.size() - 1;
-                    paramTypes.set(ix, paramTypes.get(ix).arrayType());
-                    return pos;
-                }
-
-                case 'L' -> {
-                    pos++;
-                    int end  = descriptor.indexOf(';', pos);
-                    if (end < 0) {
-                        break parse;
-                    }
-                    String name = descriptor.substring(pos, end).replace('/', '.');
-                    type = Class.forName(name, false, loader);
-                    pos = end;
-                }
-            }
-
-            paramTypes.add(type);
-            return pos + 1;
-        }
-
-        throw new NoSuchMethodException("Invalid descriptor: " + descriptor);
-    }
-
-    private static Constructor<?> tryFindConstructor(Class<?> clazz, Class<?>... paramTypes) {
-        for (Constructor<?> c : clazz.getDeclaredConstructors()) {
-            if (isAccessible(c) && Arrays.equals(c.getParameterTypes(), paramTypes)) {
-                return c;
+        for (Constructor c : clazz.getDeclaredConstructors()) {
+            if (isAccessible(c)) {
+                count++;
+                consumer.accept(c);
             }
         }
 
-        return null;
+        return count;
     }
 
     private static int forAllMethods(Class<?> clazz, String name, Consumer<Method> consumer) {
@@ -1298,45 +1224,34 @@ public final class RulesBuilder {
         }
 
         void validateConstructor(ClassLoader loader, Class<?> clazz, Consumer<String> reporter) {
+            int count;
+
             if (isEmpty(mVariants)) {
-                int count = 0;
+                Rule rule = mDefaultRule;
+                count = forAllConstructors(clazz, ctor -> {
+                    validateExecutable(loader, ctor, rule, reporter);
+                });
+            } else {
+                var toFind = new HashMap<>(mVariants);
 
-                for (Constructor<?> ctor : clazz.getDeclaredConstructors()) {
-                    if (!isAccessible(ctor)) {
-                        continue;
+                count = forAllConstructors(clazz, ctor -> {
+                    String desc = partialDescriptorFor(ctor.getParameterTypes());
+                    Rule rule = toFind.remove(desc);
+                    if (rule == null) {
+                        rule = mDefaultRule;
                     }
-                    count++;
-                    validateExecutable(loader, ctor, mDefaultRule, reporter);
-                }
+                    validateExecutable(loader, ctor, rule, reporter);
+                });
 
-                if (count == 0) {
-                    reporter.accept("Constructor isn't found: " + clazz);
+                if (count != 0 && !toFind.isEmpty()) {
+                    for (CharSequence desc : toFind.keySet()) {
+                        reporter.accept("Constructor isn't found: " + clazz.getName() + desc);
+                    }
                 }
-
-                return;
             }
 
-            for (Map.Entry<CharSequence, Rule> e : mVariants.entrySet()) {
-                Class<?>[] paramTypes;
-                try {
-                    paramTypes = paramTypesFor(loader, e.getKey().toString());
-                } catch (ClassNotFoundException | NoSuchMethodException ex) {
-                    reporter.accept(ex.toString());
-                    continue;
-                }
-
-                Constructor<?> ctor;
-                try {
-                    ctor = clazz.getConstructor(paramTypes);
-                } catch (NoSuchMethodException ex) {
-                    ctor = tryFindConstructor(clazz, paramTypes);
-                    if (ctor == null) {
-                        reporter.accept(ex.toString());
-                        continue;
-                    }
-                }
-
-                validateExecutable(loader, ctor, e.getValue(), reporter);
+            if (count == 0) {
+                reporter.accept("Constructor isn't found: " + clazz);
             }
         }
 
@@ -1359,9 +1274,7 @@ public final class RulesBuilder {
                     if (rule == null) {
                         rule = mDefaultRule;
                     }
-                    if (rule.isDenied()) {
-                        validateExecutable(loader, method, rule, reporter);
-                    }
+                    validateExecutable(loader, method, rule, reporter);
                 });
 
                 if (count != 0 && !toFind.isEmpty()) {
