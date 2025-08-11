@@ -596,6 +596,7 @@ final class ClassFileProcessor {
 
             C_MemberRef methodRef;
             Rule rule;
+            boolean maybeNull;
 
             switch (op) {
                 default -> {
@@ -611,8 +612,10 @@ final class ClassFileProcessor {
 
                     if (methodRef.mNameAndType.mName.isConstructor()) {
                         rule = ruleForConstructor(methodRef);
+                        maybeNull = false;
                     } else {
                         rule = ruleForMethod(methodRef);
+                        maybeNull = true;
                     }
 
                     if (rule.isAllowed()) {
@@ -773,7 +776,7 @@ final class ClassFileProcessor {
             boolean hasInstance = hasInstance(op);
             CodeAttr.StoredArgs args = caller.storeArgs(encoder, denyEntry, hasInstance, methodRef);
 
-            encodeDenyAction(caller, hasInstance, true, methodRef, methodRef.mClass,
+            encodeDenyAction(caller, hasInstance, maybeNull, methodRef, methodRef.mClass,
                              rule.denyAction(), resumeAddress,
                              args.argSlots(), 0, args.withArgs(), null);
 
