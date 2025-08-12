@@ -19,8 +19,10 @@ package org.cojen.boxtin;
 import java.lang.invoke.MethodHandles;
 
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 import org.cojen.maker.ClassMaker;
+import org.cojen.maker.Label;
 import org.cojen.maker.MethodMaker;
 
 import org.junit.*;
@@ -110,6 +112,58 @@ public class ClassFileProcessorTest {
             makeCaller.getMethod("makeCaller", Class.class).invoke(null, getClass());
         } catch (InvocationTargetException e) {
             assertTrue(e.getCause() instanceof SecurityException);
+        }
+    }
+
+    @Test
+    public void transformHiddenClassCreation2() throws Exception {
+        // Test the transform when the original code has exception handlers and a
+        // LocalVariableTable. No actual security check is performed, however.
+
+        var loader = new ClassLoader() {
+            Class<?> inject(String className, byte[] bytes) {
+                return defineClass(className, bytes, 0, bytes.length);
+            }
+        };
+
+        Class<?> checker;
+
+        {
+            String checkerName = getClass().getName() + "$$Checker";
+            var cm = ClassMaker.beginExternal(checkerName).public_();
+            MethodMaker mm = cm.addMethod(int.class, "defineHiddenClassWithClassData",
+                                          MethodHandles.Lookup.class, byte[].class, String.class);
+            mm.public_().static_();
+
+            mm.param(2).name("nameParamX");
+            var lengthVar = mm.var(int.class).name("length");
+            Label start = mm.label().here();
+            lengthVar.set(mm.param(2).invoke("length"));
+            mm.catch_(start, NullPointerException.class, exVar -> {
+                mm.new_(IllegalArgumentException.class, exVar).throw_();
+            });
+            mm.return_(lengthVar);
+
+            byte[] bytes = cm.finishBytes();
+            bytes = ClassFileProcessor.begin(bytes).transformHiddenClassCreation();
+            checker = loader.inject(checkerName, bytes);
+        }
+
+        Method m = checker.getMethod("defineHiddenClassWithClassData",
+                                     MethodHandles.Lookup.class, byte[].class, String.class);
+
+        byte[] empty = EmptyClassMaker.make(getClass().getName() + "$$Empty");
+
+        assertEquals(5, m.invoke(null, MethodHandles.lookup(), empty, "hello"));
+
+        try {
+            m.invoke(null, MethodHandles.lookup(), empty, (String) null);
+        } catch (InvocationTargetException e) {
+            Throwable cause = e.getCause();
+            assertTrue(cause instanceof IllegalArgumentException);
+            cause = cause.getCause();
+            assertTrue(cause instanceof NullPointerException);
+            assertTrue(cause.getMessage().contains("nameParamX"));
         }
     }
 }

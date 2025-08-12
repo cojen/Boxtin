@@ -46,7 +46,7 @@ final class EmptyClassMaker {
 
         encoder.writeInt(0xCAFEBABE);
         encoder.writeShort(0); // minor_version
-        encoder.writeShort(50); // major_version: Java 6
+        encoder.writeShort(51); // major_version: Java 7
 
         cp.writeTo(encoder);
 
