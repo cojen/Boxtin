@@ -120,31 +120,7 @@ When a `ClassFileTransformer` throws an exception, the instrumentation agent ign
 
 ## Reflection
 
-The standard rules for the `java.base` module permit reflection operations, but with some restrictions. Access is guarded when `Constructor` and `Method` instances are acquired, and not when they're invoked. Custom deny rules perform an access check at that time, possibly resulting in an exception being thrown. For methods which return an array, (example: `Class.getMethods()`), a filtering step is applied which removes elements which cannot be accessed.
-
-The following methods in `java.lang.Class` have custom deny actions:
-
-- `getConstructor` - can throw a `NoSuchMethodException`
-- `getConstructors` - can filter the results
-- `getDeclaredConstructor` - can throw a `NoSuchMethodException`
-- `getDeclaredConstructors` - can filter the results
-- `getDeclaredMethod` - can throw a `NoSuchMethodException`
-- `getDeclaredMethods`- can filter the results
-- `getEnclosingConstructor` - can throw a `NoSuchMethodError`
-- `getEnclosingMethod` - can throw a `NoSuchMethodError`
-- `getMethod` - can throw a `NoSuchMethodException`
-- `getMethods`- can filter the results
-- `getRecordComponents`- can filter the results
-
-Methods which return `MethodHandle` instances are checked using the same strategy as for reflection. Custom deny actions are defined for the following `Lookup` methods, which can throw a `NoSuchMethodException`:
-
-- `bind`
-- `findConstructor`
-- `findSpecial`
-- `findStatic`
-- `findVirtual`
-
-Methods defined by `AccessibleObject` which enable access to class members are denied by the standard rules. Attempting to call `setAccessible` causes an `InaccessibleObjectException` to be thrown. Calling `trySetAccessible` does nothing, and instead the caller gets a result of `false`.
+The standard rules for the `java.base` module permit reflection operations, but with some restrictions. Access is checked when `Constructor` and `Method` instances are acquired, and not when they're invoked. See [`checkReflection`](https://cojen.github.io/Boxtin/javadoc/org.cojen.boxtin/org/cojen/boxtin/RulesApplier.html#checkReflection()) for more details.
 
 ## Object methods
 
