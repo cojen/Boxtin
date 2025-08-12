@@ -67,6 +67,7 @@ loadScripts(document, 'script');</script>
 <ol class="toc-list">
 <li><a href="#applyRulesTo(org.cojen.boxtin.RulesBuilder)" tabindex="0">applyRulesTo(RulesBuilder)</a></li>
 <li><a href="#java_base()" tabindex="0">java_base()</a></li>
+<li><a href="#checkReflection()" tabindex="0">checkReflection()</a></li>
 </ol>
 </li>
 </ol>
@@ -102,8 +103,14 @@ loadScripts(document, 'script');</script>
 <div class="block">Applies a set of rules to the given builder.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1"><code>static <a href="RulesApplier.html" title="interface in org.cojen.boxtin">RulesApplier</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1"><code><a href="#java_base()" class="member-name-link">java_base</a>()</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1"><code><a href="#checkReflection()" class="member-name-link">checkReflection</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1">
+<div class="block">Returns an applier which allows reflection operations, but they are checked to ensure
+ that the corresponding constructor or method is allowed by the other rules.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1"><code>static <a href="RulesApplier.html" title="interface in org.cojen.boxtin">RulesApplier</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1"><code><a href="#java_base()" class="member-name-link">java_base</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1">
 <div class="block">Returns an applier of rules for the java.base module, which denies operations that are
  considered harmful.</div>
 </div>
@@ -172,6 +179,59 @@ loadScripts(document, 'script');</script>
 
  <p>*** A few thread settings can be changed if the thread hasn't started yet: name,
  daemon status, the context ClassLoader, and the thread's own uncaught exception handler.</div>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="checkReflection()">
+<h3>checkReflection</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">static</span>&nbsp;<span class="return-type"><a href="RulesApplier.html" title="interface in org.cojen.boxtin">RulesApplier</a></span>&nbsp;<span class="element-name">checkReflection</span>()</div>
+<div class="block">Returns an applier which allows reflection operations, but they are checked to ensure
+ that the corresponding constructor or method is allowed by the other rules. These rules
+ applied automatically when the <a href="#java_base()"><code>java_base</code></a> rules are applied.
+
+ <p>Access is checked when <code>Constructor</code> and <code>Method</code> instances are acquired,
+ and not when they're invoked. Custom deny rules perform a check at that time, possibly
+ resulting in an exception being thrown. For methods which return an array (example:
+ <code>Class.getMethods()</code>), a filtering step is applied which removes elements which
+ cannot be accessed.
+
+ <p>The following methods in <code>java.lang.Class</code> have custom deny actions applied:
+
+ <p>
+ <ul>
+ <li><code>getConstructor</code> - can throw a <code>NoSuchMethodException</code>
+ <li><code>getConstructors</code> - can filter the results
+ <li><code>getDeclaredConstructor</code> - can throw a <code>NoSuchMethodException</code>
+ <li><code>getDeclaredConstructors</code> - can filter the results
+ <li><code>getDeclaredMethod</code> - can throw a <code>NoSuchMethodException</code>
+ <li><code>getDeclaredMethods</code> - can filter the results
+ <li><code>getEnclosingConstructor</code> - can throw a <code>NoSuchMethodError</code>
+ <li><code>getEnclosingMethod</code> - can throw a <code>NoSuchMethodError</code>
+ <li><code>getMethod</code> - can throw a <code>NoSuchMethodException</code>
+ <li><code>getMethods</code> - can filter the results
+ <li><code>getRecordComponents</code> - can filter the results
+ </ul>
+
+ <p>Methods which return <code>MethodHandle</code> instances are checked using the same
+ strategy as for reflection. Custom deny actions are defined for the following <code>
+ Lookup</code> methods, which can throw a <code>NoSuchMethodException</code>:
+
+ <p>
+ <ul>
+ <li><code>bind</code>
+ <li><code>findConstructor</code>
+ <li><code>findSpecial</code>
+ <li><code>findStatic</code>
+ <li><code>findVirtual</code>
+ </ul>
+
+ <p>Methods defined by <code>AccessibleObject</code> which enable access to class members are
+ denied. Calling <code>setAccessible</code> causes an <code>InaccessibleObjectException</code> to
+ be thrown, except when the caller module is the same as the target module. Calling
+ <code>trySetAccessible</code> does nothing, and instead the caller gets a result of <code>
+ false</code>.</div>
 </div>
 </section>
 </li>

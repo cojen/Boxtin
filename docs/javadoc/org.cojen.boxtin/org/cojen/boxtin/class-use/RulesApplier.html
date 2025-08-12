@@ -69,8 +69,14 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color"><code>static <a href="../RulesApplier.html" title="interface in org.cojen.boxtin">RulesApplier</a></code></div>
-<div class="col-second even-row-color"><span class="type-name-label">RulesApplier.</span><code><a href="../RulesApplier.html#java_base()" class="member-name-link">java_base</a>()</code></div>
+<div class="col-second even-row-color"><span class="type-name-label">RulesApplier.</span><code><a href="../RulesApplier.html#checkReflection()" class="member-name-link">checkReflection</a>()</code></div>
 <div class="col-last even-row-color">
+<div class="block">Returns an applier which allows reflection operations, but they are checked to ensure
+ that the corresponding constructor or method is allowed by the other rules.</div>
+</div>
+<div class="col-first odd-row-color"><code>static <a href="../RulesApplier.html" title="interface in org.cojen.boxtin">RulesApplier</a></code></div>
+<div class="col-second odd-row-color"><span class="type-name-label">RulesApplier.</span><code><a href="../RulesApplier.html#java_base()" class="member-name-link">java_base</a>()</code></div>
+<div class="col-last odd-row-color">
 <div class="block">Returns an applier of rules for the java.base module, which denies operations that are
  considered harmful.</div>
 </div>

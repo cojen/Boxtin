@@ -129,6 +129,11 @@ loadScripts(document, 'script');</script>
 <div class="block">Returns a deny action which checks a predicate to determine if the operation should
  actually be allowed.</div>
 </dd>
+<dt><a href="org.cojen.boxtin/org/cojen/boxtin/RulesApplier.html#checkReflection()" class="member-name-link">checkReflection()</a> - Static method in interface org.cojen.boxtin.<a href="org.cojen.boxtin/org/cojen/boxtin/RulesApplier.html" title="interface in org.cojen.boxtin">RulesApplier</a></dt>
+<dd>
+<div class="block">Returns an applier which allows reflection operations, but they are checked to ensure
+ that the corresponding constructor or method is allowed by the other rules.</div>
+</dd>
 <dt><a href="org.cojen.boxtin/org/cojen/boxtin/Controller.html" class="type-name-link" title="interface in org.cojen.boxtin">Controller</a> - Interface in <a href="org.cojen.boxtin/org/cojen/boxtin/package-summary.html">org.cojen.boxtin</a></dt>
 <dd>
 <div class="block">Decides what set of operations should be allowed or denied based on the caller's <code>
