@@ -120,7 +120,7 @@ When a `ClassFileTransformer` throws an exception, the instrumentation agent ign
 
 ## Reflection
 
-The standard rules for the `java.base` module permit reflection operations, but with some restrictions. Access is guarded when `Constructor` and `Method` instances are acquired, and not when they're invoked. Custom deny rules perform an access check is performed at that time, possibly resulting in an exception being thrown. For methods which return an array, (example: `Class.getMethods()`), a filtering step is applied which removes elements which cannot be accessed.
+The standard rules for the `java.base` module permit reflection operations, but with some restrictions. Access is guarded when `Constructor` and `Method` instances are acquired, and not when they're invoked. Custom deny rules perform an access check at that time, possibly resulting in an exception being thrown. For methods which return an array, (example: `Class.getMethods()`), a filtering step is applied which removes elements which cannot be accessed.
 
 The following methods in `java.lang.Class` have custom deny actions:
 
