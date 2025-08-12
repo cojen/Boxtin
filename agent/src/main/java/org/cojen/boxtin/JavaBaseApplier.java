@@ -16,20 +16,16 @@
 
 package org.cojen.boxtin;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodHandleInfo;
-import java.lang.invoke.MethodType;
-
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import java.lang.reflect.RecordComponent;
+import java.lang.invoke.MethodHandles;
 
 import java.nio.ByteBuffer;
 
 import java.security.ProtectionDomain;
 
 import java.util.Properties;
+
+import static org.cojen.boxtin.CustomActions.findMethod;
 
 /**
  * Defines a set of rules to deny operations in the java.base module which could be considered
@@ -39,16 +35,6 @@ import java.util.Properties;
  * @see RulesApplier#java_base
  */
 final class JavaBaseApplier implements RulesApplier {
-    private static MethodType mt(Class<?> rtype, Class<?>... ptypes) {
-        return MethodType.methodType(rtype, ptypes);
-    }
-
-    private MethodHandleInfo findMethod(MethodHandles.Lookup lookup, String name, MethodType mt)
-        throws NoSuchMethodException, IllegalAccessException
-    {
-        return lookup.revealDirect(lookup.findStatic(CustomActions.class, name, mt));
-    }
-
     @Override
     public void applyRulesTo(RulesBuilder b) {
         MethodHandleInfo iv1, iv2, lv1, lv2;
@@ -59,104 +45,51 @@ final class JavaBaseApplier implements RulesApplier {
         MethodHandleInfo cgr1, cgr2, cgr3;
         MethodHandleInfo cna1;
 
-        // Custom deny actions used by reflection methods.
-        MethodHandleInfo cref1, cref2, cref3, cref4, cref5, cref6,
-            cref7, cref8, cref9, cref10, cref11;
-
-        // Custom deny actions used by MethodHandle.Lookup methods.
-        MethodHandleInfo cmh1, cmh2, cmh3, cmh4, cmh5;
-
-        DenyAction restricted, inaccessible;
+        DenyAction restricted;
 
         try {
             MethodHandles.Lookup lookup = MethodHandles.lookup();
 
-            iv1 = findMethod(lookup, "intValue", mt(Integer.class, String.class, int.class));
-            iv2 = findMethod(lookup, "intValue", mt(Integer.class, String.class, Integer.class));
-            lv1 = findMethod(lookup, "longValue", mt(Long.class, String.class, long.class));
-            lv2 = findMethod(lookup, "longValue", mt(Long.class, String.class, Long.class));
+            iv1 = findMethod(lookup, "intValue", Integer.class, String.class, int.class);
+            iv2 = findMethod(lookup, "intValue", Integer.class, String.class, Integer.class);
+            lv1 = findMethod(lookup, "longValue", Long.class, String.class, long.class);
+            lv2 = findMethod(lookup, "longValue", Long.class, String.class, Long.class);
 
-            fp1 = findMethod(lookup, "getProperties", mt(Properties.class, Caller.class));
+            fp1 = findMethod(lookup, "getProperties", Properties.class, Caller.class);
             fp2 = findMethod(lookup, "getProperty",
-                             mt(String.class, Caller.class, String.class));
+                             String.class, Caller.class, String.class);
             fp3 = findMethod(lookup, "getProperty",
-                             mt(String.class, Caller.class, String.class, String.class));
+                             String.class, Caller.class, String.class, String.class);
             fp4 = findMethod(lookup, "setProperties",
-                             mt(void.class, Caller.class, Properties.class));
+                             void.class, Caller.class, Properties.class);
             fp5 = findMethod(lookup, "setProperty",
-                             mt(String.class, Caller.class, String.class, String.class));
-            fp6 = findMethod(lookup, "clearProperty", mt(String.class, Caller.class, String.class));
+                             String.class, Caller.class, String.class, String.class);
+            fp6 = findMethod(lookup, "clearProperty", String.class, Caller.class, String.class);
 
-            ctn = findMethod(lookup, "checkThreadNew", mt(boolean.class, Thread.class));
+            ctn = findMethod(lookup, "checkThreadNew", boolean.class, Thread.class);
 
             cdc1 = findMethod(lookup, "checkDefineClass",
-                              mt(boolean.class, Caller.class, ClassLoader.class, String.class,
-                                 byte[].class, int.class, int.class, ProtectionDomain.class));
+                              boolean.class, Caller.class, ClassLoader.class, String.class,
+                                 byte[].class, int.class, int.class, ProtectionDomain.class);
             cdc2 = findMethod(lookup, "checkDefineClass",
-                              mt(boolean.class, Caller.class, ClassLoader.class, String.class,
-                                 ByteBuffer.class, ProtectionDomain.class));
+                              boolean.class, Caller.class, ClassLoader.class, String.class,
+                                 ByteBuffer.class, ProtectionDomain.class);
 
             cfn1 = findMethod(lookup, "checkForName",
-                              mt(boolean.class, Caller.class, String.class, boolean.class,
-                                 ClassLoader.class));
+                              boolean.class, Caller.class, String.class, boolean.class,
+                                 ClassLoader.class);
 
             cgr1 = findMethod(lookup, "checkGetResource",
-                              mt(boolean.class, Caller.class, Class.class));
+                              boolean.class, Caller.class, Class.class);
             cgr2 = findMethod(lookup, "checkGetResource",
-                              mt(boolean.class, Caller.class, ClassLoader.class));
+                              boolean.class, Caller.class, ClassLoader.class);
             cgr3 = findMethod(lookup, "checkGetResource",
-                              mt(boolean.class, Caller.class, Module.class));
+                              boolean.class, Caller.class, Module.class);
 
-            cna1 = findMethod(lookup, "checkNativeAccess", mt(boolean.class, Caller.class));
-
-            cref1 = findMethod(lookup, "getConstructor",
-                               mt(Constructor.class, Caller.class, Class.class, Class[].class));
-            cref2 = findMethod(lookup, "getConstructors",
-                               mt(Constructor[].class, Caller.class, Class.class));
-            cref3 = findMethod(lookup, "getDeclaredConstructor",
-                               mt(Constructor.class, Caller.class, Class.class, Class[].class));
-            cref4 = findMethod(lookup, "getDeclaredConstructors",
-                               mt(Constructor[].class, Caller.class, Class.class));
-            cref5 = findMethod(lookup, "getDeclaredMethod",
-                               mt(Method.class, Caller.class,
-                                  Class.class, String.class, Class[].class));
-            cref6 = findMethod(lookup, "getDeclaredMethods",
-                               mt(Method[].class, Caller.class, Class.class));
-            cref7 = findMethod(lookup, "getEnclosingConstructor",
-                               mt(Constructor.class, Caller.class, Class.class));
-            cref8 = findMethod(lookup, "getEnclosingMethod",
-                               mt(Method.class, Caller.class, Class.class));
-            cref9 = findMethod(lookup, "getMethod",
-                               mt(Method.class, Caller.class, Class.class,
-                                  String.class, Class[].class));
-            cref10 = findMethod(lookup, "getMethods",
-                                mt(Method[].class, Caller.class, Class.class));
-            cref11 = findMethod(lookup, "getRecordComponents",
-                                mt(RecordComponent[].class, Caller.class, Class.class));
-
-            cmh1 = findMethod(lookup, "lookupBind",
-                              mt(MethodHandle.class, Caller.class, MethodHandles.Lookup.class,
-                                 Object.class, String.class, MethodType.class));
-            cmh2 = findMethod(lookup, "lookupFindConstructor",
-                              mt(MethodHandle.class, Caller.class, MethodHandles.Lookup.class,
-                                 Class.class, MethodType.class));
-            cmh3 = findMethod(lookup, "lookupFindSpecial",
-                              mt(MethodHandle.class, Caller.class, MethodHandles.Lookup.class,
-                                 Class.class, String.class, MethodType.class, Class.class));
-            cmh4 = findMethod(lookup, "lookupFindStatic",
-                              mt(MethodHandle.class, Caller.class, MethodHandles.Lookup.class,
-                                 Class.class, String.class, MethodType.class));
-            cmh5 = findMethod(lookup, "lookupFindVirtual",
-                              mt(MethodHandle.class, Caller.class, MethodHandles.Lookup.class,
-                                 Class.class, String.class, MethodType.class));
+            cna1 = findMethod(lookup, "checkNativeAccess", boolean.class, Caller.class);
 
             restricted = DenyAction.checked
                 (cna1, DenyAction.exception("java.lang.IllegalCallerException"));
-
-            inaccessible = DenyAction.checked
-                (findMethod(lookup, "checkSetAccessible",
-                            mt(boolean.class, Caller.class, Object.class, boolean.class)),
-                 DenyAction.exception("java.lang.reflect.InaccessibleObjectException"));
 
         } catch (RuntimeException e) {
             throw e;
@@ -267,18 +200,7 @@ final class JavaBaseApplier implements RulesApplier {
             .allowVariant(Module.class, String.class)
             .denyVariant(DenyAction.checked(cfn1, DenyAction.standard()),
                          String.class, boolean.class, ClassLoader.class)
-            .denyMethod(DenyAction.custom(cref1), "getConstructor")
-            .denyMethod(DenyAction.custom(cref2), "getConstructors")
-            .denyMethod(DenyAction.custom(cref3), "getDeclaredConstructor")
-            .denyMethod(DenyAction.custom(cref4), "getDeclaredConstructors")
-            .denyMethod(DenyAction.custom(cref5), "getDeclaredMethod")
-            .denyMethod(DenyAction.custom(cref6), "getDeclaredMethods")
-            .denyMethod(DenyAction.custom(cref7), "getEnclosingConstructor")
-            .denyMethod(DenyAction.custom(cref8), "getEnclosingMethod")
-            .denyMethod(DenyAction.custom(cref9), "getMethod")
-            .denyMethod(DenyAction.custom(cref10), "getMethods")
             .denyMethod("getProtectionDomain")
-            .denyMethod(DenyAction.custom(cref11), "getRecordComponents")
             .denyMethod("newInstance") // deprecated
             .denyMethod(DenyAction.checked(cgr1, DenyAction.value(null)), "getResource")
             .denyMethod(DenyAction.checked(cgr1, DenyAction.value(null)), "getResourceAsStream")
@@ -497,11 +419,6 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forClass("MethodHandles.Lookup")
             .denyAllMethods()
-            .denyMethod(DenyAction.custom(cmh1), "bind")
-            .denyMethod(DenyAction.custom(cmh2), "findConstructor")
-            .denyMethod(DenyAction.custom(cmh3), "findSpecial")
-            .denyMethod(DenyAction.custom(cmh4), "findStatic")
-            .denyMethod(DenyAction.custom(cmh5), "findVirtual")
             .allowMethod("accessClass")
             .allowMethod("defineClass")
             // Defining of hidden classes requires that special changes be made to the
@@ -547,18 +464,8 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forPackage("java.lang.ref").allowAll()
 
-            .forPackage("java.lang.reflect")
-            .allowAll()
-
-            .forClass("AccessibleObject")
-            .denyMethod(inaccessible, "setAccessible")
-            .denyMethod(DenyAction.value(false), "trySetAccessible")
-
-            .forClass("RecordComponent")
-            .denyMethod("getAccessor")
-
-            .forClass("Proxy")
-            .denyMethod("getProxyClass") // deprecated
+            // Reflection operations will be denied below when checkReflection is applied.
+            .forPackage("java.lang.reflect").allowAll()
 
             .forPackage("java.lang.runtime").allowAll()
 
@@ -928,5 +835,7 @@ final class JavaBaseApplier implements RulesApplier {
             .forPackage("javax.security.auth.x500").allowAll()
 
             ;
+
+        RulesApplier.checkReflection().applyRulesTo(b);
     }
 }

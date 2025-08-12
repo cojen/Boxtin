@@ -35,13 +35,30 @@ import java.util.Arrays;
 import java.util.Properties;
 
 /**
- * Used by JavaBaseApplier for selecting custom deny actions. The methods must be accessible,
- * which is why a separate class is used.
+ * Used by JavaBaseApplier and ReflectionApplier for selecting custom deny actions. The methods
+ * must be accessible, which is why a separate class is used.
  * 
  * @author Brian S. O'Neill
  * @hidden
  */
 public final class CustomActions {
+    static MethodType mt(Class<?> rtype, Class<?>... ptypes) {
+        return MethodType.methodType(rtype, ptypes);
+    }
+
+    static MethodHandleInfo findMethod(MethodHandles.Lookup lookup, String name, MethodType mt)
+        throws NoSuchMethodException, IllegalAccessException
+    {
+        return lookup.revealDirect(lookup.findStatic(CustomActions.class, name, mt));
+    }
+
+    static MethodHandleInfo findMethod(MethodHandles.Lookup lookup, String name,
+                                       Class<?> rtype, Class<?>... ptypes)
+        throws NoSuchMethodException, IllegalAccessException
+    {
+        return findMethod(lookup, name, mt(rtype, ptypes));
+    }
+
     // Custom deny action for Integer.getInteger.
     public static Integer intValue(String name, int defaultValue) {
         return defaultValue;

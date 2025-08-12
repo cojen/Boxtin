@@ -84,4 +84,55 @@ public interface RulesApplier {
     public static RulesApplier java_base() {
         return new JavaBaseApplier();
     }
+
+    /**
+     * Returns an applier which allows reflection operations, but they are checked to ensure
+     * that the corresponding constructor or method is allowed by the other rules. These rules
+     * applied automatically when the {@link #java_base java_base} rules are applied.
+     *
+     * <p>Access is checked when {@code Constructor} and {@code Method} instances are acquired,
+     * and not when they're invoked. Custom deny rules perform a check at that time, possibly
+     * resulting in an exception being thrown. For methods which return an array (example:
+     * {@code Class.getMethods()}), a filtering step is applied which removes elements which
+     * cannot be accessed.
+     *
+     * <p>The following methods in {@code java.lang.Class} have custom deny actions applied:
+     *
+     * <p>
+     * <ul>
+     * <li>{@code getConstructor} - can throw a {@code NoSuchMethodException}
+     * <li>{@code getConstructors} - can filter the results
+     * <li>{@code getDeclaredConstructor} - can throw a {@code NoSuchMethodException}
+     * <li>{@code getDeclaredConstructors} - can filter the results
+     * <li>{@code getDeclaredMethod} - can throw a {@code NoSuchMethodException}
+     * <li>{@code getDeclaredMethods} - can filter the results
+     * <li>{@code getEnclosingConstructor} - can throw a {@code NoSuchMethodError}
+     * <li>{@code getEnclosingMethod} - can throw a {@code NoSuchMethodError}
+     * <li>{@code getMethod} - can throw a {@code NoSuchMethodException}
+     * <li>{@code getMethods} - can filter the results
+     * <li>{@code getRecordComponents} - can filter the results
+     * </ul>
+     *
+     * <p>Methods which return {@code MethodHandle} instances are checked using the same
+     * strategy as for reflection. Custom deny actions are defined for the following {@code
+     * Lookup} methods, which can throw a {@code NoSuchMethodException}:
+     *
+     * <p>
+     * <ul>
+     * <li>{@code bind}
+     * <li>{@code findConstructor}
+     * <li>{@code findSpecial}
+     * <li>{@code findStatic}
+     * <li>{@code findVirtual}
+     * </ul>
+     *
+     * <p>Methods defined by {@code AccessibleObject} which enable access to class members are
+     * denied. Calling {@code setAccessible} causes an {@code InaccessibleObjectException} to
+     * be thrown, except when the caller module is the same as the target module. Calling
+     * {@code trySetAccessible} does nothing, and instead the caller gets a result of {@code
+     * false}.
+     */
+    public static RulesApplier checkReflection() {
+        return new ReflectionApplier();
+    }
 }
