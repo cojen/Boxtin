@@ -68,6 +68,8 @@ public final class SecurityAgent {
 
     static final boolean DEBUG = Boolean.getBoolean(SecurityAgent.class.getName() + ".DEBUG");
 
+    private static final Object LOCK = new Object();
+
     private static final ClassLoader ALT_LOADER;
 
     private static Instrumentation cInst;
@@ -89,7 +91,7 @@ public final class SecurityAgent {
      * @hidden
      */
     public static void premain(String agentArgs, Instrumentation inst) {
-        synchronized (SecurityAgent.class) {
+        synchronized (LOCK) {
             if (cInst != null) {
                 // Already called.
                 throw new SecurityException();
@@ -195,7 +197,7 @@ public final class SecurityAgent {
         Instrumentation inst;
         SecurityAgent agent;
 
-        synchronized (SecurityAgent.class) {
+        synchronized (LOCK) {
             if ((inst = cInst) == null) {
                 throw new IllegalStateException("SecurityAgent must be loaded using -javaagent");
             }
