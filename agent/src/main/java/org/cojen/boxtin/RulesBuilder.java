@@ -170,7 +170,7 @@ public final class RulesBuilder {
         }
 
         return modules.computeIfAbsent(name, k -> {
-            return new ModuleScope(module).ruleForAll(mDefaultRule);
+            return new ModuleScope(this, module).ruleForAll(mDefaultRule);
         });
     }
 
@@ -344,7 +344,8 @@ public final class RulesBuilder {
     /**
      * Builder of rules at the module level.
      */
-    public final class ModuleScope {
+    public static final class ModuleScope {
+        private final RulesBuilder mParent;
         private final Module mModule;
 
         // Can be null when empty.
@@ -353,7 +354,8 @@ public final class RulesBuilder {
         // Default is selected when no map entry is found.
         private Rule mDefaultRule;
 
-        private ModuleScope(Module module) {
+        private ModuleScope(RulesBuilder parent, Module module) {
+            mParent = parent;
             mModule = module;
         }
 
@@ -433,7 +435,7 @@ public final class RulesBuilder {
          * can be added to this scope later if desired.
          */
         public RulesBuilder end() {
-            return RulesBuilder.this;
+            return mParent;
         }
 
         /**
@@ -479,7 +481,7 @@ public final class RulesBuilder {
         void validate(Consumer<String> reporter) {
             ClassLoader loader;
             try {
-                loader = mLayer.findLoader(mModule.getName());
+                loader = mParent.mLayer.findLoader(mModule.getName());
             } catch (IllegalArgumentException e) {
                 reporter.accept("Module loader isn't found: " + mModule.getName());
                 return;
