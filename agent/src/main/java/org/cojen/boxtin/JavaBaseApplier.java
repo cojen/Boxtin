@@ -362,11 +362,7 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod(DenyAction.empty(), "setDaemon")      // do nothing
             .denyMethod(DenyAction.empty(), "setMaxPriority") // do nothing
 
-            .forPackage("java.lang.annotation")
-            .allowAll()
-
-            .forClass("AnnotationTypeMismatchException")
-            .denyMethod("element")
+            .forPackage("java.lang.annotation").allowAll()
 
             .forPackage("java.lang.classfile")
             .allowAll()

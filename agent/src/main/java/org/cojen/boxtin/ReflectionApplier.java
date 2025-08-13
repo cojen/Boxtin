@@ -116,6 +116,12 @@ final class ReflectionApplier implements RulesApplier {
             .denyMethod(DenyAction.custom(cref11), "getRecordComponents")
 
 
+            .forPackage("java.lang.annotation")
+
+            .forClass("AnnotationTypeMismatchException")
+            .denyMethod("element")
+
+
             .forPackage("java.lang.invoke")
 
             .forClass("MethodHandles.Lookup")
