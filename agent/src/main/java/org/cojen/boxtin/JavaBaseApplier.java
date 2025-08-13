@@ -38,7 +38,7 @@ final class JavaBaseApplier implements RulesApplier {
     @Override
     public void applyRulesTo(RulesBuilder b) {
         MethodHandleInfo iv1, iv2, lv1, lv2;
-        MethodHandleInfo fp1, fp2, fp3, fp4, fp5, fp6;
+        MethodHandleInfo gp1, gp2;
         MethodHandleInfo ctn;
         MethodHandleInfo cdc1, cdc2;
         MethodHandleInfo cfn1;
@@ -55,16 +55,8 @@ final class JavaBaseApplier implements RulesApplier {
             lv1 = findMethod(lookup, "longValue", Long.class, String.class, long.class);
             lv2 = findMethod(lookup, "longValue", Long.class, String.class, Long.class);
 
-            fp1 = findMethod(lookup, "getProperties", Properties.class, Caller.class);
-            fp2 = findMethod(lookup, "getProperty",
-                             String.class, Caller.class, String.class);
-            fp3 = findMethod(lookup, "getProperty",
-                             String.class, Caller.class, String.class, String.class);
-            fp4 = findMethod(lookup, "setProperties",
-                             void.class, Caller.class, Properties.class);
-            fp5 = findMethod(lookup, "setProperty",
-                             String.class, Caller.class, String.class, String.class);
-            fp6 = findMethod(lookup, "clearProperty", String.class, Caller.class, String.class);
+            gp1 = findMethod(lookup, "getProperty", String.class, String.class);
+            gp2 = findMethod(lookup, "getProperty", String.class, String.class, String.class);
 
             ctn = findMethod(lookup, "checkThreadNew", boolean.class, Thread.class);
 
@@ -299,14 +291,9 @@ final class JavaBaseApplier implements RulesApplier {
             .denyVariant(DenyAction.empty())
             // Return null for all environment variables.
             .denyVariant(DenyAction.value(null), "Ljava/lang/String;")
-            // Return a filtered set of properties.
-            .denyMethod(DenyAction.custom(fp1), "getProperties")
             .denyMethod("getProperty")
-            .denyVariant(DenyAction.custom(fp2), "Ljava/lang/String;")
-            .denyVariant(DenyAction.custom(fp3), "Ljava/lang/String;Ljava/lang/String;")
-            .denyMethod(DenyAction.custom(fp4), "setProperties")
-            .denyMethod(DenyAction.custom(fp5), "setProperty")
-            .denyMethod(DenyAction.custom(fp6), "clearProperty")
+            .denyVariant(DenyAction.custom(gp1), "Ljava/lang/String;")
+            .denyVariant(DenyAction.custom(gp2), "Ljava/lang/String;Ljava/lang/String;")
             .denyMethod(DenyAction.empty(), "gc") // do nothing
             .denyMethod(DenyAction.empty(), "runFinalization") // do nothing
             .allowMethod("arraycopy")

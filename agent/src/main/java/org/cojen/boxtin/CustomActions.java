@@ -79,34 +79,32 @@ public final class CustomActions {
         return defaultValue;
     }
 
-    // Custom deny action for System.getProperties.
-    public static Properties getProperties(Caller caller) {
-        return FilteredProperties.getProperties(caller.validate().getModule());
+    // Custom deny action for System.getProperty.
+    public static String getProperty(String name) {
+        return checkGetProperty(name) ? System.getProperty(name) : null;
     }
 
     // Custom deny action for System.getProperty.
-    public static String getProperty(Caller caller, String name) {
-        return FilteredProperties.getProperty(caller.validate().getModule(), name);
+    public static String getProperty(String name, String def) {
+        return checkGetProperty(name) ? System.getProperty(name, def) : def;
     }
 
-    // Custom deny action for System.getProperty.
-    public static String getProperty(Caller caller, String name, String def) {
-        return FilteredProperties.getProperty(caller.validate().getModule(), name, def);
-    }
+    private static boolean checkGetProperty(String name) {
+        return switch (name) {
+            default -> false;
 
-    // Custom deny action for System.setProperties.
-    public static void setProperties(Caller caller, Properties props) {
-        FilteredProperties.setProperties(caller.validate().getModule(), props);
-    }
-
-    // Custom deny action for System.setProperty.
-    public static String setProperty(Caller caller, String name, String value) {
-        return FilteredProperties.setProperty(caller.validate().getModule(), name, value);
-    }
-
-    // Custom deny action for System.clearProperty.
-    public static String clearProperty(Caller caller, String name) {
-        return FilteredProperties.clearProperty(caller.validate().getModule(), name);
+            case "java.version", "java.version.date",
+                "java.vendor", "java.vendor.url", "java.vendor.version",
+                "java.vm.specification.version", "java.vm.specification.vendor",
+                "java.vm.specification.name", "java.vm.version", "java.vm.vendor", "java.vm.name",
+                "java.specification.version", "java.specification.maintenance.version",
+                "java.specification.vendor", "java.specification.name",
+                "java.class.version",
+                "os.name", "os.arch", "os.version",
+                "file.separator", "path.separator", "line.separator",
+                "native.encoding", "stdin.encoding", "stdout.encoding", "stderr.encoding"
+                -> true;
+        };
     }
 
     // Check for various Thread operations.

@@ -47,25 +47,30 @@ public class PropertiesTest extends TransformTest {
         assertNull(System.getProperty("user.dir"));
         assertEquals("x", System.getProperty("user.dir", "x"));
         assertNotNull(System.getProperty("file.separator"));
-        assertNull(System.setProperty("user.dir", "fake"));
-        assertEquals("fake", System.getProperty("user.dir"));
-        System.clearProperty("user.dir");
-        assertNull(System.getProperty("user.dir"));
-        System.setProperty("file.separator", "qqq");
-        assertEquals("qqq", System.getProperty("file.separator"));
-        System.setProperties(null);
-        assertNotEquals("qqq", System.getProperty("file.separator"));
 
-        var props = new Properties();
-        System.setProperties(props);
+        try {
+            System.setProperty("abc", "xyz");
+            fail();
+        } catch (SecurityException e) {
+        }
 
-        assertNull(System.getProperty("file.separator"));
+        try {
+            System.clearProperty("abc");
+            fail();
+        } catch (SecurityException e) {
+        }
 
-        String name = PropertiesTest.class.getName();
-        System.setProperty(name, "hello");
-        assertEquals("hello", props.get(name));
-        assertEquals("hello", props.getProperty(name));
-        assertTrue(System.getProperties().containsKey(name));
+        try {
+            System.setProperties(null);
+            fail();
+        } catch (SecurityException e) {
+        }
+
+        try {
+            System.getProperties();
+            fail();
+        } catch (SecurityException e) {
+        }
     }
 
     @Test

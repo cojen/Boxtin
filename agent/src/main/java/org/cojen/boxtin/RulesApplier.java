@@ -54,12 +54,12 @@ public interface RulesApplier {
      * <li>Loading native code or calling restricted FFM operations (*)
      * <li>Using reflection to bypass any rules
      * <li>Reading resources from other ClassLoaders or Modules
-     * <li>Accessing sensitive system properties (**)
+     * <li>Reading sensitive system properties or changing the system properties
      * <li>Altering shared settings (current locale, time zone, etc.)
      * <li>Creating ObjectInputStreams
      * <li>Defining new Modules
      * <li>Exiting the current process
-     * <li>Changing sensitive thread settings (priority, etc. ***)
+     * <li>Changing sensitive thread settings (priority, etc. **)
      * <li>Using the spi packages in the java.base module
      * <li>Altering Provider properties
      * <li>Closing or shutting down ForkJoinPools
@@ -74,11 +74,7 @@ public interface RulesApplier {
      * href=https://openjdk.org/jeps/454>JEP 454</a>)
      * </ul>
      *
-     * <p>** Altering system properties is allowed, but the changes are only visible to the
-     * module that changed them. This restriction doesn't apply to modules which are permitted
-     * to fully access system properties.
-     *
-     * <p>*** A few thread settings can be changed if the thread hasn't started yet: name,
+     * <p>** A few thread settings can be changed if the thread hasn't started yet: name,
      * daemon status, the context ClassLoader, and the thread's own uncaught exception handler.
      */
     public static RulesApplier java_base() {
