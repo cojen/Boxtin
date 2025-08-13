@@ -300,7 +300,7 @@ public final class CustomActions {
 
         RecordComponent[] components = clazz.getRecordComponents();
 
-        if (callerClass.getModule() == clazz.getModule()) {
+        if (components == null || callerClass.getModule() == clazz.getModule()) {
             return components;
         }
 

@@ -281,6 +281,15 @@ public class ReflectionTest extends TransformTest {
     }
 
     @Test
+    public void noRecordComponents() throws Exception {
+        if (runTransformed()) {
+            return;
+        }
+
+        assertNull(System.class.getRecordComponents());
+    }
+
+    @Test
     public void bind() throws Exception {
         if (runTransformed()) {
             return;
