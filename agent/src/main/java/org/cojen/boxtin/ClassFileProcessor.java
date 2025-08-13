@@ -200,10 +200,10 @@ final class ClassFileProcessor {
             Rules.ForClass forClass = rulesForClass(superClass);
 
             if (forClass.isAllDenied()) {
-                // No need to explictly deny because the super class constructors will.
+                // No need to explicitly deny because the super class constructors will.
                 mDenyConstruction = false;
 
-                // Access to the inherited static methods must be explictly denied.
+                // Access to the inherited static methods must be explicitly denied.
 
                 Map<String, Module> packageToModule =
                     PackageToModule.packageMapFor(rules.moduleLayer());

@@ -61,7 +61,7 @@ import java.util.Map;
 public final class SecurityAgent {
     /* 
        Note: Some of the public methods in this class are documented as hidden, but there's no
-       expecation that this offers any security. The intent is to keep the documentation clean.
+       expectation that this offers any security. The intent is to keep the documentation clean.
        For the most part, calling these methods is harmless, and the ClassFileTransformer
        explicitly denies access to them anyhow.
      */
