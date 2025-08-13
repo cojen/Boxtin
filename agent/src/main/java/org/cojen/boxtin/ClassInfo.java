@@ -305,11 +305,11 @@ final class ClassInfo {
             }
         }
 
-        for (String ifaceName : mInterfaceNames) {
+        // Note that only inherited instance methods are considered, because static interface
+        // methods aren't really inherited.
+        if (instanceMethods) for (String ifaceName : mInterfaceNames) {
             ClassInfo ifaceInfo = find(ifaceName, packageToModule);
             if (ifaceInfo != null) {
-                // Note that inherited statics are ignored, because static interface methods
-                // aren't really inherited.
                 if (!ifaceInfo.forAllMethods(packageToModule, false, instanceMethods, consumer)) {
                     return false;
                 }
