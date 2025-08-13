@@ -132,9 +132,6 @@ final class ReflectionApplier implements RulesApplier {
             .denyMethod(inaccessible, "setAccessible")
             .denyMethod(DenyAction.value(false), "trySetAccessible")
 
-            .forClass("RecordComponent")
-            .denyMethod("getAccessor")
-
             .forClass("Proxy")
             .denyMethod("getProxyClass") // deprecated
 
