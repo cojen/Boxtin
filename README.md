@@ -86,6 +86,12 @@ For each accessible static method (which isn't already declared locally in the s
 
 If the inherited static method is final, it still needs to be overridden to ensure that the access check is applied. Overriding such a method is perfectly legal as far as the JVM is concerned, and it's the Java compiler which restricts this.
 
+Subtyping restrictions act a little bit differently than explicit class denials. For example, the [`java.base`](https://cojen.github.io/Boxtin/javadoc/org.cojen.boxtin/org/cojen/boxtin/RulesApplier.html#java_base()) rules deny access to the `java.nio.channels.spi` package. The `AbstractInterruptibleChannel` is defined in this package, and so it's implicitly denied. A subclass defined by a module which has these rules applied to it cannot be constructed &mdash; the subclass constructor always throws an exception.
+
+However, the `java.nio.channels.SelectableChannel` class is a subclass of `AbstractInterruptibleChannel`, and this is allowed because both classes are in the same module. In addition, the `SelectableChannel` class is fully allowed because all classes in the `java.nio.channels` package are allowed by default, according to the `java.base` rules. The module which was denied the ability to subclass `AbstractInterruptibleChannel` directly can subclass `SelectableChannel`, thus extending `AbstractInterruptibleChannel` indirectly.
+
+If `AbstractInterruptibleChannel` is explicitly denied and `SelectableChannel` is still allowed, subclassing `SelectableChannel` is still allowed, but the methods inherited from `AbstractInterruptibleChannel` are denied. If `SelectableChannel` overrides any of them, access is still denied. This inconsistency is undesirable, but it's not clear which behavior should be preferred.
+
 ### MethodHandle constants
 
 The Java classfile format supports defining [`MethodHandle`](https://docs.oracle.com/javase/specs/jvms/se24/html/jvms-4.html#jvms-4.4.8) constants, which are primarily used by Java lambdas. When necessary, Boxtin transforms these constants such that a security check is put in place. It does this by replacing the original constant with one that calls a synthetic proxy method.
