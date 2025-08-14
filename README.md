@@ -18,11 +18,11 @@ Boxtin is designed to restrict operations for "plugins", much like the original 
 - Rules are selected by module, not by code source or protection domain.
 - The standard deny action is to throw a `SecurityException`, but alternative [deny actions](https://cojen.github.io/Boxtin/javadoc/org.cojen.boxtin/org/cojen/boxtin/DenyAction.html) can be configured instead.
 
-A _caller_ is the plugin code, represented by a [module](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Module.html), possibly unnamed. A _target_ is the code which is being called by the caller, represented by a rule. A rule logically maps target methods or constructors to an "allow" or "deny" outcome.
+A _caller_ is the plugin code, represented by a [module](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Module.html), possibly unnamed. A _target_ is the code which is being called by the caller, represented by a rule. A rule logically maps target methods or constructors to an "allow" or "deny" outcome. Targets must be defined in modules &mdash; classes and interfaces loaded from the class path cannot have deniable operations.
 
 Boxtin works by examining classes to see if any invocation of a constructor or method matches against a deny rule. If so, the class is transformed such that all suitable deny actions are applied. This type of transformation is strictly a "caller-side" check, and "target-side" checks are never performed — no stack trace is ever captured at runtime, and target classes are never modified unless they themselves call any denied operations.
 
-The controller decides which set of rules apply for a given module. For convenience, a [`RulesApplier`](https://cojen.github.io/Boxtin/javadoc/org.cojen.boxtin/org/cojen/boxtin/RulesApplier.html) can define a standard set of rules, by name or category. For example: [`java.base`](https://github.com/cojen/Boxtin/blob/main/agent/src/main/java/org/cojen/boxtin/JavaBaseApplier.java)
+The controller decides which set of rules apply for a given caller module. For convenience, a [`RulesApplier`](https://cojen.github.io/Boxtin/javadoc/org.cojen.boxtin/org/cojen/boxtin/RulesApplier.html) can define a standard set of rules, by name or category. For example: [`java.base`](https://github.com/cojen/Boxtin/blob/main/agent/src/main/java/org/cojen/boxtin/JavaBaseApplier.java)
 
 Rules cannot allow access to operations beyond the boundaries already established by modules. As an example, a rule cannot be defined to allow access to the internal JDK classes. The existing Java `--add-exports` and `--add-opens` options must be used instead.
 
