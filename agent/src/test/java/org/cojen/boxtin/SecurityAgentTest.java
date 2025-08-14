@@ -27,8 +27,6 @@ import java.util.Set;
 
 import java.util.jar.JarFile;
 
-import java.util.logging.Handler;
-import java.util.logging.Logger;
 import java.util.logging.LogRecord;
 
 import org.junit.*;
@@ -170,34 +168,11 @@ public class SecurityAgentTest {
 
     @Test
     public void logException() throws Exception {
-        Logger logger = Logger.getLogger(SecurityAgent.class.getName());
-        logger.setUseParentHandlers(false);
-
-        final ArrayList<LogRecord> records = new ArrayList<>();
-
-        var handler = new Handler() {
-            @Override
-            public void publish(LogRecord record) {
-                records.add(record);
-            }
-
-            @Override
-            public void flush() {
-            }
-
-            @Override
-            public void close() {
-            }
-        };
-
-        logger.addHandler(handler);
-
-        SecurityAgent.logException(new Exception());
-        SecurityAgent.logException(new Exception("hello"));
-        SecurityAgent.logException("hello", new IllegalArgumentException());
-
-        logger.setUseParentHandlers(true);
-        logger.removeHandler(handler);
+        List<LogRecord> records = SimpleLogHandler.forSecurityAgent(() -> {
+            SecurityAgent.logException(new Exception());
+            SecurityAgent.logException(new Exception("hello"));
+            SecurityAgent.logException("hello", new IllegalArgumentException());
+        });
 
         assertEquals(3, records.size());
 

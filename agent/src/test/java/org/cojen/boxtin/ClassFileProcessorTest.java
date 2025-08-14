@@ -144,6 +144,8 @@ public class ClassFileProcessorTest {
             });
             mm.return_(lengthVar);
 
+            cm.addMethod(void.class, "skip").public_().static_();
+
             byte[] bytes = cm.finishBytes();
             bytes = ClassFileProcessor.begin(bytes).transformHiddenClassCreation();
             checker = loader.inject(checkerName, bytes);

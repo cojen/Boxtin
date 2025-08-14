@@ -346,8 +346,11 @@ public final class SecurityAgent {
             return EmptyClassMaker.make(className);
         } catch (Throwable e2) {
             // Everything is broken.
-            logException(e2);
-            Runtime.getRuntime().halt(1);
+            try {
+                logException(e2);
+            } finally {
+                Runtime.getRuntime().halt(1);
+            }
             throw e2;
         }
     }
