@@ -132,3 +132,12 @@ The standard rules for the `java.base` module permit reflection operations, but 
 
 Methods declared in the root `Object` class cannot be denied, even when done so explicitly. This makes it easier to deny all methods in a class without breaking these fundamental operations. Even if these operations could be denied, the caller check would be bypassed when any of these methods are invoked by any of the classes in the `java.base` module. For example: `String.valueOf(obj)` calls `toString()`.
 
+## Limitations
+
+The technique currently used to modify code is relatively simple and efficient, but it does have a limitation. The original invoke instruction for a denied operation is replaced with a `goto`, which branches to new code which is added at the end of the method. If the operation is allowed to continue, a `goto` or `goto_w` instruction branches back to the location just after the original invoke. 
+
+Because the `goto` instruction is limited to a signed 16-bit offset, methods larger than 32767 bytes might not be transformable. When this happens, an error is logged and the entire class is replaced with an empty one. Ideally a `goto_w` instruction should be used, but it doesn't fit in the space occupied by the original invoke instruction. The exception is the `invokeinterface` instruction, which is large enough to be replaced with a `goto_w` instruction.
+
+Even if the `goto` limitation was resolved, very large methods might still not be transformable, because the upper limit for a method is 65535 bytes.
+
+
