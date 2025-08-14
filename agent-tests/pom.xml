@@ -11,7 +11,7 @@
   <parent>
     <groupId>org.cojen</groupId>
     <artifactId>boxtin-parent</artifactId>
-    <version>0.0.1</version>
+    <version>0.9.0</version>
   </parent>
 
   <properties>
@@ -28,7 +28,7 @@
     <dependency>
       <groupId>org.cojen</groupId>
       <artifactId>boxtin</artifactId>
-      <version>[0.0.1]</version>
+      <version>[0.9.0]</version>
       <scope>test</scope>
     </dependency>
     <dependency>
