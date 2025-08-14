@@ -31,7 +31,13 @@ public class SystemPropertiesTest {
 
     @Test
     public void basic() throws Exception {
-        assertNull(System.getProperties().get("user.dir"));
-        assertNotNull(System.getProperties().get("file.separator"));
+        try {
+            System.getProperties();
+            fail();
+        } catch (SecurityException e) {
+        }
+
+        assertNull(System.getProperty("user.dir"));
+        assertNotNull(System.getProperty("file.separator"));
     }
 }
