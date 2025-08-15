@@ -752,8 +752,8 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope denyAllConstructors(DenyAction action) {
-            mConstructors = null;
             Rule rule = deny(action);
+            mConstructors = null;
             mDefaultConstructorRule = rule;
             mVariantScope = mConstructors = new MethodScope().ruleForAll(rule);
             return this;
@@ -774,8 +774,8 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope denyAllMethods(DenyAction action) {
-            mMethods = null;
             mDefaultMethodRule = deny(action);
+            mMethods = null;
             mVariantScope = null;
             return this;
         }
@@ -797,7 +797,8 @@ public final class RulesBuilder {
          * @throws IllegalArgumentException if not a valid method name
          */
         public ClassScope denyMethod(DenyAction action, String name) {
-            mVariantScope = forMethod(name).ruleForAll(deny(action));
+            Rule rule = deny(action);
+            mVariantScope = forMethod(name).ruleForAll(rule);
             return this;
         }
 
@@ -910,10 +911,11 @@ public final class RulesBuilder {
          * @throws IllegalStateException if no current constructor or method
          */
         public ClassScope denyVariant(DenyAction action, String descriptor) {
+            Rule rule = deny(action);
             if (mVariantScope == null) {
                 throw new IllegalStateException("No current constructor or method");
             }
-            mVariantScope.ruleForVariant(deny(action), descriptor);
+            mVariantScope.ruleForVariant(rule, descriptor);
             return this;
         }
 
