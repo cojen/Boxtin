@@ -743,10 +743,7 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope denyAllConstructors() {
-            mConstructors = null;
-            mDefaultConstructorRule = deny();
-            mVariantScope = mConstructors = new MethodScope().ruleForAll(deny());
-            return this;
+            return denyAllConstructors(DenyAction.standard());
         }
 
         /**
@@ -768,10 +765,7 @@ public final class RulesBuilder {
          * @return this
          */
         public ClassScope denyAllMethods() {
-            mMethods = null;
-            mDefaultMethodRule = deny();
-            mVariantScope = null;
-            return this;
+            return denyAllMethods(DenyAction.standard());
         }
 
         /**
@@ -793,8 +787,7 @@ public final class RulesBuilder {
          * @throws IllegalArgumentException if not a valid method name
          */
         public ClassScope denyMethod(String name) {
-            mVariantScope = forMethod(name).ruleForAll(deny());
-            return this;
+            return denyMethod(DenyAction.standard(), name);
         }
 
         /**
@@ -815,15 +808,11 @@ public final class RulesBuilder {
          * @param descriptor descriptor for the parameters, not including parenthesis or the
          * return type
          * @return this
-         * @throws IllegalStateException if no current constructor or method, or if all
-         * variants are explicitly allowed
+         * @throws IllegalStateException if no current constructor or method
          */
         public ClassScope allowVariant(String descriptor) {
             if (mVariantScope == null) {
                 throw new IllegalStateException("No current constructor or method");
-            }
-            if (mVariantScope.isAllAllowed()) {
-                throw new IllegalStateException("All variants are explicitly allowed");
             }
             mVariantScope.ruleForVariant(allow(), descriptor);
             return this;
@@ -871,7 +860,7 @@ public final class RulesBuilder {
         public ClassScope allowAllConstructors() {
             mConstructors = null;
             mDefaultConstructorRule = allow();
-            mVariantScope = mConstructors = new MethodScope().allowAll();
+            mVariantScope = mConstructors = new MethodScope().ruleForAll(allow());
             return this;
         }
 
@@ -894,7 +883,7 @@ public final class RulesBuilder {
          * @throws IllegalArgumentException if not a valid method name
          */
         public ClassScope allowMethod(String name) {
-            mVariantScope = forMethod(name).allowAll();
+            mVariantScope = forMethod(name).ruleForAll(allow());
             return this;
         }
 
@@ -905,18 +894,10 @@ public final class RulesBuilder {
          * @param descriptor descriptor for the parameters, not including parenthesis or the
          * return type
          * @return this
-         * @throws IllegalStateException if no current constructor or method, or if all
-         * variants are explicitly denied
+         * @throws IllegalStateException if no current constructor or method
          */
         public ClassScope denyVariant(String descriptor) {
-            if (mVariantScope == null) {
-                throw new IllegalStateException("No current constructor or method");
-            }
-            if (mVariantScope.isAllDenied()) {
-                throw new IllegalStateException("All variants are explicitly denied");
-            }
-            mVariantScope.ruleForVariant(deny(), descriptor);
-            return this;
+            return denyVariant(DenyAction.standard(), descriptor);
         }
 
         /**
@@ -941,8 +922,7 @@ public final class RulesBuilder {
          * all previous rules.
          *
          * @return this
-         * @throws IllegalStateException if no current constructor or method, or if all
-         * variants are explicitly denied
+         * @throws IllegalStateException if no current constructor or method
          */
         public ClassScope denyVariant(Class<?>... paramTypes) {
             return denyVariant(paramDescriptorFor(paramTypes));
@@ -953,8 +933,7 @@ public final class RulesBuilder {
          * all previous rules.
          *
          * @return this
-         * @throws IllegalStateException if no current constructor or method, or if all
-         * variants are explicitly denied
+         * @throws IllegalStateException if no current constructor or method
          */
         public ClassScope denyVariant(DenyAction action, Class<?>... paramTypes) {
             return denyVariant(action, paramDescriptorFor(paramTypes));
@@ -1156,15 +1135,6 @@ public final class RulesBuilder {
 
         boolean isAllAllowed() {
             return isEmpty(mVariants) && mDefaultRule.isAllowed();
-        }
-
-        /**
-         * Allow access to all variants, superseding all previous rules.
-         *
-         * @return this
-         */
-        MethodScope allowAll() {
-            return ruleForAll(allow());
         }
 
         /**

@@ -164,14 +164,6 @@ public class RulesBuilderTest {
         }
 
         try {
-            b.forModule("java.base").forPackage("java.lang").forClass("String")
-                .allowAllConstructors().allowVariant("x");
-            fail();
-        } catch (IllegalStateException e) {
-            assertTrue(e.getMessage().contains("explicitly"));
-        }
-
-        try {
             b.forModule("java.base").forPackage("java.lang").forClass("Long").denyVariant("x");
             fail();
         } catch (IllegalStateException e) {
@@ -184,14 +176,6 @@ public class RulesBuilderTest {
             fail();
         } catch (IllegalStateException e) {
             assertTrue(e.getMessage().contains("current"));
-        }
-
-        try {
-            b.forModule("java.base").forPackage("java.lang").forClass("Long")
-                .denyAllConstructors().denyVariant("x");
-            fail();
-        } catch (IllegalStateException e) {
-            assertTrue(e.getMessage().contains("explicitly"));
         }
 
         // This is actually okay.
