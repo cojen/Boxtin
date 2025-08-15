@@ -386,14 +386,14 @@ public final class RulesBuilder {
          * @return this
          */
         public ModuleScope allowAll() {
+            ruleForAll(allow());
+
             // Need to expand all the packages, given that the module associations aren't known
             // when classes are transformed.
 
-            denyAll();
-
             for (String packageName : mModule.getPackages()) {
                 if (mModule.isExported(packageName)) {
-                    forPackage(packageName).allowAll();
+                    forPackage(packageName);
                 }
             }
 
@@ -503,11 +503,8 @@ public final class RulesBuilder {
         {
             if (mPackages != null) {
                 for (Map.Entry<String, PackageScope> e : mPackages.entrySet()) {
-                    RuleSet.PackageScope scope = e.getValue()
-                        .build(mModule, mDefaultRule, packageToModule);
-                    if (scope != null) {
-                        packageScopes.put(scope.name(), scope);
-                    }
+                    RuleSet.PackageScope scope = e.getValue().build(mModule, packageToModule);
+                    packageScopes.put(scope.name(), scope);
                 }
             }
         }
@@ -673,16 +670,7 @@ public final class RulesBuilder {
             }
         }
 
-        /**
-         * @return null if redundant
-         */
-        private RuleSet.PackageScope build(Module module, Rule parentRule,
-                                           Map<String, Module> packageToModule)
-        {
-            if (isEmpty(mClasses) && parentRule.equals(mDefaultRule)) {
-                return null;
-            }
-
+        private RuleSet.PackageScope build(Module module, Map<String, Module> packageToModule) {
             Map<String, RuleSet.ClassScope> builtClasses;
 
             if (isEmpty(mClasses)) {
