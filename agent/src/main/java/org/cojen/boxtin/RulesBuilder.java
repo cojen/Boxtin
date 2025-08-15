@@ -386,18 +386,7 @@ public final class RulesBuilder {
          * @return this
          */
         public ModuleScope allowAll() {
-            ruleForAll(allow());
-
-            // Need to expand all the packages, given that the module associations aren't known
-            // when classes are transformed.
-
-            for (String packageName : mModule.getPackages()) {
-                if (mModule.isExported(packageName)) {
-                    forPackage(packageName);
-                }
-            }
-
-            return this;
+            return ruleForAll(allow());
         }
 
         /**
@@ -406,6 +395,18 @@ public final class RulesBuilder {
         ModuleScope ruleForAll(Rule rule) {
             mPackages = null;
             mDefaultRule = rule;
+
+            if (rule.isAllAllowed()) {
+                // Need to expand all the packages, given that the module associations aren't
+                // known when classes are transformed.
+
+                for (String packageName : mModule.getPackages()) {
+                    if (mModule.isExported(packageName)) {
+                        forPackage(packageName);
+                    }
+                }
+            }
+
             return this;
         }
 
