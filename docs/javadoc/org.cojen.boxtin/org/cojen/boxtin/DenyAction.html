@@ -73,7 +73,7 @@ loadScripts(document, 'script');</script>
 <li><a href="#value(java.lang.Object)" tabindex="0">value(Object)</a></li>
 <li><a href="#empty()" tabindex="0">empty()</a></li>
 <li><a href="#custom(java.lang.invoke.MethodHandleInfo)" tabindex="0">custom(MethodHandleInfo)</a></li>
-<li><a href="#checked(java.lang.invoke.MethodHandleInfo,org.cojen.boxtin.DenyAction)" tabindex="0">checked(MethodHandleInfo, DenyAction)</a></li>
+<li><a href="#check(java.lang.invoke.MethodHandleInfo)" tabindex="0">check(MethodHandleInfo)</a></li>
 </ol>
 </li>
 </ol>
@@ -101,17 +101,16 @@ loadScripts(document, 'script');</script>
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
 <div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab1" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab1', 3)" class="table-tab">Static Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab1" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab1', 3)" class="table-tab">Static Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
 <div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
 <div class="summary-table three-column-summary">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#checked(java.lang.invoke.MethodHandleInfo,org.cojen.boxtin.DenyAction)" class="member-name-link">checked</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/invoke/MethodHandleInfo.html" title="class or interface in java.lang.invoke" class="external-link">MethodHandleInfo</a>&nbsp;predicate,
- <a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
-<div class="block">Returns a deny action which checks a predicate to determine if the operation should
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#check(java.lang.invoke.MethodHandleInfo)" class="member-name-link">check</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/invoke/MethodHandleInfo.html" title="class or interface in java.lang.invoke" class="external-link">MethodHandleInfo</a>&nbsp;predicate)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Returns this deny action but with a predicate check to determine if the operation should
  actually be allowed.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></code></div>
@@ -276,12 +275,11 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="checked(java.lang.invoke.MethodHandleInfo,org.cojen.boxtin.DenyAction)">
-<h3>checked</h3>
+<section class="detail" id="check(java.lang.invoke.MethodHandleInfo)">
+<h3>check</h3>
 <div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></span>&nbsp;<span class="element-name">checked</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/invoke/MethodHandleInfo.html" title="class or interface in java.lang.invoke" class="external-link">MethodHandleInfo</a>&nbsp;predicate,
- <a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</span></div>
-<div class="block">Returns a deny action which checks a predicate to determine if the operation should
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></span>&nbsp;<span class="element-name">check</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/invoke/MethodHandleInfo.html" title="class or interface in java.lang.invoke" class="external-link">MethodHandleInfo</a>&nbsp;predicate)</span></div>
+<div class="block">Returns this deny action but with a predicate check to determine if the operation should
  actually be allowed. The parameters given to the predicate are the <a href="Caller.html" title="class in org.cojen.boxtin"><code>Caller</code></a>
  (optional), the non-null instance (if applicable), and the original method parameters.
  The return type must be boolean. If the predicate format is incompatible, then a <code>
@@ -290,10 +288,9 @@ loadScripts(document, 'script');</script>
 <dt>Parameters:</dt>
 <dd><code>predicate</code> - the predicate checking method which returns true when the operation is
  allowed</dd>
-<dd><code>action</code> - the action to perform when the operation is denied</dd>
 <dt>Throws:</dt>
-<dd><code><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/IllegalArgumentException.html" title="class or interface in java.lang" class="external-link">IllegalArgumentException</a></code> - if the predicate doesn't return a boolean, or if the
- given action is checked</dd>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/IllegalArgumentException.html" title="class or interface in java.lang" class="external-link">IllegalArgumentException</a></code> - if the predicate doesn't return a boolean</dd>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/IllegalStateException.html" title="class or interface in java.lang" class="external-link">IllegalStateException</a></code> - if this action is already checked</dd>
 </dl>
 </div>
 </section>

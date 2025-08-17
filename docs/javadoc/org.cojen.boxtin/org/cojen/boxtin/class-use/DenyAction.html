@@ -68,11 +68,10 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color"><code>static <a href="../DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></code></div>
-<div class="col-second even-row-color"><span class="type-name-label">DenyAction.</span><code><a href="../DenyAction.html#checked(java.lang.invoke.MethodHandleInfo,org.cojen.boxtin.DenyAction)" class="member-name-link">checked</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/invoke/MethodHandleInfo.html" title="class or interface in java.lang.invoke" class="external-link">MethodHandleInfo</a>&nbsp;predicate,
- <a href="../DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</code></div>
+<div class="col-first even-row-color"><code><a href="../DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></code></div>
+<div class="col-second even-row-color"><span class="type-name-label">DenyAction.</span><code><a href="../DenyAction.html#check(java.lang.invoke.MethodHandleInfo)" class="member-name-link">check</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/invoke/MethodHandleInfo.html" title="class or interface in java.lang.invoke" class="external-link">MethodHandleInfo</a>&nbsp;predicate)</code></div>
 <div class="col-last even-row-color">
-<div class="block">Returns a deny action which checks a predicate to determine if the operation should
+<div class="block">Returns this deny action but with a predicate check to determine if the operation should
  actually be allowed.</div>
 </div>
 <div class="col-first odd-row-color"><code>static <a href="../DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></code></div>
@@ -129,61 +128,54 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color"><code>static <a href="../DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a></code></div>
-<div class="col-second even-row-color"><span class="type-name-label">DenyAction.</span><code><a href="../DenyAction.html#checked(java.lang.invoke.MethodHandleInfo,org.cojen.boxtin.DenyAction)" class="member-name-link">checked</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/invoke/MethodHandleInfo.html" title="class or interface in java.lang.invoke" class="external-link">MethodHandleInfo</a>&nbsp;predicate,
- <a href="../DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</code></div>
+<div class="col-first even-row-color"><code>static <a href="../Rule.html" title="class in org.cojen.boxtin">Rule</a></code></div>
+<div class="col-second even-row-color"><span class="type-name-label">Rule.</span><code><a href="../Rule.html#deny(org.cojen.boxtin.DenyAction)" class="member-name-link">deny</a><wbr>(<a href="../DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</code></div>
 <div class="col-last even-row-color">
-<div class="block">Returns a deny action which checks a predicate to determine if the operation should
- actually be allowed.</div>
-</div>
-<div class="col-first odd-row-color"><code>static <a href="../Rule.html" title="class in org.cojen.boxtin">Rule</a></code></div>
-<div class="col-second odd-row-color"><span class="type-name-label">Rule.</span><code><a href="../Rule.html#deny(org.cojen.boxtin.DenyAction)" class="member-name-link">deny</a><wbr>(<a href="../DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</code></div>
-<div class="col-last odd-row-color">
 <div class="block">Returns a rule which is denied with the given action.</div>
 </div>
-<div class="col-first even-row-color"><code><a href="../RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></code></div>
-<div class="col-second even-row-color"><span class="type-name-label">RulesBuilder.ClassScope.</span><code><a href="../RulesBuilder.ClassScope.html#denyAll(org.cojen.boxtin.DenyAction)" class="member-name-link">denyAll</a><wbr>(<a href="../DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</code></div>
-<div class="col-last even-row-color">
+<div class="col-first odd-row-color"><code><a href="../RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></code></div>
+<div class="col-second odd-row-color"><span class="type-name-label">RulesBuilder.ClassScope.</span><code><a href="../RulesBuilder.ClassScope.html#denyAll(org.cojen.boxtin.DenyAction)" class="member-name-link">denyAll</a><wbr>(<a href="../DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</code></div>
+<div class="col-last odd-row-color">
 <div class="block">Deny access to all constructors and locally declared methods, superseding all
  previous rules.</div>
 </div>
-<div class="col-first odd-row-color"><code><a href="../RulesBuilder.ModuleScope.html" title="class in org.cojen.boxtin">RulesBuilder.ModuleScope</a></code></div>
-<div class="col-second odd-row-color"><span class="type-name-label">RulesBuilder.ModuleScope.</span><code><a href="../RulesBuilder.ModuleScope.html#denyAll(org.cojen.boxtin.DenyAction)" class="member-name-link">denyAll</a><wbr>(<a href="../DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</code></div>
-<div class="col-last odd-row-color">
+<div class="col-first even-row-color"><code><a href="../RulesBuilder.ModuleScope.html" title="class in org.cojen.boxtin">RulesBuilder.ModuleScope</a></code></div>
+<div class="col-second even-row-color"><span class="type-name-label">RulesBuilder.ModuleScope.</span><code><a href="../RulesBuilder.ModuleScope.html#denyAll(org.cojen.boxtin.DenyAction)" class="member-name-link">denyAll</a><wbr>(<a href="../DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</code></div>
+<div class="col-last even-row-color">
 <div class="block">Deny access to all packages, superseding all previous rules.</div>
 </div>
-<div class="col-first even-row-color"><code><a href="../RulesBuilder.PackageScope.html" title="class in org.cojen.boxtin">RulesBuilder.PackageScope</a></code></div>
-<div class="col-second even-row-color"><span class="type-name-label">RulesBuilder.PackageScope.</span><code><a href="../RulesBuilder.PackageScope.html#denyAll(org.cojen.boxtin.DenyAction)" class="member-name-link">denyAll</a><wbr>(<a href="../DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</code></div>
-<div class="col-last even-row-color">
+<div class="col-first odd-row-color"><code><a href="../RulesBuilder.PackageScope.html" title="class in org.cojen.boxtin">RulesBuilder.PackageScope</a></code></div>
+<div class="col-second odd-row-color"><span class="type-name-label">RulesBuilder.PackageScope.</span><code><a href="../RulesBuilder.PackageScope.html#denyAll(org.cojen.boxtin.DenyAction)" class="member-name-link">denyAll</a><wbr>(<a href="../DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</code></div>
+<div class="col-last odd-row-color">
 <div class="block">Deny access to all classes, superseding all previous rules.</div>
 </div>
-<div class="col-first odd-row-color"><code><a href="../RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></code></div>
-<div class="col-second odd-row-color"><span class="type-name-label">RulesBuilder.ClassScope.</span><code><a href="../RulesBuilder.ClassScope.html#denyAllConstructors(org.cojen.boxtin.DenyAction)" class="member-name-link">denyAllConstructors</a><wbr>(<a href="../DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</code></div>
-<div class="col-last odd-row-color">
+<div class="col-first even-row-color"><code><a href="../RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></code></div>
+<div class="col-second even-row-color"><span class="type-name-label">RulesBuilder.ClassScope.</span><code><a href="../RulesBuilder.ClassScope.html#denyAllConstructors(org.cojen.boxtin.DenyAction)" class="member-name-link">denyAllConstructors</a><wbr>(<a href="../DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</code></div>
+<div class="col-last even-row-color">
 <div class="block">Deny access to all constructors, superseding all previous rules.</div>
 </div>
-<div class="col-first even-row-color"><code><a href="../RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></code></div>
-<div class="col-second even-row-color"><span class="type-name-label">RulesBuilder.ClassScope.</span><code><a href="../RulesBuilder.ClassScope.html#denyAllMethods(org.cojen.boxtin.DenyAction)" class="member-name-link">denyAllMethods</a><wbr>(<a href="../DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</code></div>
-<div class="col-last even-row-color">
+<div class="col-first odd-row-color"><code><a href="../RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></code></div>
+<div class="col-second odd-row-color"><span class="type-name-label">RulesBuilder.ClassScope.</span><code><a href="../RulesBuilder.ClassScope.html#denyAllMethods(org.cojen.boxtin.DenyAction)" class="member-name-link">denyAllMethods</a><wbr>(<a href="../DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action)</code></div>
+<div class="col-last odd-row-color">
 <div class="block">Deny access to all locally declared methods, superseding all previous rules.</div>
 </div>
-<div class="col-first odd-row-color"><code><a href="../RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></code></div>
-<div class="col-second odd-row-color"><span class="type-name-label">RulesBuilder.ClassScope.</span><code><a href="../RulesBuilder.ClassScope.html#denyMethod(org.cojen.boxtin.DenyAction,java.lang.String)" class="member-name-link">denyMethod</a><wbr>(<a href="../DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action,
+<div class="col-first even-row-color"><code><a href="../RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></code></div>
+<div class="col-second even-row-color"><span class="type-name-label">RulesBuilder.ClassScope.</span><code><a href="../RulesBuilder.ClassScope.html#denyMethod(org.cojen.boxtin.DenyAction,java.lang.String)" class="member-name-link">denyMethod</a><wbr>(<a href="../DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name)</code></div>
-<div class="col-last odd-row-color">
+<div class="col-last even-row-color">
 <div class="block">Deny access to all variants of the given method, superseding all previous rules.</div>
 </div>
-<div class="col-first even-row-color"><code><a href="../RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></code></div>
-<div class="col-second even-row-color"><span class="type-name-label">RulesBuilder.ClassScope.</span><code><a href="../RulesBuilder.ClassScope.html#denyVariant(org.cojen.boxtin.DenyAction,java.lang.Class...)" class="member-name-link">denyVariant</a><wbr>(<a href="../DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action,
+<div class="col-first odd-row-color"><code><a href="../RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></code></div>
+<div class="col-second odd-row-color"><span class="type-name-label">RulesBuilder.ClassScope.</span><code><a href="../RulesBuilder.ClassScope.html#denyVariant(org.cojen.boxtin.DenyAction,java.lang.Class...)" class="member-name-link">denyVariant</a><wbr>(<a href="../DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;?&gt;...&nbsp;paramTypes)</code></div>
-<div class="col-last even-row-color">
+<div class="col-last odd-row-color">
 <div class="block">Deny access to a specific variant of the current constructor or method, superseding
  all previous rules.</div>
 </div>
-<div class="col-first odd-row-color"><code><a href="../RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></code></div>
-<div class="col-second odd-row-color"><span class="type-name-label">RulesBuilder.ClassScope.</span><code><a href="../RulesBuilder.ClassScope.html#denyVariant(org.cojen.boxtin.DenyAction,java.lang.String)" class="member-name-link">denyVariant</a><wbr>(<a href="../DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action,
+<div class="col-first even-row-color"><code><a href="../RulesBuilder.ClassScope.html" title="class in org.cojen.boxtin">RulesBuilder.ClassScope</a></code></div>
+<div class="col-second even-row-color"><span class="type-name-label">RulesBuilder.ClassScope.</span><code><a href="../RulesBuilder.ClassScope.html#denyVariant(org.cojen.boxtin.DenyAction,java.lang.String)" class="member-name-link">denyVariant</a><wbr>(<a href="../DenyAction.html" title="class in org.cojen.boxtin">DenyAction</a>&nbsp;action,
  <a href="https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;descriptor)</code></div>
-<div class="col-last odd-row-color">
+<div class="col-last even-row-color">
 <div class="block">Deny access to a specific variant of the current constructor or method, superseding
  all previous rules.</div>
 </div>
