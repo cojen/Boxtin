@@ -138,7 +138,7 @@ public abstract sealed class DenyAction {
     }
 
     /**
-     * Returns a deny action which checks a predicate to determine if the operation should
+     * Returns this deny action but with a predicate check to determine if the operation should
      * actually be allowed. The parameters given to the predicate are the {@link Caller}
      * (optional), the non-null instance (if applicable), and the original method parameters.
      * The return type must be boolean. If the predicate format is incompatible, then a {@code
@@ -146,17 +146,14 @@ public abstract sealed class DenyAction {
      *
      * @param predicate the predicate checking method which returns true when the operation is
      * allowed
-     * @param action the action to perform when the operation is denied
-     * @throws IllegalArgumentException if the predicate doesn't return a boolean, or if the
-     * given action is checked
+     * @throws IllegalArgumentException if the predicate doesn't return a boolean
+     * @throws IllegalStateException if this action is already checked
      */
-    public static DenyAction checked(MethodHandleInfo predicate, DenyAction action) {
-        Objects.requireNonNull(predicate);
-        Objects.requireNonNull(action);
-        if (predicate.getMethodType().returnType() != boolean.class || action instanceof Checked) {
+    public DenyAction check(MethodHandleInfo predicate) {
+        if (predicate.getMethodType().returnType() != boolean.class) {
             throw new IllegalArgumentException();
         }
-        return new Checked(predicate, action);
+        return new Checked(predicate, this);
     }
 
     private DenyAction() {
@@ -452,6 +449,11 @@ public abstract sealed class DenyAction {
         private Checked(MethodHandleInfo predicate, DenyAction action) {
             this.predicate = predicate;
             this.action = action;
+        }
+
+        @Override
+        public DenyAction check(MethodHandleInfo predicate) {
+            throw new IllegalStateException();
         }
 
         @Override

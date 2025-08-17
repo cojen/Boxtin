@@ -80,8 +80,7 @@ final class JavaBaseApplier implements RulesApplier {
 
             cna1 = findMethod(lookup, "checkNativeAccess", boolean.class, Caller.class);
 
-            restricted = DenyAction.checked
-                (cna1, DenyAction.exception("java.lang.IllegalCallerException"));
+            restricted = DenyAction.exception("java.lang.IllegalCallerException").check(cna1);
 
         } catch (RuntimeException e) {
             throw e;
@@ -190,21 +189,21 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("forName")
             .allowVariant(String.class)
             .allowVariant(Module.class, String.class)
-            .denyVariant(DenyAction.checked(cfn1, DenyAction.standard()),
+            .denyVariant(DenyAction.standard().check(cfn1),
                          String.class, boolean.class, ClassLoader.class)
             .denyMethod("getProtectionDomain")
             .denyMethod("newInstance") // deprecated
-            .denyMethod(DenyAction.checked(cgr1, DenyAction.value(null)), "getResource")
-            .denyMethod(DenyAction.checked(cgr1, DenyAction.value(null)), "getResourceAsStream")
+            .denyMethod(DenyAction.value(null).check(cgr1), "getResource")
+            .denyMethod(DenyAction.value(null).check(cgr1), "getResourceAsStream")
 
             .forClass("ClassLoader")
             .denyMethod("clearAssertionStatus")
             .allowMethod("defineClass")
             .denyVariant("[BII") // deprecated
             // Cannot specify a ProtectionDomain when defining a class.
-            .denyVariant(DenyAction.checked(cdc1, DenyAction.standard()),
+            .denyVariant(DenyAction.standard().check(cdc1),
                          "Ljava/lang/String;[BIILjava/security/ProtectionDomain;")
-            .denyVariant(DenyAction.checked(cdc2, DenyAction.standard()),
+            .denyVariant(DenyAction.standard().check(cdc2),
                          "Ljava/lang/String;Ljava/nio/ByteBuffer;Ljava/security/ProtectionDomain;")
             .denyMethod("getSystemResource")
             .denyMethod("getSystemResourceAsStream")
@@ -212,10 +211,10 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("setClassAssertionStatus")
             .denyMethod("setDefaultAssertionStatus")
             .denyMethod("setPackageAssertionStatus")
-            .denyMethod(DenyAction.checked(cgr2, DenyAction.value(null)), "getResource")
-            .denyMethod(DenyAction.checked(cgr2, DenyAction.value(null)), "getResourceAsStream")
-            .denyMethod(DenyAction.checked(cgr2, DenyAction.empty()), "getResources")
-            .denyMethod(DenyAction.checked(cgr2, DenyAction.empty()), "resources")
+            .denyMethod(DenyAction.value(null).check(cgr2), "getResource")
+            .denyMethod(DenyAction.value(null).check(cgr2), "getResourceAsStream")
+            .denyMethod(DenyAction.empty().check(cgr2), "getResources")
+            .denyMethod(DenyAction.empty().check(cgr2), "resources")
 
             .forClass("Integer")
             .denyMethod("getInteger")
@@ -234,7 +233,7 @@ final class JavaBaseApplier implements RulesApplier {
             .denyVariant(DenyAction.custom(lv2), "Ljava/lang/String;Ljava/lang/Long;")
 
             .forClass("Module")
-            .denyMethod(DenyAction.checked(cgr3, DenyAction.value(null)), "getResourceAsStream")
+            .denyMethod(DenyAction.value(null).check(cgr3), "getResourceAsStream")
 
             .forClass("ModuleLayer")
             .denyMethod("defineModules")
@@ -310,13 +309,12 @@ final class JavaBaseApplier implements RulesApplier {
             .denyAll()
             .denyMethod(DenyAction.value(1), "activeCount")
             .denyMethod(DenyAction.value(0), "enumerate")  // do nothing
-            .denyMethod(DenyAction.checked(ctn, DenyAction.value(null)), "getContextClassLoader")
-            .denyMethod(DenyAction.checked(ctn, DenyAction.standard()), "setContextClassLoader")
-            .denyMethod(DenyAction.checked(ctn, DenyAction.empty()), "setDaemon")
-            .denyMethod(DenyAction.checked(ctn, DenyAction.empty()), "setName")
+            .denyMethod(DenyAction.value(null).check(ctn), "getContextClassLoader")
+            .denyMethod(DenyAction.standard().check(ctn), "setContextClassLoader")
+            .denyMethod(DenyAction.empty().check(ctn), "setDaemon")
+            .denyMethod(DenyAction.empty().check(ctn), "setName")
             .denyMethod(DenyAction.empty(), "setPriority") // do nothing
-            .denyMethod(DenyAction.checked(ctn, DenyAction.standard()),
-                        "setUncaughtExceptionHandler")
+            .denyMethod(DenyAction.standard().check(ctn), "setUncaughtExceptionHandler")
             .allowAllConstructors()
             .allowMethod("checkAccess")
             .allowMethod("clone") // always throws an exception anyhow

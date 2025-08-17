@@ -87,10 +87,9 @@ final class ReflectionApplier implements RulesApplier {
                               MethodHandle.class, Caller.class, MethodHandles.Lookup.class,
                                  Class.class, String.class, MethodType.class);
 
-            inaccessible = DenyAction.checked
-                (findMethod(lookup, "checkSetAccessible",
-                            boolean.class, Caller.class, Object.class, boolean.class),
-                 DenyAction.exception("java.lang.reflect.InaccessibleObjectException"));
+            inaccessible = DenyAction.exception("java.lang.reflect.InaccessibleObjectException")
+                .check(findMethod(lookup, "checkSetAccessible",
+                                  boolean.class, Caller.class, Object.class, boolean.class));
 
         } catch (RuntimeException e) {
             throw e;

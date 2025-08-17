@@ -41,12 +41,10 @@ public class CheckedTransformTest extends TransformTest {
         b.forModule("org.cojen.boxtin").forPackage("org.cojen.boxtin")
             .forClass("CheckedOperations")
             .allowAllConstructors()
-            .denyMethod(DenyAction.checked(find("c_op1", int.class),
-                                           DenyAction.standard()), "op1")
-            .denyMethod(DenyAction.checked(find("c_op2", int.class, long.class),
-                                           DenyAction.value(-1L)), "op2")
-            .denyMethod(DenyAction.checked(find("c_op3", Caller.class, String.class),
-                                           DenyAction.empty()), "op3");
+            .denyMethod(DenyAction.standard().check(find("c_op1", int.class)), "op1")
+            .denyMethod(DenyAction.value(-1L).check(find("c_op2", int.class, long.class)), "op2")
+            .denyMethod(DenyAction.empty().check(find("c_op3", Caller.class, String.class)),
+                        "op3");
         ;
 
         b.forModule("java.base").allowAll();
@@ -85,19 +83,19 @@ public class CheckedTransformTest extends TransformTest {
         MethodHandleInfo illegal = lookup.revealDirect(mh);
 
         try {
-            DenyAction.checked(illegal, DenyAction.standard());
+            DenyAction.standard().check(illegal);
             fail();
         } catch (IllegalArgumentException e) {
             // predicate doesn't return boolean
         }
 
         MethodHandleInfo predicate = find("c_op1", int.class);
-        DenyAction action = DenyAction.checked(predicate, DenyAction.standard());
+        DenyAction action = DenyAction.standard().check(predicate);
 
         try {
-            DenyAction.checked(predicate, action);
+            action.check(predicate);
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalStateException e) {
             // action is checked
         }
     }
