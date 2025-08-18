@@ -16,8 +16,6 @@
 
 package org.cojen.boxtin;
 
-import java.util.Properties;
-
 import org.junit.*;
 import static org.junit.Assert.*;
 

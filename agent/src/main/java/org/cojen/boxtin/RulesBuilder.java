@@ -78,12 +78,54 @@ public final class RulesBuilder {
     }
 
     /**
-     * Applies a set of rules to this builder.
+     * Applies all the rules from the given applier to this builder.
      *
      * @return this
      */
     public RulesBuilder applyRules(RulesApplier applier) {
         applier.applyRulesTo(this);
+        return this;
+    }
+
+    /**
+     * Applies only the deny rules from the given applier to this builder.
+     *
+     * @return this
+     */
+    public RulesBuilder applyDenyRules(RulesApplier applier) {
+        var other = new RulesBuilder(mLayer).allowAll().applyRules(applier);
+
+        if (other.mModules != null) {
+            for (Map.Entry<String, ModuleScope> e : other.mModules.entrySet()) {
+                forModule(e.getKey()).applyDenyRules(e.getValue());
+            }
+        }
+
+        if (other.mDefaultRule.isDenied()) {
+            mDefaultRule = other.mDefaultRule;
+        }
+
+        return this;
+    }
+
+    /**
+     * Applies only the allow rules from the given applier to this builder.
+     *
+     * @return this
+     */
+    public RulesBuilder applyAllowRules(RulesApplier applier) {
+        var other = new RulesBuilder(mLayer).denyAll().applyRules(applier);
+
+        if (other.mModules != null) {
+            for (Map.Entry<String, ModuleScope> e : other.mModules.entrySet()) {
+                forModule(e.getKey()).applyAllowRules(e.getValue());
+            }
+        }
+
+        if (other.mDefaultRule.isAllowed()) {
+            mDefaultRule = other.mDefaultRule;
+        }
+
         return this;
     }
 
@@ -396,7 +438,7 @@ public final class RulesBuilder {
             mPackages = null;
             mDefaultRule = rule;
 
-            if (rule.isAllAllowed()) {
+            if (rule.isAllowed()) {
                 // Need to expand all the packages, given that the module associations aren't
                 // known when classes are transformed.
 
@@ -421,7 +463,10 @@ public final class RulesBuilder {
             if (!mModule.getPackages().contains(name)) {
                 throw new IllegalArgumentException();
             }
-            final String slashName = name.replace('.', '/').intern();
+            return doForPackage(name.replace('.', '/').intern());
+        }
+
+        private PackageScope doForPackage(String slashName) {
             Map<String, PackageScope> packages = mPackages;
             if (packages == null) {
                 mPackages = packages = new LinkedHashMap<>();
@@ -464,6 +509,30 @@ public final class RulesBuilder {
          */
         public ModuleScope forModule(String name, String minVersion, String maxVersion) {
             return end().forModule(name, minVersion, maxVersion);
+        }
+
+        void applyDenyRules(ModuleScope other) {
+            if (other.mPackages != null) {
+                for (Map.Entry<String, PackageScope> e : other.mPackages.entrySet()) {
+                    doForPackage(e.getKey()).applyDenyRules(e.getValue());
+                }
+            }
+
+            if (other.mDefaultRule.isDenied()) {
+                mDefaultRule = other.mDefaultRule;
+            }
+        }
+
+        void applyAllowRules(ModuleScope other) {
+            if (other.mPackages != null) {
+                for (Map.Entry<String, PackageScope> e : other.mPackages.entrySet()) {
+                    doForPackage(e.getKey()).applyAllowRules(e.getValue());
+                }
+            }
+
+            if (other.mDefaultRule.isAllowed()) {
+                mDefaultRule = other.mDefaultRule;
+            }
         }
 
         void preValidate(Set<String> packageNames, Consumer<String> reporter) {
@@ -648,6 +717,30 @@ public final class RulesBuilder {
          */
         public ModuleScope forModule(String name, String minVersion, String maxVersion) {
             return end().forModule(name, minVersion, maxVersion);
+        }
+
+        void applyDenyRules(PackageScope other) {
+            if (other.mClasses != null) {
+                for (Map.Entry<String, ClassScope> e : other.mClasses.entrySet()) {
+                    forClass(e.getKey()).applyDenyRules(e.getValue());
+                }
+            }
+
+            if (other.mDefaultRule.isDenied()) {
+                mDefaultRule = other.mDefaultRule;
+            }
+        }
+
+        void applyAllowRules(PackageScope other) {
+            if (other.mClasses != null) {
+                for (Map.Entry<String, ClassScope> e : other.mClasses.entrySet()) {
+                    forClass(e.getKey()).applyAllowRules(e.getValue());
+                }
+            }
+
+            if (other.mDefaultRule.isAllowed()) {
+                mDefaultRule = other.mDefaultRule;
+            }
         }
 
         /**
@@ -1001,6 +1094,52 @@ public final class RulesBuilder {
             return end().forModule(name, minVersion, maxVersion);
         }
 
+        void applyDenyRules(ClassScope other) {
+            if (other.mConstructors != null) {
+                if (mConstructors == null) {
+                    mConstructors = new MethodScope().ruleForAll(mDefaultConstructorRule);
+                }
+                mConstructors.applyDenyRules(other.mConstructors);
+            }
+
+            if (other.mDefaultConstructorRule.isDenied()) {
+                mDefaultConstructorRule = other.mDefaultConstructorRule;
+            }
+
+            if (other.mMethods != null) {
+                for (Map.Entry<String, MethodScope> e : other.mMethods.entrySet()) {
+                    forMethod(e.getKey()).applyDenyRules(e.getValue());
+                }
+            }
+
+            if (other.mDefaultMethodRule.isDenied()) {
+                mDefaultMethodRule = other.mDefaultMethodRule;
+            }
+        }
+
+        void applyAllowRules(ClassScope other) {
+            if (other.mConstructors != null) {
+                if (mConstructors == null) {
+                    mConstructors = new MethodScope().ruleForAll(mDefaultConstructorRule);
+                }
+                mConstructors.applyAllowRules(other.mConstructors);
+            }
+
+            if (other.mDefaultConstructorRule.isAllowed()) {
+                mDefaultConstructorRule = other.mDefaultConstructorRule;
+            }
+
+            if (other.mMethods != null) {
+                for (Map.Entry<String, MethodScope> e : other.mMethods.entrySet()) {
+                    forMethod(e.getKey()).applyAllowRules(e.getValue());
+                }
+            }
+
+            if (other.mDefaultMethodRule.isAllowed()) {
+                mDefaultMethodRule = other.mDefaultMethodRule;
+            }
+        }
+
         /**
          * Validates all class members.
          */
@@ -1033,16 +1172,15 @@ public final class RulesBuilder {
             }
         }
 
-        /**
-         * Caller must call allowAll or ruleForAll on the returned MethodScope.
-         */
         private MethodScope forMethod(String name) {
             checkMethodName(name);
             Map<String, MethodScope> methods = mMethods;
             if (methods == null) {
                 mMethods = methods = new LinkedHashMap<>();
             }
-            return methods.computeIfAbsent(name, k -> new MethodScope());
+            return methods.computeIfAbsent(name, k -> {
+                return new MethodScope().ruleForAll(mDefaultMethodRule);
+            });
         }
 
         /**
@@ -1201,6 +1339,36 @@ public final class RulesBuilder {
                 }
             }
             return descriptor;
+        }
+
+        void applyDenyRules(MethodScope other) {
+            if (other.mVariants != null) {
+                for (Map.Entry<CharSequence, Rule> e : other.mVariants.entrySet()) {
+                    Rule rule = e.getValue();
+                    if (rule.isDenied()) {
+                        ruleForVariant(rule, e.getKey().toString());
+                    }
+                }
+            }
+
+            if (other.mDefaultRule.isDenied()) {
+                mDefaultRule = other.mDefaultRule;
+            }
+        }
+
+        void applyAllowRules(MethodScope other) {
+            if (other.mVariants != null) {
+                for (Map.Entry<CharSequence, Rule> e : other.mVariants.entrySet()) {
+                    Rule rule = e.getValue();
+                    if (rule.isAllowed()) {
+                        ruleForVariant(rule, e.getKey().toString());
+                    }
+                }
+            }
+
+            if (other.mDefaultRule.isAllowed()) {
+                mDefaultRule = other.mDefaultRule;
+            }
         }
 
         void validateConstructor(ClassLoader loader, Class<?> clazz, Consumer<String> reporter) {
