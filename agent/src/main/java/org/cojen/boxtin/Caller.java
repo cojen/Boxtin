@@ -20,7 +20,7 @@ import java.util.Objects;
 
 /**
  * Wraps a caller class, to be passed to a {@link DenyAction#custom custom} or {@link
- * DenyAction#custom checked} deny action method.
+ * DenyAction#check checked} deny action method.
  *
  * @author Brian S. O'Neill
  */
