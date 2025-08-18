@@ -75,6 +75,8 @@ loadScripts(document, 'script');</script>
 <ol class="toc-list">
 <li><a href="#moduleLayer()" tabindex="0">moduleLayer()</a></li>
 <li><a href="#applyRules(org.cojen.boxtin.RulesApplier)" tabindex="0">applyRules(RulesApplier)</a></li>
+<li><a href="#applyDenyRules(org.cojen.boxtin.RulesApplier)" tabindex="0">applyDenyRules(RulesApplier)</a></li>
+<li><a href="#applyAllowRules(org.cojen.boxtin.RulesApplier)" tabindex="0">applyAllowRules(RulesApplier)</a></li>
 <li><a href="#denyAll()" tabindex="0">denyAll()</a></li>
 <li><a href="#allowAll()" tabindex="0">allowAll()</a></li>
 <li><a href="#forModule(java.lang.String)" tabindex="0">forModule(String)</a></li>
@@ -170,9 +172,19 @@ loadScripts(document, 'script');</script>
 <div class="block">Allow access to all packages, superseding all previous rules.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.html" title="class in org.cojen.boxtin">RulesBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#applyAllowRules(org.cojen.boxtin.RulesApplier)" class="member-name-link">applyAllowRules</a><wbr>(<a href="RulesApplier.html" title="interface in org.cojen.boxtin">RulesApplier</a>&nbsp;applier)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Applies only the allow rules from the given applier to this builder.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.html" title="class in org.cojen.boxtin">RulesBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#applyDenyRules(org.cojen.boxtin.RulesApplier)" class="member-name-link">applyDenyRules</a><wbr>(<a href="RulesApplier.html" title="interface in org.cojen.boxtin">RulesApplier</a>&nbsp;applier)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Applies only the deny rules from the given applier to this builder.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RulesBuilder.html" title="class in org.cojen.boxtin">RulesBuilder</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#applyRules(org.cojen.boxtin.RulesApplier)" class="member-name-link">applyRules</a><wbr>(<a href="RulesApplier.html" title="interface in org.cojen.boxtin">RulesApplier</a>&nbsp;applier)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Applies a set of rules to this builder.</div>
+<div class="block">Applies all the rules from the given applier to this builder.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="Rules.html" title="interface in org.cojen.boxtin">Rules</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#build()" class="member-name-link">build</a>()</code></div>
@@ -270,7 +282,33 @@ loadScripts(document, 'script');</script>
 <h3>applyRules</h3>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RulesBuilder.html" title="class in org.cojen.boxtin">RulesBuilder</a></span>&nbsp;<span class="element-name">applyRules</span><wbr><span class="parameters">(<a href="RulesApplier.html" title="interface in org.cojen.boxtin">RulesApplier</a>&nbsp;applier)</span></div>
-<div class="block">Applies a set of rules to this builder.</div>
+<div class="block">Applies all the rules from the given applier to this builder.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>this</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="applyDenyRules(org.cojen.boxtin.RulesApplier)">
+<h3>applyDenyRules</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RulesBuilder.html" title="class in org.cojen.boxtin">RulesBuilder</a></span>&nbsp;<span class="element-name">applyDenyRules</span><wbr><span class="parameters">(<a href="RulesApplier.html" title="interface in org.cojen.boxtin">RulesApplier</a>&nbsp;applier)</span></div>
+<div class="block">Applies only the deny rules from the given applier to this builder.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>this</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="applyAllowRules(org.cojen.boxtin.RulesApplier)">
+<h3>applyAllowRules</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RulesBuilder.html" title="class in org.cojen.boxtin">RulesBuilder</a></span>&nbsp;<span class="element-name">applyAllowRules</span><wbr><span class="parameters">(<a href="RulesApplier.html" title="interface in org.cojen.boxtin">RulesApplier</a>&nbsp;applier)</span></div>
+<div class="block">Applies only the allow rules from the given applier to this builder.</div>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd>this</dd>
