@@ -72,7 +72,7 @@ loadScripts(document, 'script');</script>
 <li><a href="#isDenied()" tabindex="0">isDenied()</a></li>
 <li><a href="#denyAction()" tabindex="0">denyAction()</a></li>
 <li><a href="#isAllAllowed()" tabindex="0">isAllAllowed()</a></li>
-<li><a href="#isAllDenied()" tabindex="0">isAllDenied()</a></li>
+<li><a href="#isConstructionDenied()" tabindex="0">isConstructionDenied()</a></li>
 <li><a href="#ruleForConstructor(java.lang.CharSequence)" tabindex="0">ruleForConstructor(CharSequence)</a></li>
 <li><a href="#ruleForConstructor(java.lang.Class...)" tabindex="0">ruleForConstructor(Class...)</a></li>
 <li><a href="#ruleForMethod(java.lang.CharSequence,java.lang.CharSequence)" tabindex="0">ruleForMethod(CharSequence, CharSequence)</a></li>
@@ -146,14 +146,14 @@ implements <a href="Rules.ForClass.html" title="interface in org.cojen.boxtin">R
 <div class="block">Same as <a href="#isAllowed()"><code>isAllowed()</code></a>.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final boolean</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isAllDenied()" class="member-name-link">isAllDenied</a>()</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isAllowed()" class="member-name-link">isAllowed</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Same as <a href="#isDenied()"><code>isDenied()</code></a>.</div>
+<div class="block">Returns true if the rule is always allowed.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final boolean</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isAllowed()" class="member-name-link">isAllowed</a>()</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isConstructionDenied()" class="member-name-link">isConstructionDenied</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Returns true if the rule is always allowed.</div>
+<div class="block">Same as <a href="#isDenied()"><code>isDenied()</code></a>.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isDenied()" class="member-name-link">isDenied</a>()</code></div>
@@ -274,14 +274,14 @@ implements <a href="Rules.ForClass.html" title="interface in org.cojen.boxtin">R
 </section>
 </li>
 <li>
-<section class="detail" id="isAllDenied()">
-<h3>isAllDenied</h3>
+<section class="detail" id="isConstructionDenied()">
+<h3>isConstructionDenied</h3>
 <div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">isAllDenied</span>()</div>
+<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">isConstructionDenied</span>()</div>
 <div class="block">Same as <a href="#isDenied()"><code>isDenied()</code></a>.</div>
 <dl class="notes">
 <dt>Specified by:</dt>
-<dd><code><a href="Rules.ForClass.html#isAllDenied()">isAllDenied</a></code>&nbsp;in interface&nbsp;<code><a href="Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></code></dd>
+<dd><code><a href="Rules.ForClass.html#isConstructionDenied()">isConstructionDenied</a></code>&nbsp;in interface&nbsp;<code><a href="Rules.ForClass.html" title="interface in org.cojen.boxtin">Rules.ForClass</a></code></dd>
 </dl>
 </div>
 </section>
