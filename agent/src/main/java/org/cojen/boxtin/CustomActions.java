@@ -394,7 +394,7 @@ public final class CustomActions {
 
         for (Class<?> iface : interfaces) {
             if (callerModule != iface.getModule() &&
-                !SecurityAgent.isAllAllowed(callerClass, iface))
+                SecurityAgent.isAnyDenied(callerClass, iface))
             {
                 return false;
             }

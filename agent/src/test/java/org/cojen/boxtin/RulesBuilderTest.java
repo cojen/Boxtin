@@ -67,7 +67,7 @@ public class RulesBuilderTest {
         assertEquals(ModuleLayer.empty(), rules3.moduleLayer());
 
         Rules.ForClass forClass = rules.forClass(String.class.getModule(), "java.lang", "Integer");
-        assertTrue(forClass.isAllAllowed());
+        assertFalse(forClass.isAnyDenied());
     }
 
     @Test
@@ -338,7 +338,7 @@ public class RulesBuilderTest {
             b.applyDenyRules(RulesApplier.java_base());
             b.validate();
             Rules rules = b.build();
-            assertTrue(rules.forClass(mod, String.class).isAllAllowed());
+            assertFalse(rules.forClass(mod, String.class).isAnyDenied());
             assertTrue(rules.forClass(mod, Boolean.class)
                        .ruleForMethod("getBoolean", String.class).isDenied());
             Rules.ForClass forClass = rules.forClass(mod, File.class);
@@ -386,7 +386,7 @@ public class RulesBuilderTest {
             assertTrue(forClass.ruleForMethod("mkdir", "()").isDenied());
             assertTrue(forClass.ruleForMethod("getName", "()").isAllowed());
             forClass = rules.forClass(mod, InputStream.class);
-            assertTrue(forClass.isAllAllowed());
+            assertFalse(forClass.isAnyDenied());
         }
 
         {

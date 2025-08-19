@@ -72,9 +72,9 @@ public interface Rules {
      */
     public static interface ForClass {
         /**
-         * Returns true if all operations are allowed.
+         * Returns true if any operations are denied.
          */
-        public boolean isAllAllowed();
+        public boolean isAnyDenied();
 
         /**
          * Returns true if all constructors are denied.

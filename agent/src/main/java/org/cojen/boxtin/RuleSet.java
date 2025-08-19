@@ -109,7 +109,7 @@ final class RuleSet implements Rules {
             forClass = scope.forClass(className);
         }
 
-        if (!forClass.isAllAllowed()) {
+        if (forClass.isAnyDenied()) {
             // Check if a qualified package export is defined by the target module to the
             // caller module. If so, allow the package.
             String dottedName = packageName.toString().replace('/', '.');
@@ -299,9 +299,9 @@ final class RuleSet implements Rules {
         }
 
         @Override
-        public boolean isAllAllowed() {
-            return mConstructors == null && mDefaultConstructorRule.isAllowed()
-                && mMethodScopes.isEmpty() && mDefaultMethodRule.isAllowed();
+        public boolean isAnyDenied() {
+            return !(mConstructors == null && mDefaultConstructorRule.isAllowed()
+                     && mMethodScopes.isEmpty() && mDefaultMethodRule.isAllowed());
         }
 
         @Override

@@ -1269,14 +1269,6 @@ public final class RulesBuilder {
         private MethodScope() {
         }
 
-        boolean isAllDenied() {
-            return isEmpty(mVariants) && mDefaultRule.isDenied();
-        }
-
-        boolean isAllAllowed() {
-            return isEmpty(mVariants) && mDefaultRule.isAllowed();
-        }
-
         /**
          * Apply a rule to all variants, superseding all previous rules.
          *

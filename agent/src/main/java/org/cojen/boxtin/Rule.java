@@ -81,11 +81,11 @@ public sealed class Rule implements Rules.ForClass {
     }
 
     /**
-     * Same as {@link #isAllowed}.
+     * Same as {@link #isDenied}.
      */
     @Override
-    public final boolean isAllAllowed() {
-        return isAllowed();
+    public final boolean isAnyDenied() {
+        return isDenied();
     }
 
     /**

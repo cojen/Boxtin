@@ -375,8 +375,8 @@ public final class SecurityAgent {
      * @param caller the class which is calling the target
      * @param target the class which has an operation which is potentially denied for the caller
      */
-    static boolean isAllAllowed(Class<?> caller, Class<?> target) {
-        return Proxy.isAllowed(caller, target, null, null);
+    static boolean isAnyDenied(Class<?> caller, Class<?> target) {
+        return !Proxy.isAllowed(caller, target, null, null);
     }
 
     /**
@@ -464,7 +464,7 @@ public final class SecurityAgent {
         }
 
         /**
-         * Note: Pass null for name and desc to check for isAllAllowed.
+         * Note: Pass null for name and desc to check if all operations are allowed.
          */
         static boolean isAllowed(Class<?> caller, Class<?> target, String name, String desc) {
             try {
@@ -499,7 +499,7 @@ public final class SecurityAgent {
      *
      * Note: Module comparison should be performed as a prerequisite.
      *
-     * Note: Pass null for name and desc to check for isAllAllowed.
+     * Note: Pass null for name and desc to check if all operations are allowed.
      *
      * @hidden
      */
@@ -526,7 +526,7 @@ public final class SecurityAgent {
         Rules.ForClass forClass = rules.forClass(module, target);
 
         if (name == null && desc == null) {
-            return forClass.isAllAllowed();
+            return !forClass.isAnyDenied();
         }
 
         if (name == null || name.equals("<init>")) {
@@ -561,7 +561,7 @@ public final class SecurityAgent {
     /**
      * Note: Module comparison should be performed as a prerequisite.
      *
-     * Note: Pass null for name and desc to check for isAllAllowed.
+     * Note: Pass null for name and desc to check if all operations are allowed.
      */
     private static boolean isAllowed3(Class<?> caller, Class<?> target, String name, String desc) {
         SecurityAgent agent = agent();
