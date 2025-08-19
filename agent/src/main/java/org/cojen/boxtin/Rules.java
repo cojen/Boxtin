@@ -77,12 +77,9 @@ public interface Rules {
         public boolean isAllAllowed();
 
         /**
-         * Returns true if all operations are implicitly denied. This is true when all classes
-         * in a package are denied by default, and no explicit rule is defined for this class.
+         * Returns true if all constructors are denied.
          */
-        public default boolean isAllDenied() {
-            return false;
-        }
+        public boolean isConstructionDenied();
 
         /**
          * Returns the rule for a specific constructor, as specified by its descriptor.

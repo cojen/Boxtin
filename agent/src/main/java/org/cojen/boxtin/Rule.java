@@ -92,7 +92,7 @@ public sealed class Rule implements Rules.ForClass {
      * Same as {@link #isDenied}.
      */
     @Override
-    public final boolean isAllDenied() {
+    public final boolean isConstructionDenied() {
         return isDenied();
     }
 

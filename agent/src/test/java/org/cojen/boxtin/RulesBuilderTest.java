@@ -327,9 +327,7 @@ public class RulesBuilderTest {
             b.applyDenyRules(RulesApplier.java_base());
             b.validate();
             Rules rules = b.build();
-            assertTrue(rules.forClass(mod, String.class).isAllDenied());
             Rules.ForClass forClass = rules.forClass(mod, File.class);
-            assertFalse(forClass.isAllDenied()); // not implicit
             assertTrue(forClass.ruleForMethod("mkdir", "()").isDenied());
             assertTrue(forClass.ruleForMethod("getName", "()").isDenied());
         }
@@ -344,7 +342,6 @@ public class RulesBuilderTest {
             assertTrue(rules.forClass(mod, Boolean.class)
                        .ruleForMethod("getBoolean", String.class).isDenied());
             Rules.ForClass forClass = rules.forClass(mod, File.class);
-            assertFalse(forClass.isAllDenied()); // not implicit
             assertTrue(forClass.ruleForMethod("mkdir", "()").isDenied());
             assertTrue(forClass.ruleForMethod("getName", "()").isDenied());
             forClass = rules.forClass(mod, ProcessBuilder.class);
@@ -357,11 +354,9 @@ public class RulesBuilderTest {
             b.applyDenyRules(RulesApplier.java_base());
             b.validate();
             Rules rules = b.build();
-            assertTrue(rules.forClass(mod, String.class).isAllDenied());
             assertTrue(rules.forClass(mod, Boolean.class)
                        .ruleForMethod("getBoolean", String.class).isDenied());
             Rules.ForClass forClass = rules.forClass(mod, File.class);
-            assertFalse(forClass.isAllDenied()); // not implicit
             assertTrue(forClass.ruleForMethod("mkdir", "()").isDenied());
             assertTrue(forClass.ruleForMethod("getName", "()").isAllowed());
         }
@@ -376,9 +371,7 @@ public class RulesBuilderTest {
             b.applyAllowRules(RulesApplier.java_base());
             b.validate();
             Rules rules = b.build();
-            assertFalse(rules.forClass(mod, String.class).isAllDenied());
             Rules.ForClass forClass = rules.forClass(mod, File.class);
-            assertFalse(forClass.isAllDenied()); // not implicit
             assertTrue(forClass.ruleForMethod("mkdir", "()").isAllowed());
             assertTrue(forClass.ruleForMethod("getName", "()").isAllowed());
         }
@@ -389,9 +382,7 @@ public class RulesBuilderTest {
             b.applyAllowRules(RulesApplier.java_base());
             b.validate();
             Rules rules = b.build();
-            assertFalse(rules.forClass(mod, String.class).isAllDenied());
             Rules.ForClass forClass = rules.forClass(mod, File.class);
-            assertFalse(forClass.isAllDenied()); // not implicit
             assertTrue(forClass.ruleForMethod("mkdir", "()").isDenied());
             assertTrue(forClass.ruleForMethod("getName", "()").isAllowed());
             forClass = rules.forClass(mod, InputStream.class);
@@ -404,9 +395,7 @@ public class RulesBuilderTest {
             b.applyAllowRules(RulesApplier.java_base());
             b.validate();
             Rules rules = b.build();
-            assertFalse(rules.forClass(mod, String.class).isAllDenied());
             Rules.ForClass forClass = rules.forClass(mod, File.class);
-            assertFalse(forClass.isAllDenied()); // not implicit
             assertTrue(forClass.ruleForMethod("mkdir", "()").isAllowed());
             assertTrue(forClass.ruleForMethod("getName", "()").isAllowed());
             forClass = rules.forClass(mod, ProcessBuilder.class);

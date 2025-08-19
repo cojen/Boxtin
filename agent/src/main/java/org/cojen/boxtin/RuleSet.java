@@ -305,12 +305,16 @@ final class RuleSet implements Rules {
         }
 
         @Override
+        public boolean isConstructionDenied() {
+            ConstructorScope scope = mConstructors;
+            return scope == null ? mDefaultConstructorRule.isDenied()
+                : scope.isConstructionDenied();
+        }
+
+        @Override
         public Rule ruleForConstructor(CharSequence descriptor) {
             ConstructorScope scope = mConstructors;
-            if (scope == null) {
-                return mDefaultConstructorRule;
-            }
-            return scope.ruleForVariant(descriptor);
+            return scope == null ? mDefaultConstructorRule : scope.ruleForVariant(descriptor);
         }
 
         @Override
@@ -399,6 +403,18 @@ final class RuleSet implements Rules {
         @Override
         protected Rule defaultRule() {
             return mDefaultRule;
+        }
+
+        boolean isConstructionDenied() {
+            if (mDefaultRule.isAllowed()) {
+                return false;
+            }
+            for (Rule rule : mVariants.values()) {
+                if (rule.isAllowed()) {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 

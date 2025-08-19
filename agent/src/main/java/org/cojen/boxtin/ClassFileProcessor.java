@@ -93,7 +93,7 @@ final class ClassFileProcessor {
 
     private MethodMap mDeclaredMethods;
 
-    private boolean mDenyConstruction;
+    private DenyAction.Exception mDenyConstruction;
 
     private TreeMap<Integer, RegionReplacement> mReplacements;
 
@@ -186,9 +186,15 @@ final class ClassFileProcessor {
         if (mInterfaceIndexes != null) {
             for (int i=0; i<mInterfaceIndexes.length; i++) {
                 Rules.ForClass forClass = rulesForClass(cp.findConstantClass(mInterfaceIndexes[i]));
-                if (forClass.isAllDenied()) {
+                if (forClass.isConstructionDenied()) {
                     // Denying construction denies access to the inherited instance methods.
-                    mDenyConstruction = true;
+                    DenyAction denyAction = forClass.ruleForConstructor("()").denyAction();
+                    if (denyAction instanceof DenyAction.Exception ex) {
+                        mDenyConstruction = ex;
+                    } else {
+                        mDenyConstruction = DenyAction.Standard.THE;
+                    }
+                    break;
                 }
             }
         }
@@ -199,9 +205,9 @@ final class ClassFileProcessor {
             C_Class superClass = cp.findConstantClass(mSuperClassIndex);
             Rules.ForClass forClass = rulesForClass(superClass);
 
-            if (forClass.isAllDenied()) {
+            if (forClass.isConstructionDenied()) {
                 // No need to explicitly deny because the super class constructors will.
-                mDenyConstruction = false;
+                mDenyConstruction = null;
 
                 // Access to the inherited static methods must be explicitly denied.
 
@@ -568,11 +574,11 @@ final class ClassFileProcessor {
     private void insertCallerChecks(CodeAttr caller) throws IOException, ClassFormatException {
         final ConstantPool cp = mConstantPool;
 
-        if (mDenyConstruction && cp.findConstantUTF8(caller.nameIndex).isConstructor()) {
+        if (mDenyConstruction != null && cp.findConstantUTF8(caller.nameIndex).isConstructor()) {
             // Just throw an exception.
             var ctor = new ReplacedMethod(caller);
             ctor.prepareForModification(cp, mThisClassIndex, null);
-            encodeExceptionAction(ctor, DenyAction.Standard.THE);
+            encodeExceptionAction(ctor, mDenyConstruction);
             storeReplacement(ctor.attrOffset, ctor);
             return;
         }
