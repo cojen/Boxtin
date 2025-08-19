@@ -16,6 +16,16 @@
 
 package org.cojen.boxtin;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+
+import java.lang.reflect.AccessibleObject;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InaccessibleObjectException;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+
 /**
  * Defines and applies common sets of rules.
  *
@@ -53,17 +63,17 @@ public interface RulesApplier {
      * <li>Starting processes
      * <li>Loading native code or calling restricted FFM operations (*)
      * <li>Using reflection to bypass any rules
-     * <li>Reading resources from other ClassLoaders or Modules
+     * <li>Reading resources from other {@code ClassLoaders} or {@code Modules}
      * <li>Reading sensitive system properties or changing the system properties
      * <li>Altering shared settings (current locale, time zone, etc.)
-     * <li>Creating ObjectInputStreams
-     * <li>Defining new Modules
+     * <li>Creating {@code ObjectInputStreams}
+     * <li>Defining new {@code Modules}
      * <li>Exiting the current process
      * <li>Changing sensitive thread settings (priority, etc. **)
-     * <li>Using the spi packages in the java.base module
-     * <li>Altering Provider properties
-     * <li>Closing or shutting down ForkJoinPools
-     * <li>Loading classes into ProtectionDomains
+     * <li>Using the {@code spi} packages in the {@code java.base} module
+     * <li>Altering {@code Provider} properties
+     * <li>Closing or shutting down {@code ForkJoinPools}
+     * <li>Loading classes into {@code ProtectionDomains}
      * </ul>
      *
      * <p>* Loading native code or calling restricted FFM operations is allowed when:
@@ -75,7 +85,8 @@ public interface RulesApplier {
      * </ul>
      *
      * <p>** A few thread settings can be changed if the thread hasn't started yet: name,
-     * daemon status, the context ClassLoader, and the thread's own uncaught exception handler.
+     * daemon status, the context {@code ClassLoader}, and the thread's own uncaught exception
+     * handler.
      */
     public static RulesApplier java_base() {
         return new JavaBaseApplier();
@@ -86,47 +97,53 @@ public interface RulesApplier {
      * that the corresponding constructor or method is allowed by the other rules. These rules
      * applied automatically when the {@link #java_base java_base} rules are applied.
      *
-     * <p>Access is checked when {@code Constructor} and {@code Method} instances are acquired,
+     * <p>Access is checked when {@link Constructor} and {@link Method} instances are acquired,
      * and not when they're invoked. Custom deny rules perform a check at that time, possibly
      * resulting in an exception being thrown. For methods which return an array (example:
-     * {@code Class.getMethods()}), a filtering step is applied which removes elements which
-     * cannot be accessed.
+     * {@link Class#getMethods Class.getMethods}), a filtering step is applied which removes
+     * elements which cannot be accessed.
      *
-     * <p>The following methods in {@code java.lang.Class} have custom deny actions applied:
+     * <p>The following {@code Class} methods have custom deny actions applied:
      *
      * <p>
      * <ul>
-     * <li>{@code getConstructor} - can throw a {@code NoSuchMethodException}
-     * <li>{@code getConstructors} - can filter the results
-     * <li>{@code getDeclaredConstructor} - can throw a {@code NoSuchMethodException}
-     * <li>{@code getDeclaredConstructors} - can filter the results
-     * <li>{@code getDeclaredMethod} - can throw a {@code NoSuchMethodException}
-     * <li>{@code getDeclaredMethods} - can filter the results
-     * <li>{@code getEnclosingConstructor} - can throw a {@code NoSuchMethodError}
-     * <li>{@code getEnclosingMethod} - can throw a {@code NoSuchMethodError}
-     * <li>{@code getMethod} - can throw a {@code NoSuchMethodException}
-     * <li>{@code getMethods} - can filter the results
-     * <li>{@code getRecordComponents} - can filter the results
+     * <li>{@link Class#getConstructor getConstructor} - can throw a {@link NoSuchMethodException}
+     * <li>{@link Class#getConstructors getConstructors} - can filter the results
+     * <li>{@link Class#getDeclaredConstructor getDeclaredConstructor} - can throw a {@link NoSuchMethodException}
+     * <li>{@link Class#getDeclaredConstructors getDeclaredConstructors} - can filter the results
+     * <li>{@link Class#getDeclaredMethod getDeclaredMethod} - can throw a {@link NoSuchMethodException}
+     * <li>{@link Class#getDeclaredMethods getDeclaredMethods} - can filter the results
+     * <li>{@link Class#getEnclosingConstructor getEnclosingConstructor} - can throw a {@link NoSuchMethodError}
+     * <li>{@link Class#getEnclosingMethod getEnclosingMethod} - can throw a {@link NoSuchMethodError}
+     * <li>{@link Class#getMethod getMethod} - can throw a {@link NoSuchMethodException}
+     * <li>{@link Class#getMethods getMethods} - can filter the results
+     * <li>{@link Class#getRecordComponents getRecordComponents} - can filter the results
      * </ul>
      *
-     * <p>Methods which return {@code MethodHandle} instances are checked using the same
+     * <p>Methods which return {@link MethodHandle} instances are checked using the same
      * strategy as for reflection. Custom deny actions are defined for the following {@code
-     * Lookup} methods, which can throw a {@code NoSuchMethodException}:
+     * Lookup} methods, which can throw a {@link NoSuchMethodException}:
      *
      * <p>
      * <ul>
-     * <li>{@code bind}
-     * <li>{@code findConstructor}
-     * <li>{@code findSpecial}
-     * <li>{@code findStatic}
-     * <li>{@code findVirtual}
+     * <li>{@link MethodHandles.Lookup#bind bind}
+     * <li>{@link MethodHandles.Lookup#findConstructor findConstructor}
+     * <li>{@link MethodHandles.Lookup#findSpecial findSpecial}
+     * <li>{@link MethodHandles.Lookup#findStatic findStatic}
+     * <li>{@link MethodHandles.Lookup#findVirtual findVirtual}
      * </ul>
      *
-     * <p>Methods defined by {@code AccessibleObject} which enable access to class members are
-     * denied. Calling {@code setAccessible} causes an {@code InaccessibleObjectException} to
-     * be thrown, except when the caller module is the same as the target module. Calling
-     * {@code trySetAccessible} does nothing, and instead the caller gets a result of {@code
-     * false}.
+     * <p>Methods defined by {@link AccessibleObject} which enable access to class members are
+     * denied. Calling {@link AccessibleObject#setAccessible setAccessible} causes an {@link
+     * InaccessibleObjectException} to be thrown, except when the caller module is the same as
+     * the target module. Calling {@link AccessibleObject#trySetAccessible trySetAccessible}
+     * does nothing, and instead the caller gets a result of {@code false}.
+     *
+     * <p>Calling {@link Proxy#newProxyInstance Proxy.newProxyInstance} throws a {@link
+     * SecurityException} if any of the given interfaces have any denied operations. Without
+     * this check, an {@link InvocationHandler} could get access to a denied {@code Method},
+     * bypassing the other reflection checks, and thus allowing method calls on other
+     * instances.
      */
     public static RulesApplier checkReflection() {
         return new ReflectionApplier();
