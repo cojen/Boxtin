@@ -17,7 +17,9 @@
 package org.cojen.boxtin;
 
 import java.lang.invoke.MethodHandleInfo;
+import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.lang.invoke.WrongMethodTypeException;
 
 import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
@@ -222,8 +224,12 @@ public abstract sealed class DenyAction {
         if (to.isAssignableFrom(from)) {
             return true;
         }
-        // TODO: Permit widening and boxing of primitives.
-        return false;
+        try {
+            MethodHandles.empty(MethodType.methodType(from)).asType(MethodType.methodType(to));
+            return true;
+        } catch (WrongMethodTypeException e) {
+            return false;
+        }
     }
 
     static sealed class Exception extends DenyAction {

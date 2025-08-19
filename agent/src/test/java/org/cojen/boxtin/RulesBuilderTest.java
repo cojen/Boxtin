@@ -312,6 +312,17 @@ public class RulesBuilderTest {
                 assertTrue(e.getMessage().contains("convert method return type"));
             }
         }
+
+        {
+            var lookup = MethodHandles.lookup();
+            MethodHandleInfo mhi = lookup.revealDirect
+                (lookup.findStatic(getClass(), "foo", MethodType.methodType(int.class)));
+            var b = new RulesBuilder();
+            b.forModule("java.base").forPackage("java.lang").forClass("Integer")
+                .denyMethod(DenyAction.custom(mhi), "getInteger");
+            // Boxing int to Integer should work.
+            b.validate();
+        }
     }
 
     public static int foo() {
