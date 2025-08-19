@@ -23,6 +23,7 @@ import java.lang.invoke.MethodType;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.RecordComponent;
@@ -382,6 +383,24 @@ public final class CustomActions {
         MethodHandle mh = lookup.findVirtual(clazz, name, mt);
         checkEx(callerClass, lookup, mh);
         return mh;
+    }
+
+    // Check for Proxy.newProxyInstance.
+    public static boolean checkNewProxyInstance(Caller caller, ClassLoader loader,
+                                                Class<?>[] interfaces, InvocationHandler handler)
+    {
+        Class<?> callerClass = caller.validate();
+        Module callerModule = callerClass.getModule();
+
+        for (Class<?> iface : interfaces) {
+            if (callerModule != iface.getModule() &&
+                !SecurityAgent.isAllAllowed(callerClass, iface))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static void checkErr(Class<?> callerClass, Class<?> target, String name, String desc)

@@ -22,6 +22,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.RecordComponent;
 
@@ -41,6 +42,9 @@ final class ReflectionApplier implements RulesApplier {
         // Custom deny actions used by the MethodHandle.Lookup methods.
         MethodHandleInfo cmh1, cmh2, cmh3, cmh4, cmh5;
 
+        // Custom check used by Proxy.newProxyInstance.
+        MethodHandleInfo cnpi;
+
         DenyAction inaccessible;
 
         try {
@@ -56,7 +60,7 @@ final class ReflectionApplier implements RulesApplier {
                                Constructor[].class, Caller.class, Class.class);
             cref5 = findMethod(lookup, "getDeclaredMethod",
                                Method.class, Caller.class,
-                                  Class.class, String.class, Class[].class);
+                               Class.class, String.class, Class[].class);
             cref6 = findMethod(lookup, "getDeclaredMethods",
                                Method[].class, Caller.class, Class.class);
             cref7 = findMethod(lookup, "getEnclosingConstructor",
@@ -65,7 +69,7 @@ final class ReflectionApplier implements RulesApplier {
                                Method.class, Caller.class, Class.class);
             cref9 = findMethod(lookup, "getMethod",
                                Method.class, Caller.class, Class.class,
-                                  String.class, Class[].class);
+                               String.class, Class[].class);
             cref10 = findMethod(lookup, "getMethods",
                                 Method[].class, Caller.class, Class.class);
             cref11 = findMethod(lookup, "getRecordComponents",
@@ -73,7 +77,7 @@ final class ReflectionApplier implements RulesApplier {
 
             cmh1 = findMethod(lookup, "lookupBind",
                               MethodHandle.class, Caller.class, MethodHandles.Lookup.class,
-                                 Object.class, String.class, MethodType.class);
+                              Object.class, String.class, MethodType.class);
             cmh2 = findMethod(lookup, "lookupFindConstructor",
                               MethodHandle.class, Caller.class, MethodHandles.Lookup.class,
                                  Class.class, MethodType.class);
@@ -82,10 +86,14 @@ final class ReflectionApplier implements RulesApplier {
                                  Class.class, String.class, MethodType.class, Class.class);
             cmh4 = findMethod(lookup, "lookupFindStatic",
                               MethodHandle.class, Caller.class, MethodHandles.Lookup.class,
-                                 Class.class, String.class, MethodType.class);
+                              Class.class, String.class, MethodType.class);
             cmh5 = findMethod(lookup, "lookupFindVirtual",
                               MethodHandle.class, Caller.class, MethodHandles.Lookup.class,
-                                 Class.class, String.class, MethodType.class);
+                              Class.class, String.class, MethodType.class);
+
+            cnpi = findMethod(lookup, "checkNewProxyInstance",
+                              boolean.class, Caller.class, ClassLoader.class,
+                              Class[].class, InvocationHandler.class);
 
             inaccessible = DenyAction.exception("java.lang.reflect.InaccessibleObjectException")
                 .check(findMethod(lookup, "checkSetAccessible",
@@ -139,6 +147,10 @@ final class ReflectionApplier implements RulesApplier {
 
             .forClass("Proxy")
             .denyMethod("getProxyClass") // deprecated
+            // If any interfaces have any denials, then throw a SecurityException. Without this
+            // check, an InvocationHandler could get access to a denied Method, bypassing the
+            // basic reflection checks and thus allowing method calls on other instances.
+            .denyMethod(DenyAction.standard().check(cnpi), "newProxyInstance")
 
             ;
     }

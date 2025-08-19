@@ -369,6 +369,17 @@ public final class SecurityAgent {
     }
 
     /**
+     * Is called by a reflection access method. Module comparison should be performed as a
+     * prerequisite. True is returned if the corresponding rule set allows access.
+     *
+     * @param caller the class which is calling the target
+     * @param target the class which has an operation which is potentially denied for the caller
+     */
+    static boolean isAllAllowed(Class<?> caller, Class<?> target) {
+        return Proxy.isAllowed(caller, target, null, null);
+    }
+
+    /**
      * Note: Must be public because it needs to be accessed from the MethodHandles.Lookup class.
      *
      * @hidden
@@ -452,6 +463,9 @@ public final class SecurityAgent {
             TRANSFORM_H = mh2;
         }
 
+        /**
+         * Note: Pass null for name and desc to check for isAllAllowed.
+         */
         static boolean isAllowed(Class<?> caller, Class<?> target, String name, String desc) {
             try {
                 return (boolean) IS_ALLOWED_H.invokeExact(caller, target, name, desc);
@@ -485,6 +499,8 @@ public final class SecurityAgent {
      *
      * Note: Module comparison should be performed as a prerequisite.
      *
+     * Note: Pass null for name and desc to check for isAllAllowed.
+     *
      * @hidden
      */
     public boolean isAllowed2(Class<?> caller, Class<?> target, String name, String desc) {
@@ -508,6 +524,10 @@ public final class SecurityAgent {
         }
 
         Rules.ForClass forClass = rules.forClass(module, target);
+
+        if (name == null && desc == null) {
+            return forClass.isAllAllowed();
+        }
 
         if (name == null || name.equals("<init>")) {
             return forClass.ruleForConstructor(desc).isAllowed();
@@ -540,6 +560,8 @@ public final class SecurityAgent {
 
     /**
      * Note: Module comparison should be performed as a prerequisite.
+     *
+     * Note: Pass null for name and desc to check for isAllAllowed.
      */
     private static boolean isAllowed3(Class<?> caller, Class<?> target, String name, String desc) {
         SecurityAgent agent = agent();
