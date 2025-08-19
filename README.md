@@ -59,7 +59,7 @@ If multiple denial rules are applicable, then selection checks are performed to 
 
 If the method being invoked is static, then the [`isAssignable`](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html#isAssignableFrom(java.lang.Class)) method is used instead of the `instanceof` operator. In either case, these checks are optimized by the JVM such that they are effectively eliminated. The resulting code will always perform a specific deny operation, or it will always allow the original invocation.
 
-In the above example, no additional checks are made before performing a denial operation. Additional checks can be inserted to test the target module, or to perform a [`checked`](https://cojen.github.io/Boxtin/javadoc/org.cojen.boxtin/org/cojen/boxtin/DenyAction.html#check(java.lang.invoke.MethodHandleInfo,org.cojen.boxtin.DenyAction)) deny action.
+In the above example, no additional checks are made before performing a denial operation. Additional checks can be inserted to test the target module, or to perform a [`checked`](https://cojen.github.io/Boxtin/javadoc/org.cojen.boxtin/org/cojen/boxtin/DenyAction.html#check(java.lang.invoke.MethodHandleInfo)) deny action.
 
 The purpose of the module check is to allow invocations within a module. As was stated earlier, a caller is always allowed to call any target operation in its own module. The module check is inserted because the exact module that the target is loaded into isn't known at the time the class is being transformed.
 
@@ -82,7 +82,7 @@ To guard against this, classes which are defined as subtypes of implicitly denie
 
 Static methods require special attention, because they can be inherited and accessed without instantiation. Static methods defined in interfaces aren't inherited, and so nothing special needs to be done in that case. Special transformations are required for static methods which are inherited from an implicitly denied class.
 
-For each accessible static method (which isn't already declared locally in the subtype), a synthetic override is generated which matches the signature of the inherited method. The override applies the necessary security checks against the inherited method, and only if the operation is actually allowed will the original method be called. Ordinarily the operation is denied, but the deny action for the package might be [`checked`](https://cojen.github.io/Boxtin/javadoc/org.cojen.boxtin/org/cojen/boxtin/DenyAction.html#check(java.lang.invoke.MethodHandleInfo,org.cojen.boxtin.DenyAction)).
+For each accessible static method (which isn't already declared locally in the subtype), a synthetic override is generated which matches the signature of the inherited method. The override applies the necessary security checks against the inherited method, and only if the operation is actually allowed will the original method be called. Ordinarily the operation is denied, but the deny action for the package might be [`checked`](https://cojen.github.io/Boxtin/javadoc/org.cojen.boxtin/org/cojen/boxtin/DenyAction.html#check(java.lang.invoke.MethodHandleInfo)).
 
 If the inherited static method is final, it still needs to be overridden to ensure that the access check is applied. Overriding such a method is perfectly legal as far as the JVM is concerned, and it's the Java compiler which restricts this.
 
