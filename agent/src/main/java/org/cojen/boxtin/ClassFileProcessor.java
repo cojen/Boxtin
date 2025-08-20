@@ -164,7 +164,7 @@ final class ClassFileProcessor {
         final ConstantPool cp = mConstantPool;
         final BufferDecoder decoder = mDecoder;
 
-        // Gather all the method declarations, to be used later by the rulesForClass method.
+        // Gather all the method declarations, to be used to detect if a method call is local.
 
         mDeclaredMethods = new MethodMap(mMethodsCount);
 

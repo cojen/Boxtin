@@ -320,11 +320,7 @@ final class RuleSet implements Rules {
         @Override
         public Rule ruleForMethod(CharSequence name, CharSequence descriptor) {
             MethodScope scope = mMethodScopes.get(name);
-            Rule rule = scope == null ? mDefaultMethodRule : scope.ruleForVariant(descriptor);
-            if (!rule.isAllowed() && isObjectMethod(name, descriptor)) {
-                rule = Rule.allow();
-            }
-            return rule;
+            return scope == null ? mDefaultMethodRule : scope.ruleForVariant(descriptor);
         }
 
         @SuppressWarnings("unchecked")
