@@ -33,8 +33,8 @@ import java.util.Map;
 
 /**
  * The {@code SecurityAgent} is an instrumentation agent which transforms classes such that
- * access checks are enforced. For operations which are denied, a {@link SecurityException} is
- * thrown at runtime.
+ * access checks are enforced. As a result of these transformations, calling a denied operation
+ * throws a {@link SecurityException}, or it can perform a specific {@link DenyAction action}.
  *
  * <p>The agent can be launched with a custom {@link Controller} as follows:
  *

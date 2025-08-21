@@ -25,8 +25,13 @@ import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+
+import java.util.stream.Stream;
 
 /**
  * Specifies the action to take when access to an operation is denied.
@@ -35,7 +40,7 @@ import java.util.Objects;
  */
 public abstract sealed class DenyAction {
     /**
-     * Returns the standard deny action, which throws a {@code SecurityException} without a
+     * Returns the standard deny action, which throws a {@link SecurityException} without a
      * message.
      */
     public static DenyAction standard() {
@@ -111,9 +116,9 @@ public abstract sealed class DenyAction {
 
     /**
      * Returns a deny action which returns an empty instance. Types supported are arrays,
-     * {@code String}, {@code Optional}, {@code Iterable}, {@code Collection}, {@code Stream},
-     * and any of the empty variants supported by the {@code Collections} class. Otherwise, a
-     * new instance is created using a no-arg constructor, possibly resulting in a {@code
+     * {@link String}, {@link Optional}, {@link Iterable}, {@link Collection}, {@link Stream},
+     * and any of the empty variants supported by the {@link Collections} class. Otherwise, a
+     * new instance is created using a no-arg constructor, possibly resulting in a {@link
      * LinkageError} at runtime. If the actual type is primitive, then 0, false or void is
      * returned instead.
      *
@@ -128,8 +133,9 @@ public abstract sealed class DenyAction {
      * Returns a deny action which performs a custom operation. The parameters given to the
      * custom method are the {@link Caller} (optional), the non-null instance (if applicable),
      * and the original method parameters. The return type must exactly match the original
-     * method's return type. If the custom method type is incompatible, then a {@code
-     * SecurityException} or {@code WrongMethodTypeException} can be thrown instead.
+     * method's return type. If the original method has more parameters than the custom method,
+     * the trailing ones are dropped. If the custom method type is incompatible, then a {@link
+     * SecurityException} or {@link WrongMethodTypeException} can be thrown instead.
      *
      * <p>Note: This action has no effect for constructors, unless the custom operation throws
      * an exception. If it doesn't throw an exception, a {@code SecurityException} is thrown
@@ -143,8 +149,9 @@ public abstract sealed class DenyAction {
      * Returns this deny action but with a predicate check to determine if the operation should
      * actually be allowed. The parameters given to the predicate are the {@link Caller}
      * (optional), the non-null instance (if applicable), and the original method parameters.
-     * The return type must be boolean. If the predicate format is incompatible, then a {@code
-     * SecurityException} or {@code WrongMethodTypeException} can be thrown instead.
+     * The return type must be boolean. If the original method has more parameters than the
+     * predicate, the trailing ones are dropped. If the predicate format is incompatible, then
+     * a {@link SecurityException} or {@link WrongMethodTypeException} can be thrown instead.
      *
      * @param predicate the predicate checking method which returns true when the operation is
      * allowed

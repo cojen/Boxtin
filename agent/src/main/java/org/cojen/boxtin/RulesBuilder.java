@@ -55,7 +55,7 @@ public final class RulesBuilder {
 
     /**
      * Construct an instance which uses the boot module layer for discovering modules,
-     * packages, and classes.
+     * packages, and classes. By default, access to all modules is denied.
      */
     public RulesBuilder() {
         this(ModuleLayer.boot());
@@ -63,7 +63,7 @@ public final class RulesBuilder {
 
     /**
      * Construct an instance which uses the given module layer for discovering modules,
-     * packages, and classes.
+     * packages, and classes. By default, access to all modules is denied.
      */
     public RulesBuilder(ModuleLayer layer) {
         mLayer = Objects.requireNonNull(layer);
@@ -130,8 +130,8 @@ public final class RulesBuilder {
     }
 
     /**
-     * Deny access to all packages, superseding all previous rules. This action is
-     * recursive, denying access to all packages, classes, constructors, etc.
+     * Deny access to all modules, superseding all previous rules. This action is recursive,
+     * denying access to all packages, classes, constructors, etc.
      *
      * @return this
      */
@@ -140,8 +140,8 @@ public final class RulesBuilder {
     }
 
     /**
-     * Allow access to all packages, superseding all previous rules. This action is
-     * recursive, allowing access to all packages, classes, constructors, etc.
+     * Allow access to all modules, superseding all previous rules. This action is recursive,
+     * allowing access to all packages, classes, constructors, etc.
      *
      * @return this
      */
@@ -236,7 +236,6 @@ public final class RulesBuilder {
      * exception is thrown if validation fails.
      *
      * @return this
-     * @throws NullPointerException if layer is null
      * @throws IllegalStateException if validation fails
      */
     public RulesBuilder validate() {
@@ -249,7 +248,6 @@ public final class RulesBuilder {
      *
      * @param reporter pass non-null for reporting multiple validation failures
      * @return this
-     * @throws NullPointerException if layer is null
      * @throws IllegalStateException if validation fails
      */
     public RulesBuilder validate(Consumer<String> reporter) {

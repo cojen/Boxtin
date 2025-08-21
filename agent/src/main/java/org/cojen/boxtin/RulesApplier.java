@@ -16,6 +16,8 @@
 
 package org.cojen.boxtin;
 
+import java.io.ObjectInputStream;
+
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 
@@ -25,6 +27,11 @@ import java.lang.reflect.InaccessibleObjectException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+
+import java.security.ProtectionDomain;
+import java.security.Provider;
+
+import java.util.concurrent.ForkJoinPool;
 
 /**
  * Defines and applies common sets of rules.
@@ -61,19 +68,19 @@ public interface RulesApplier {
      * <li>Creating network sockets
      * <li>Opening URLs
      * <li>Starting processes
-     * <li>Loading native code or calling restricted FFM operations (*)
+     * <li>Loading native code or calling restricted {@link java.lang.foreign FFM} operations (*)
      * <li>Using reflection to bypass any rules
-     * <li>Reading resources from other {@code ClassLoaders} or {@code Modules}
+     * <li>Reading resources from other {@link ClassLoader ClassLoaders} or {@link Module Modules}
      * <li>Reading sensitive system properties or changing the system properties
      * <li>Altering shared settings (current locale, time zone, etc.)
-     * <li>Creating {@code ObjectInputStreams}
+     * <li>Creating {@link ObjectInputStream ObjectInputStreams}
      * <li>Defining new {@code Modules}
      * <li>Exiting the current process
      * <li>Changing sensitive thread settings (priority, etc. **)
      * <li>Using the {@code spi} packages in the {@code java.base} module
-     * <li>Altering {@code Provider} properties
-     * <li>Closing or shutting down {@code ForkJoinPools}
-     * <li>Loading classes into {@code ProtectionDomains}
+     * <li>Altering {@link Provider} properties
+     * <li>Closing or shutting down {@link ForkJoinPool ForkJoinPools}
+     * <li>Loading classes into {@link ProtectionDomain ProtectionDomains}
      * </ul>
      *
      * <p>* Loading native code or calling restricted FFM operations is allowed when:
@@ -99,9 +106,8 @@ public interface RulesApplier {
      *
      * <p>Access is checked when {@link Constructor} and {@link Method} instances are acquired,
      * and not when they're invoked. Custom deny rules perform a check at that time, possibly
-     * resulting in an exception being thrown. For methods which return an array (example:
-     * {@link Class#getMethods Class.getMethods}), a filtering step is applied which removes
-     * elements which cannot be accessed.
+     * resulting in an exception being thrown. For methods which return an array, a filtering
+     * step is applied which removes elements which cannot be accessed.
      *
      * <p>The following {@code Class} methods have custom deny actions applied:
      *
