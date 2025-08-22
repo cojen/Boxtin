@@ -23,6 +23,8 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodHandleInfo;
 import java.lang.invoke.MethodType;
 
+import java.net.URI;
+
 import java.util.ArrayList;
 
 import org.junit.*;
@@ -412,5 +414,110 @@ public class RulesBuilderTest {
             forClass = rules.forClass(mod, ProcessBuilder.class);
             assertTrue(forClass.ruleForConstructor("()").isDenied());
         }
+    }
+
+    @Test
+    public void isConstructionDenied() throws Exception {
+        Module mod = getClass().getClassLoader().getUnnamedModule();
+
+        {
+            var b = new RulesBuilder();
+            b.forModule("java.base").forPackage("java.io").forClass("File")
+                .allowAllConstructors()
+                .denyVariant(String.class);
+            b.validate();
+            Rules rules = b.build();
+            Rules.ForClass forClass = rules.forClass(mod, File.class);
+            assertFalse(forClass.isConstructionDenied());
+        }
+
+        {
+            var b = new RulesBuilder();
+            b.forModule("java.base").forPackage("java.io").forClass("File")
+                .denyAllConstructors()
+                .allowVariant(String.class);
+            b.validate();
+            Rules rules = b.build();
+            Rules.ForClass forClass = rules.forClass(mod, File.class);
+            assertFalse(forClass.isConstructionDenied());
+        }
+
+        {
+            var b = new RulesBuilder();
+            b.forModule("java.base").forPackage("java.io").forClass("File")
+                .allowAllConstructors()
+                .denyVariant(File.class, String.class)
+                .denyVariant(String.class)
+                .denyVariant(String.class, String.class)
+                .denyVariant(URI.class)
+                ;
+            b.validate();
+            Rules rules = b.build();
+            Rules.ForClass forClass = rules.forClass(mod, File.class);
+            assertFalse(forClass.isConstructionDenied());
+        }
+
+        {
+            var b = new RulesBuilder();
+            b.forModule("java.base").forPackage("java.io").forClass("File")
+                .denyAllConstructors()
+                .denyVariant(DenyAction.empty(), File.class, String.class)
+                ;
+            b.validate();
+            Rules rules = b.build();
+            Rules.ForClass forClass = rules.forClass(mod, File.class);
+            System.out.println("forClass: " + forClass);
+            assertTrue(forClass.isConstructionDenied());
+        }
+    }
+
+    @Test
+    public void equalRulesTest() throws Exception {
+        Rules r1, r2;
+
+        {
+            var b = new RulesBuilder();
+            b.forModule("java.base").forPackage("java.io").forClass("File")
+                .denyAllConstructors()
+                .denyVariant(DenyAction.empty(), File.class, String.class)
+                ;
+            b.validate();
+            r1 = b.build();
+            r2 = b.build();
+        }
+
+        assertNotSame(r1, r2);
+        int hash = r1.hashCode();
+        assertEquals(hash, r1.hashCode());
+        assertEquals(hash, r2.hashCode());
+        assertEquals(r1, r2);
+    }
+
+    @Test
+    public void sameModule() throws Exception {
+        var b = new RulesBuilder();
+        b.forModule("java.base").forPackage("java.io").forClass("File")
+            .denyAllConstructors()
+            .denyVariant(DenyAction.empty(), File.class, String.class)
+            ;
+        b.validate();
+        Rules rules = b.build();
+
+        assertFalse(rules.forClass(String.class.getModule(), File.class).isAnyDenied());
+    }
+
+    @Test
+    public void qualifiedExport() throws Exception {
+        Rules rules = new RulesBuilder().applyRules(RulesApplier.java_base()).build();
+
+        Module thisMod = getClass().getModule();
+        assertTrue(rules.forClass(thisMod, Integer.class).isAnyDenied());
+        assertEquals(Rule.deny(), rules.forClass(thisMod, "jdk/internal/misc", "Unsafe"));
+
+        Module unnamedMod = getClass().getClassLoader().getUnnamedModule();
+        assertEquals(Rule.deny(), rules.forClass(unnamedMod, "jdk/internal/misc", "Unsafe"));
+
+        Module desktopMod = java.awt.Component.class.getModule();
+        assertEquals(Rule.allow(), rules.forClass(desktopMod, "jdk/internal/misc", "Unsafe"));
     }
 }

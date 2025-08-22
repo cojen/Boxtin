@@ -109,7 +109,7 @@ final class RuleSet implements Rules {
             forClass = scope.forClass(className);
         }
 
-        if (forClass.isAnyDenied()) {
+        if (forClass.isAnyDenied() && caller.isNamed()) {
             // Check if a qualified package export is defined by the target module to the
             // caller module. If so, allow the package.
             String dottedName = packageName.toString().replace('/', '.');
@@ -177,8 +177,6 @@ final class RuleSet implements Rules {
         // Default is selected when no map entry is found.
         private final Rule mDefaultRule;
 
-        private int mHashCode;
-
         /**
          * @param packageName must have '/' characters as separators 
          */
@@ -201,14 +199,10 @@ final class RuleSet implements Rules {
 
         @Override
         public int hashCode() {
-            int hash = mHashCode;
-            if (hash == 0) {
-                hash = mModule.hashCode();
-                hash = hash * 31 + mPackageName.hashCode();
-                hash = hash * 31 + mClassScopes.hashCode();
-                hash = hash * 31 + mDefaultRule.hashCode();
-                mHashCode = hash;
-            }
+            int hash = mModule.hashCode();
+            hash = hash * 31 + mPackageName.hashCode();
+            hash = hash * 31 + mClassScopes.hashCode();
+            hash = hash * 31 + mDefaultRule.hashCode();
             return hash;
         }
 
@@ -262,10 +256,6 @@ final class RuleSet implements Rules {
             mDefaultConstructorRule = Objects.requireNonNull(defaultConstructorRule);
             mMethodScopes = Objects.requireNonNull(methodScopes);
             mDefaultMethodRule = Objects.requireNonNull(defaultMethodRule);
-        }
-
-        String name() {
-            return mClassName;
         }
 
         String fullName() {
@@ -350,20 +340,13 @@ final class RuleSet implements Rules {
     static abstract class ExecutableScope {
         protected final NavigableMap<CharSequence, Rule> mVariants;
 
-        private int mHashCode;
-
         ExecutableScope(NavigableMap<CharSequence, Rule> variants) {
             mVariants = Objects.requireNonNull(variants);
         }
 
         @Override
         public int hashCode() {
-            int hash = mHashCode;
-            if (hash == 0) {
-                hash = mVariants.hashCode() * 31 + defaultRule().hashCode();
-                mHashCode = hash ^ 1395528771;
-            }
-            return hash;
+            return (mVariants.hashCode() * 31 + defaultRule().hashCode()) ^ 1395528771;
         }
 
         @Override
