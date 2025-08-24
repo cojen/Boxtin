@@ -26,6 +26,8 @@ import java.lang.reflect.Proxy;
 
 import java.util.OptionalInt;
 
+import org.cojen.maker.ClassMaker;
+
 import org.junit.*;
 import static org.junit.Assert.*;
 
@@ -172,6 +174,22 @@ public class ExitTest {
             fail();
         } catch (SecurityException e) {
             // Expected.
+        }
+    }
+
+    @Test
+    public void hidden() throws Exception {
+        // Note that an explicit lookup must be provided. If a lookup is selected
+        // automatically, then it will belong to an unnamed module, and the TestController only
+        // returns deny rules for the "org.cojen.boxtin.tests" module.
+        var cm = ClassMaker.begin(null, MethodHandles.lookup()).public_();
+        cm.addMethod(null, "exit").public_().static_().var(System.class).invoke("exit", 123);
+        Method m = cm.finishHidden().lookupClass().getMethod("exit");
+        try {
+            m.invoke(null);
+            fail();
+        } catch (InvocationTargetException e) {
+            assertTrue(e.getCause() instanceof SecurityException);
         }
     }
 
