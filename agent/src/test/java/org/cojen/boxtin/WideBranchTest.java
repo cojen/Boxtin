@@ -44,6 +44,10 @@ public class WideBranchTest extends TransformTest {
             return;
         }
 
+        doBasic();
+    }
+
+    private void doBasic() throws Exception {
         Map<Object, Object> m = new SecureRandom().getProvider();
 
         try {
