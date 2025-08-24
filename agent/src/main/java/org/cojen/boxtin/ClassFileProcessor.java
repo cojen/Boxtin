@@ -809,7 +809,7 @@ final class ClassFileProcessor {
         // Note: Any changes to this method might need to be reflected in the
         // SecurityAgent.isAllowed2 method.
 
-        if (isInvokingThisClass(methodRef) && mDeclaredMethods.find(methodRef) != null) {
+        if (isInvokingLocalMethod(methodRef)) {
             return Rule.allow();
         }
 
@@ -825,9 +825,7 @@ final class ClassFileProcessor {
         // Note: Any changes to this method might need to be reflected in the
         // SecurityAgent.isAllowed2 method.
 
-        boolean invokingThis = isInvokingThisClass(methodRef);
-
-        if (invokingThis && mDeclaredMethods.find(methodRef) != null) {
+        if (isInvokingLocalMethod(methodRef)) {
             return Rule.allow();
         }
 
@@ -837,10 +835,6 @@ final class ClassFileProcessor {
 
         C_NameAndType nat = methodRef.mNameAndType;
         Rule rule = rulesForClass(methodRef.mClass).ruleForMethod(nat.mName, nat.mTypeDesc);
-
-        if (invokingThis && !hasInheritance()) {
-            return rule;
-        }
 
         Map<String, DenyAction> denials = mRules.denialsForMethod(nat.mName, nat.mTypeDesc);
 
@@ -877,18 +871,15 @@ final class ClassFileProcessor {
         return mRules.forClass(mModule, packageName, className);
     }
 
+    private boolean isInvokingLocalMethod(C_MemberRef methodRef) {
+        return isInvokingThisClass(methodRef) && mDeclaredMethods.find(methodRef) != null;
+    }
+
     private boolean isInvokingThisClass(C_MemberRef methodRef) {
         int thisIndex = mThisClassIndex;
         int otherIndex = methodRef.mClass.mIndex;
         return (thisIndex == otherIndex ||
             mConstantPool.findConstant(thisIndex).equals(mConstantPool.findConstant(otherIndex)));
-    }
-
-    private boolean hasInheritance() {
-        return mInterfaceIndexes != null
-            || (mSuperClassIndex != 0 &&
-                !mConstantPool.findConstantClass(mSuperClassIndex)
-                .mValue.equals("java/lang/Object"));
     }
 
     private static void encodeBranch(BufferEncoder encoder, int address) throws IOException {
