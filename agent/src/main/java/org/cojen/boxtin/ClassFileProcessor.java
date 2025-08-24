@@ -842,7 +842,7 @@ final class ClassFileProcessor {
             return rule;
         }
 
-        Map<String, Rule> denials = mRules.denialsForMethod(nat.mName, nat.mTypeDesc);
+        Map<String, DenyAction> denials = mRules.denialsForMethod(nat.mName, nat.mTypeDesc);
 
         if (denials.isEmpty() || denials.containsKey(methodRef.mClass.mValue)) {
             return rule;
@@ -965,14 +965,14 @@ final class ClassFileProcessor {
         if (action instanceof DenyAction.Multi mu) {
             C_MemberRef isAssignableFrom = null;
 
-            Map<String, Rule> matches = mu.matches;
+            Map<String, DenyAction> matches = mu.matches;
 
             if (matches.size() > 1 && denyAddresses == null) {
                 // Use this to reduce code duplication.
                 denyAddresses = new HashMap<>();
             }
 
-            for (Map.Entry<String, Rule> e : matches.entrySet()) {
+            for (Map.Entry<String, DenyAction> e : matches.entrySet()) {
                 targetClass = mConstantPool.addClass(e.getKey());
                 int doCastArg0 = castArg0;
 
@@ -1002,7 +1002,7 @@ final class ClassFileProcessor {
                 // Note that maybeNull is now false because of the instanceof check.
 
                 encodeDenyAction(caller, hasInstance, false, methodRef, targetClass,
-                                 e.getValue().denyAction(), resumeAddress,
+                                 e.getValue(), resumeAddress,
                                  argSlots, doCastArg0, withArgs, denyAddresses);
 
                 caller.smt.putEntry(encoder.length(), withArgs);

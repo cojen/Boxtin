@@ -62,10 +62,10 @@ public interface Rules {
      * @param name method name
      * @param descriptor descriptor for the parameters, including parenthesis, but the return
      * type is optional
-     * @return a non-null map of fully qualified class names to deny rules; '/' characters are
-     * used as separators
+     * @return a non-null map of fully qualified class names to deny actions; '/' characters
+     * are used as separators
      */
-    public Map<String, Rule> denialsForMethod(CharSequence name, CharSequence descriptor);
+    public Map<String, DenyAction> denialsForMethod(CharSequence name, CharSequence descriptor);
 
     /**
      * Checks access to constructors or methods, for a specific class.

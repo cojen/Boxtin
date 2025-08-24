@@ -122,7 +122,7 @@ final class RuleSet implements Rules {
     }
 
     @Override
-    public Map<String, Rule> denialsForMethod(CharSequence name, CharSequence descriptor) {
+    public Map<String, DenyAction> denialsForMethod(CharSequence name, CharSequence descriptor) {
         Object value = mDeniedMethodsIndex.get(name);
 
         if (value == null) {
@@ -130,29 +130,29 @@ final class RuleSet implements Rules {
         }
 
         if (value instanceof ClassScope scope) {
-            Rule rule = scope.ruleForMethod(name, descriptor);
-            return rule.isAllowed() ? Map.of() : Map.of(scope.fullName(), rule);
+            DenyAction action = scope.ruleForMethod(name, descriptor).denyAction();
+            return action == null ? Map.of() : Map.of(scope.fullName(), action);
         }
 
         @SuppressWarnings("unchecked")
         var set = (Set<ClassScope>) value;
 
         String firstName = null;
-        Rule firstRule = null;
-        Map<String, Rule> matches = null;
+        DenyAction firstAction = null;
+        Map<String, DenyAction> matches = null;
 
         for (ClassScope scope : set) {
-            Rule rule = scope.ruleForMethod(name, descriptor);
-            if (rule.isDenied()) {
+            DenyAction action = scope.ruleForMethod(name, descriptor).denyAction();
+            if (action != null) {
                 if (firstName == null) {
                     firstName = scope.fullName();
-                    firstRule = rule;
+                    firstAction = action;
                 } else {
                     if (matches == null) {
                         matches = new LinkedHashMap<>();
-                        matches.put(firstName, firstRule);
+                        matches.put(firstName, firstAction);
                     }
-                    matches.put(scope.fullName(), rule);
+                    matches.put(scope.fullName(), action);
                 }
             }
         }
@@ -162,7 +162,7 @@ final class RuleSet implements Rules {
         }
 
         if (firstName != null) {
-            return Map.of(firstName, firstRule);
+            return Map.of(firstName, firstAction);
         }
 
         return Map.of();

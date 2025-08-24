@@ -496,23 +496,20 @@ public abstract sealed class DenyAction {
      * @see Rules#denialsForMethod
      */
     static final class Multi extends DenyAction {
-        final Map<String, Rule> matches;
+        final Map<String, DenyAction> matches;
 
         /**
-         * @param matches map of fully qualified class names to deny rules; '/' characters are
-         * used as separators
+         * @param matches map of fully qualified class names to deny actions; '/' characters
+         * are used as separators
          */
-        Multi(Map<String, Rule> matches) {
+        Multi(Map<String, DenyAction> matches) {
             this.matches = matches;
         }
 
         @Override
         void validate(ClassLoader loader, Executable executable) throws ClassNotFoundException {
-            for (Rule rule : matches.values()) {
-                DenyAction action = rule.denyAction();
-                if (action != null) {
-                    action.validate(loader, executable);
-                }
+            for (DenyAction action : matches.values()) {
+                action.validate(loader, executable);
             }
         }
 

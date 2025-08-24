@@ -537,7 +537,7 @@ public final class SecurityAgent {
             return false;
         }
 
-        Map<String, Rule> denials = rules.denialsForMethod(name, desc);
+        Map<String, DenyAction> denials = rules.denialsForMethod(name, desc);
 
         if (!denials.isEmpty()) {
             ClassLoader loader = target.getClassLoader();
