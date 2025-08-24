@@ -466,7 +466,6 @@ public class RulesBuilderTest {
             b.validate();
             Rules rules = b.build();
             Rules.ForClass forClass = rules.forClass(mod, File.class);
-            System.out.println("forClass: " + forClass);
             assertTrue(forClass.isConstructionDenied());
         }
     }
