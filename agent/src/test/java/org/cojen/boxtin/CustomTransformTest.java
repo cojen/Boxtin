@@ -42,6 +42,12 @@ public class CustomTransformTest extends TransformTest {
             .forClass("CustomOperations")
             .allowAllConstructors()
             .denyVariant(custom(void.class, null), int.class)
+            .denyVariant(custom(Object.class, "c_op18", int.class, String.class),
+                         int.class, String.class)
+            .denyVariant(custom(double.class, "c_op19", String.class, int.class),
+                         String.class, int.class)
+            .denyVariant(custom(double.class, "c_op19", String.class, int.class),
+                         String.class)
             .denyMethod(custom(void.class, "c_op1",
                                int.class, boolean.class, char.class, double.class), "op1")
             .denyMethod(custom(boolean.class, "c_op2", long.class), "op2")
@@ -198,6 +204,14 @@ public class CustomTransformTest extends TransformTest {
         return new Object[] {caller.validate(), obj};
     }
 
+    public static Object c_op18(int x, String s) {
+        return s;
+    }
+
+    public static double c_op19(String s, int x) {
+        return x;
+    }
+
     @Test
     public void custom() throws Exception {
         if (runTransformed()) {
@@ -263,6 +277,24 @@ public class CustomTransformTest extends TransformTest {
 
         try {
             new CustomOperations(123);
+            fail();
+        } catch (SecurityException e) {
+        }
+
+        try {
+            new CustomOperations(123, "xyz");
+            fail();
+        } catch (SecurityException e) {
+        }
+
+        try {
+            new CustomOperations("xyz", 123);
+            fail();
+        } catch (SecurityException e) {
+        }
+
+        try {
+            new CustomOperations("xyz");
             fail();
         } catch (SecurityException e) {
         }

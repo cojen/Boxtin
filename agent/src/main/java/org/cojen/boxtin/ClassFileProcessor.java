@@ -602,7 +602,7 @@ final class ClassFileProcessor {
 
             C_MemberRef methodRef;
             Rule rule;
-            boolean maybeNull;
+            boolean hasInstance, maybeNull;
 
             switch (op) {
                 default -> {
@@ -618,9 +618,11 @@ final class ClassFileProcessor {
 
                     if (methodRef.mNameAndType.mName.isConstructor()) {
                         rule = ruleForConstructor(methodRef);
+                        hasInstance = op == INVOKEVIRTUAL || op == INVOKEINTERFACE;
                         maybeNull = false;
                     } else {
                         rule = ruleForMethod(methodRef);
+                        hasInstance = hasInstance(op);
                         maybeNull = true;
                     }
 
@@ -779,7 +781,6 @@ final class ClassFileProcessor {
 
             int checkStartAddress = encoder.length();
 
-            boolean hasInstance = hasInstance(op);
             CodeAttr.StoredArgs args = caller.storeArgs(encoder, denyEntry, hasInstance, methodRef);
 
             encodeDenyAction(caller, hasInstance, maybeNull, methodRef, methodRef.mClass,

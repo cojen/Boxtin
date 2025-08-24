@@ -33,6 +33,15 @@ public class CustomOperations {
     public CustomOperations(int x) {
     }
 
+    public CustomOperations(int x, String s) {
+    }
+
+    public CustomOperations(String s, int x) {
+    }
+
+    public CustomOperations(String s) {
+    }
+
     public static void op1(int i, boolean b, char c, double d) {
         throw null;
     }
