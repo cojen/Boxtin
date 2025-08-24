@@ -41,6 +41,8 @@ public final class TestController implements Controller {
         if ("org.cojen.boxtin.tests".equals(module.getName())) {
             return mRules;
         }
+        // Note that returning null (allow all) for unknown or unnamed modules isn't usually
+        // appropriate. It's done this way only for the benefit of the test suite.
         return null;
     }
 }
