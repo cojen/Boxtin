@@ -33,7 +33,6 @@ import java.nio.ByteBuffer;
 import java.security.ProtectionDomain;
 
 import java.util.Arrays;
-import java.util.Properties;
 
 /**
  * Used by JavaBaseApplier and ReflectionApplier for selecting custom deny actions. The methods

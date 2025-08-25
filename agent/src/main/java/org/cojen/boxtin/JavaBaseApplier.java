@@ -23,8 +23,6 @@ import java.nio.ByteBuffer;
 
 import java.security.ProtectionDomain;
 
-import java.util.Properties;
-
 import static org.cojen.boxtin.CustomActions.findMethod;
 
 /**

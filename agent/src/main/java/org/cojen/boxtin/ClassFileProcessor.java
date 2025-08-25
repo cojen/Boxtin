@@ -83,7 +83,7 @@ final class ClassFileProcessor {
 
     private final ConstantPool mConstantPool;
     private final int mThisClassIndex;
-    private final int mSuperClassOffset, mSuperClassIndex;
+    private final int mSuperClassIndex;
     private final int[] mInterfaceIndexes;
     private final BufferDecoder mDecoder;
     private final int mMethodsStartOffset;
@@ -112,7 +112,6 @@ final class ClassFileProcessor {
         int accessFlags = decoder.readUnsignedShort();
         mThisClassIndex = decoder.readUnsignedShort();
 
-        mSuperClassOffset = decoder.offset();
         mSuperClassIndex = decoder.readUnsignedShort();
 
         {
@@ -185,8 +184,8 @@ final class ClassFileProcessor {
         // Check if any super interfaces restrict subtyping.
 
         if (mInterfaceIndexes != null) {
-            for (int i=0; i<mInterfaceIndexes.length; i++) {
-                Rules.ForClass forClass = rulesForClass(cp.findConstantClass(mInterfaceIndexes[i]));
+            for (int index : mInterfaceIndexes) {
+                Rules.ForClass forClass = rulesForClass(cp.findConstantClass(index));
                 if (forClass.isConstructionDenied()) {
                     // Denying construction denies access to the inherited instance methods.
                     DenyAction denyAction = forClass.ruleForConstructor("()").denyAction();
