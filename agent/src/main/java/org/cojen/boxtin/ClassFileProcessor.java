@@ -25,6 +25,7 @@ import java.lang.invoke.MethodType;
 
 import java.lang.reflect.Modifier;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
@@ -97,7 +98,7 @@ final class ClassFileProcessor {
 
     private TreeMap<Integer, RegionReplacement> mReplacements;
 
-    private Map<Integer, ProxyMethod> mProxyMethods;
+    private ArrayList<ProxyMethod> mProxyMethods;
 
     // Keys are original code offsets.
     private Map<Integer, ProxyMethod> mReplacedMethodHandles;
@@ -293,7 +294,7 @@ final class ClassFileProcessor {
         if (mProxyMethods != null) {
             // Append the new methods by "replacing" what is logically an empty method just
             // after the method table.
-            storeReplacement(methodsEndOffset, new CompositeReplacement(mProxyMethods.values()));
+            storeReplacement(methodsEndOffset, new CompositeReplacement(mProxyMethods));
         }
 
         return mReplacements != null;
@@ -1693,15 +1694,7 @@ final class ClassFileProcessor {
         ConstantPool cp = mConstantPool;
 
         if (mProxyMethods == null) {
-            mProxyMethods = new HashMap<>();
-        }
-
-        Integer key = (op << 24) | methodRef.mIndex;
-
-        ProxyMethod proxyMethod = mProxyMethods.get(key);
-
-        if (proxyMethod != null) {
-            return proxyMethod;
+            mProxyMethods = new ArrayList<>();
         }
 
         C_Class instanceType;
@@ -1723,9 +1716,9 @@ final class ClassFileProcessor {
                 (thisClass, cp.addNameAndType(proxyMethodName, proxyDesc));
         }
 
-        proxyMethod = new ProxyMethod(proxyMethodRef, accessFlags);
+        var proxyMethod = new ProxyMethod(proxyMethodRef, accessFlags);
         proxyMethod.prepareForModification(cp, mThisClassIndex, null);
-        mProxyMethods.put(key, proxyMethod);
+        mProxyMethods.add(proxyMethod);
 
         int[] argSlots = proxyMethod.staticParamArgs(proxyDesc.asMethodTypeDesc());
 
