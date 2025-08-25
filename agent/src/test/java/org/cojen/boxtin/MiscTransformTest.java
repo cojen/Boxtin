@@ -22,12 +22,15 @@ import java.io.FileNotFoundException;
 
 import java.net.Socket;
 
+import java.security.Provider;
 import java.security.SecureRandom;
 
 import java.util.Formatter;
 import java.util.Map;
 
 import java.util.function.BiConsumer;
+import java.util.function.IntSupplier;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 import org.cojen.maker.ClassMaker;
@@ -182,6 +185,33 @@ public class MiscTransformTest extends TransformTest {
     public static class Task extends Thread {
         public void run() {
             while (!interrupted());
+        }
+    }
+
+    @Test
+    public void lambdas() throws Exception {
+        if (runTransformed()) {
+            return;
+        }
+
+        {
+            File f = new File("x");
+            LongSupplier s = f::length;
+            assertEquals(0L, s.getAsLong());
+        }
+
+        {
+            IntSupplier s = Thread::activeCount;
+            assertEquals(1, s.getAsInt());
+        }
+
+        try {
+            Provider p = new SecureRandom().getProvider();
+            @SuppressWarnings("deprecation")
+            Supplier s = p::getVersion;
+            s.get();
+            fail();
+        } catch (SecurityException e) {
         }
     }
 }
