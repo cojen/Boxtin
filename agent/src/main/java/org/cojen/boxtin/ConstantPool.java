@@ -341,12 +341,8 @@ final class ConstantPool {
         }
     }
 
-    boolean hasBeenExtended() {
-        return mAddedConstants != null;
-    }
-
     private void extend() throws ClassFormatException {
-        if (!hasBeenExtended()) {
+        if (mAddedConstants == null) {
             doExtend();
         }
     }

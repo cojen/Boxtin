@@ -433,14 +433,9 @@ final class ClassFileProcessor {
     /**
      * Finishes modifications and returns a new class file buffer.
      *
-     * @return null if no modifications were made
      * @throws ClassFormatException if the redefined class has too many constants or methods
      */
     private byte[] redefine() throws IOException, ClassFormatException {
-        if (!mConstantPool.hasBeenExtended() && mReplacements == null) {
-            return null;
-        }
-
         BufferDecoder decoder = mDecoder;
         long capacity = decoder.buffer().length;
 
