@@ -17,6 +17,7 @@ Boxtin is designed to restrict operations for "plugins", much like the original 
 - With Boxtin, rules are defined entirely by the host environment, and so the libraries it depends on don't require any modifications.
 - Rules are selected by module, not by code source or protection domain.
 - The standard deny action is to throw a `SecurityException`, but alternative [deny actions](https://cojen.github.io/Boxtin/javadoc/org.cojen.boxtin/org/cojen/boxtin/DenyAction.html) can be configured instead.
+- Boxtin works with virtual threads, because it never walks the stack.
 
 A _caller_ is the plugin code, represented by a [module](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Module.html), possibly unnamed. A _target_ is the code which is being called by the caller, represented by a rule. A rule logically maps target methods or constructors to an "allow" or "deny" outcome. Targets must be defined in modules &mdash; classes and interfaces loaded from the class path cannot have deniable operations.
 
