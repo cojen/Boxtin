@@ -141,4 +141,7 @@ Because the `goto` instruction is limited to a signed 16-bit offset, methods lar
 
 Even if the `goto` limitation was resolved, very large methods might still not be transformable, because the upper limit for a method is 65535 bytes.
 
+One strategy for fixing the limitation is to replace the original invoke instruction with a call to a synthetic proxy method. This transformation is actually a bit simpler overall, but it doesn't work when invoking a constructor `<init>` method. This is because uninitialized object references cannot escape the current method, and this is enforced by the verifier.
+
+
 
