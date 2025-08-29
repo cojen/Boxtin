@@ -149,7 +149,7 @@ public class MiscTransformTest extends TransformTest {
 
     @Test
     public void superMethodHandle() throws Throwable {
-        String className = getClass() + "$$Super";
+        String className = getClass().getName() + "$$Super";
 
         var cm = ClassMaker.beginExternal(className).public_().static_().extend(File.class);
         var mm = cm.addConstructor(String.class).public_();
