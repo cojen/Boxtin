@@ -125,7 +125,6 @@ final class JavaBaseApplier implements RulesApplier {
             .allowMethod("getParentFile")
             .allowMethod("getPath")
             .allowMethod("isAbsolute")
-            .allowMethod("toPath")
 
             .forClass("FileInputStream")
             .denyAllConstructors(DenyAction.exception("java.io.FileNotFoundException"))
@@ -360,14 +359,7 @@ final class JavaBaseApplier implements RulesApplier {
 
             .forPackage("java.lang.annotation").allowAll()
 
-            .forPackage("java.lang.classfile")
-            .allowAll()
-
-            .forClass("ClassFile")
-            .denyMethod("buildModuleTo")
-            .denyMethod("buildTo")
-            .denyMethod("parse").allowVariant("[B")
-            .denyMethod("verify").allowVariant("[B")
+            .forPackage("java.lang.classfile").allowAll()
 
             .forPackage("java.lang.classfile.attribute").allowAll()
 
@@ -491,6 +483,9 @@ final class JavaBaseApplier implements RulesApplier {
             .denyAllConstructors()
             .denyMethod("setSocketImplFactory")
 
+            .forClass("UnixDomainSocketAddress")
+            .denyAll()
+
             .forClass("URL")
             .denyAllConstructors()
             .denyMethod("of")
@@ -561,7 +556,6 @@ final class JavaBaseApplier implements RulesApplier {
             .forClass("Path")
             .denyMethod("getFileSystem")
             .denyMethod("of")
-            .allowVariant("Ljava/lang/String;[Ljava/lang/String;")
             .denyMethod("register")
             .denyMethod("toAbsolutePath")
             .denyMethod("toRealPath")
