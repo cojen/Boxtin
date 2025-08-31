@@ -10,7 +10,7 @@ java -javaagent:Boxtin.jar=my.app.SecurityController ...
 
 If the controller is specified as "default", then a default is selected which only allows limited access to the [`java.base`](https://cojen.github.io/Boxtin/javadoc/org.cojen.boxtin/org/cojen/boxtin/RulesApplier.html#java_base()) module. If no controller is specified at all, then the [`activate`](https://cojen.github.io/Boxtin/javadoc/org.cojen.boxtin/org/cojen/boxtin/SecurityAgent.html#activate(org.cojen.boxtin.Controller)) method must be called later, preferably from the main method.
 
-Boxtin is designed to restrict operations for "[plugins](https://github.com/cojen/Boxtin/wiki/Plugins)", much like the original security manager was designed for restricting applet permissions. There are a few key differences, however:
+Boxtin is designed to restrict operations for [plugins](https://github.com/cojen/Boxtin/wiki/Plugins), much like the original security manager was designed for restricting applet permissions. There are a few key differences, however:
 
 - Boxtin is a shallow sandbox, which means it only checks the immediate caller to see if an operation is denied. It does this by modifying the caller class.
 - The original Java security manager implemented a deep sandbox, by walking the stack. This seemed like a good idea at the time, but in practice it was too complicated and inefficient. The [`AccessController.doPrivileged`](https://docs.oracle.com/en/java/javase/23/docs/api/java.base/java/security/AccessController.html) methods were intended for handling special cases, but they were actually used over 1000 times in the JDK.
