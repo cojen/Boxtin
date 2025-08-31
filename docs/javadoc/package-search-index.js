@@ -1,1 +1,1 @@
-packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"m":"org.cojen.boxtin","l":"org.cojen.boxtin"}];updateSearchResults();
+packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html","k":"18"},{"m":"org.cojen.boxtin","l":"org.cojen.boxtin"}];updateSearchResults();
