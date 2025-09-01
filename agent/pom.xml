@@ -6,12 +6,12 @@
   <artifactId>boxtin</artifactId>
   <packaging>jar</packaging>
   <name>Boxtin</name>
-  <version>0.9.1</version>
+  <version>1.0.0</version>
 
   <parent>
     <groupId>org.cojen</groupId>
     <artifactId>boxtin-parent</artifactId>
-    <version>0.9.1</version>
+    <version>1.0.0</version>
   </parent>
 
   <description>
