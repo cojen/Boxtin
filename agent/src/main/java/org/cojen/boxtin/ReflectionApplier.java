@@ -105,7 +105,7 @@ final class ReflectionApplier implements RulesApplier {
             throw new RuntimeException(e);
         }
 
-        b.forModule("java.base", null, "26")
+        b.forModule("java.base", null, "27")
 
             .forPackage("java.lang")
 
