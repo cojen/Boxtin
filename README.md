@@ -119,7 +119,7 @@ The Java classfile format supports defining [`MethodHandle`](https://docs.oracle
 
 ### Hidden classes
 
-The JVM doesn't pass hidden classes to instrumentation agents, and so this would permit hidden classes to completely bypass any rules. Boxtin could simply deny access to the `defineHiddenClass` and `defineHiddenClassWithClassData` methods, but instead it alters them such that hidden classes can be transformed just like any other class. Any class definition which is passed to these methods is first passed to the `SecurityAgent` for applying any necessary transformations. Code within the JDK itself is permitted to define hidden classes without going through these public methods, and so these classes won't be transformed. This isn't an issue because it doesn't permit arbitrary hidden classes to be defined.
+The JVM doesn't pass hidden classes to instrumentation agents, and so this would permit hidden classes to completely bypass any rules. Boxtin could simply deny access to the `defineHiddenClass` and `defineHiddenClassWithClassData` methods, but instead it alters them such that hidden classes can be transformed just like any other class. Any class definition which is passed to these methods is first passed to the `SecurityAgent` for applying any necessary transformations. Code within the JDK itself is permitted to define hidden classes without going through these public methods, and so internally defined hidden classes won't be transformed. This isn't an issue because it doesn't permit arbitrary hidden classes to be defined.
 
 ### Fail secure behavior
 
