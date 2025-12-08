@@ -6,7 +6,7 @@
   <artifactId>boxtin-parent</artifactId>
   <packaging>pom</packaging>
   <name>Boxtin-parent</name>
-  <version>1.0.0</version>
+  <version>1.0.1</version>
 
   <modules>
     <module>agent</module>
