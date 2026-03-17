@@ -2,7 +2,7 @@
 
 Boxtin is a customizable Java security manager agent, intended to replace the original security manager, which is now [disabled](https://openjdk.org/jeps/486).
 
-Boxtin provides an [instrumentation agent](https://docs.oracle.com/en/java/javase/24/docs/api/java.instrument/java/lang/instrument/package-summary.html) which modifies classes to include the necessary security checks. It's launched with a custom [controller](https://cojen.github.io/Boxtin/javadoc/org.cojen.boxtin/org/cojen/boxtin/Controller.html) which decides what operations are allowed for a given module.
+Boxtin provides an [instrumentation agent](https://docs.oracle.com/en/java/javase/26/docs/api/java.instrument/java/lang/instrument/package-summary.html) which modifies classes to include the necessary security checks. It's launched with a custom [controller](https://cojen.github.io/Boxtin/javadoc/org.cojen.boxtin/org/cojen/boxtin/Controller.html) which decides what operations are allowed for a given module.
 
 ```
 java -javaagent:Boxtin.jar=my.app.SecurityController ...
@@ -19,7 +19,7 @@ Boxtin is designed to restrict operations for [plugins](https://github.com/cojen
 - The standard deny action is to throw a `SecurityException`, but alternative [deny actions](https://cojen.github.io/Boxtin/javadoc/org.cojen.boxtin/org/cojen/boxtin/DenyAction.html) can be configured instead.
 - Boxtin never walks the call stack, which means it cannot be tricked by hidden classes or special "caller sensitive" methods.
 
-A _caller_ is the plugin code, represented by a [module](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Module.html), possibly unnamed. A _target_ is the code which is being called by the caller, represented by a rule. A rule logically maps target methods or constructors to an "allow" or "deny" outcome. Targets must be defined in modules &mdash; classes and interfaces loaded from the class path cannot have deniable operations.
+A _caller_ is the plugin code, represented by a [module](https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/Module.html), possibly unnamed. A _target_ is the code which is being called by the caller, represented by a rule. A rule logically maps target methods or constructors to an "allow" or "deny" outcome. Targets must be defined in modules &mdash; classes and interfaces loaded from the class path cannot have deniable operations.
 
 Boxtin works by examining classes to see if any invocation of a constructor or method matches against a deny rule. If so, the class is transformed such that all suitable deny actions are applied. This type of transformation is strictly a "caller-side" check, and "target-side" checks are never performed — no stack trace is ever captured at runtime, and target classes are never modified unless they themselves call any denied operations.
 
@@ -33,7 +33,7 @@ When a module exports a package P to a specific module B, then module B has acce
 
 ## Code transformations
 
-The `SecurityAgent` installs a [`ClassFileTransformer`](https://docs.oracle.com/en/java/javase/24/docs/api/java.instrument/java/lang/instrument/ClassFileTransformer.html) which transforms classes and interfaces which have any denied operations. Classes and interfaces loaded by the bootstrap class loader are allowed to call anything, and so they're exempt from transformation.
+The `SecurityAgent` installs a [`ClassFileTransformer`](https://docs.oracle.com/en/java/javase/26/docs/api/java.instrument/java/lang/instrument/ClassFileTransformer.html) which transforms classes and interfaces which have any denied operations. Classes and interfaces loaded by the bootstrap class loader are allowed to call anything, and so they're exempt from transformation.
 
 The `Code` attribute of each method is scanned, searching for `invokevirtual`, `invokespecial`, `invokestatic` and `invokeinterface` bytecode operations. If it's determined that the invocation refers to the class itself, then the operation is allowed. Otherwise, a corresponding rule is selected from the [`rules`](https://cojen.github.io/Boxtin/javadoc/org.cojen.boxtin/org/cojen/boxtin/Rules.html) provided by the controller. If the rule indicates that the operation is denied, then a series of checks are logically inserted immediately before the invoke operation.
 
@@ -58,7 +58,7 @@ If multiple denial rules are applicable, then selection checks are performed to 
     }
 ```
 
-If the method being invoked is static, then the [`isAssignable`](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/Class.html#isAssignableFrom(java.lang.Class)) method is used instead of the `instanceof` operator. In either case, these checks are optimized by the JVM such that they are effectively eliminated. The resulting code will always perform a specific deny operation, or it will always allow the original invocation.
+If the method being invoked is static, then the [`isAssignable`](https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/Class.html#isAssignableFrom(java.lang.Class)) method is used instead of the `instanceof` operator. In either case, these checks are optimized by the JVM such that they are effectively eliminated. The resulting code will always perform a specific deny operation, or it will always allow the original invocation.
 
 In the above example, no additional checks are made before performing a denial operation. Additional checks can be inserted to test the target module, or to perform a [`checked`](https://cojen.github.io/Boxtin/javadoc/org.cojen.boxtin/org/cojen/boxtin/DenyAction.html#check(java.lang.invoke.MethodHandleInfo)) deny action.
 
@@ -95,7 +95,7 @@ If `AbstractInterruptibleChannel` is explicitly denied and `SelectableChannel` i
 
 ### MethodHandle constants
 
-The Java classfile format supports defining [`MethodHandle`](https://docs.oracle.com/javase/specs/jvms/se24/html/jvms-4.html#jvms-4.4.8) constants, which are primarily used by Java lambdas. When necessary, Boxtin transforms these constants such that a security check is put in place. It does this by replacing the original constant with one that calls a synthetic proxy method.
+The Java classfile format supports defining [`MethodHandle`](https://docs.oracle.com/javase/specs/jvms/se26/html/jvms-4.html#jvms-4.4.8) constants, which are primarily used by Java lambdas. When necessary, Boxtin transforms these constants such that a security check is put in place. It does this by replacing the original constant with one that calls a synthetic proxy method.
 
 ```java
     // original
