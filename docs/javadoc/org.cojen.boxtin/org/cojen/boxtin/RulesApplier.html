@@ -186,7 +186,7 @@ handler.</div>
 <div class="member-signature"><span class="modifiers">static</span>&nbsp;<span class="return-type"><a href="RulesApplier.html" title="interface in org.cojen.boxtin">RulesApplier</a></span>&nbsp;<span class="element-name">checkReflection</span>()</div>
 <div class="block">Returns an applier which allows reflection operations, but they are checked to ensure
 that the corresponding constructor or method is allowed by the other rules. These rules
-applied automatically when the <a href="#java_base()"><code>java_base</code></a> rules are applied.
+are applied automatically when the <a href="#java_base()"><code>java_base</code></a> rules are applied.
 
 <p>Access is checked when <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/reflect/Constructor.html" title="class in java.lang.reflect" class="external-link"><code>Constructor</code></a> and <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/reflect/Method.html" title="class in java.lang.reflect" class="external-link"><code>Method</code></a> instances are acquired,
 and not when they're invoked. Custom deny rules perform a check at that time, possibly
