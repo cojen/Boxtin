@@ -102,7 +102,7 @@ public interface RulesApplier {
     /**
      * Returns an applier which allows reflection operations, but they are checked to ensure
      * that the corresponding constructor or method is allowed by the other rules. These rules
-     * applied automatically when the {@link #java_base java_base} rules are applied.
+     * are applied automatically when the {@link #java_base java_base} rules are applied.
      *
      * <p>Access is checked when {@link Constructor} and {@link Method} instances are acquired,
      * and not when they're invoked. Custom deny rules perform a check at that time, possibly
