@@ -151,19 +151,19 @@ considered harmful. This consists of:
 <li>Creating network sockets
 <li>Opening URLs
 <li>Starting processes
-<li>Loading native code or calling restricted <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/foreign/package-summary.html" class="external-link"><code>FFM</code></a> operations (*)
+<li>Loading native code or calling restricted <a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/foreign/package-summary.html" class="external-link"><code>FFM</code></a> operations (*)
 <li>Using reflection to bypass any rules
-<li>Reading resources from other <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/ClassLoader.html" title="class in java.lang" class="external-link"><code>ClassLoaders</code></a> or <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Module.html" title="class in java.lang" class="external-link"><code>Modules</code></a>
+<li>Reading resources from other <a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/ClassLoader.html" title="class in java.lang" class="external-link"><code>ClassLoaders</code></a> or <a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/Module.html" title="class in java.lang" class="external-link"><code>Modules</code></a>
 <li>Reading sensitive system properties or changing the system properties
 <li>Altering shared settings (current locale, time zone, etc.)
-<li>Creating <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/io/ObjectInputStream.html" title="class in java.io" class="external-link"><code>ObjectInputStreams</code></a>
+<li>Creating <a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/io/ObjectInputStream.html" title="class in java.io" class="external-link"><code>ObjectInputStreams</code></a>
 <li>Defining new <code>Modules</code>
 <li>Exiting the current process
 <li>Changing sensitive thread settings (priority, etc. **)
 <li>Using the <code>spi</code> packages in the <code>java.base</code> module
-<li>Altering <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/security/Provider.html" title="class in java.security" class="external-link"><code>Provider</code></a> properties
-<li>Closing or shutting down <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/concurrent/ForkJoinPool.html" title="class in java.util.concurrent" class="external-link"><code>ForkJoinPools</code></a>
-<li>Loading classes into <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/security/ProtectionDomain.html" title="class in java.security" class="external-link"><code>ProtectionDomains</code></a>
+<li>Altering <a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/security/Provider.html" title="class in java.security" class="external-link"><code>Provider</code></a> properties
+<li>Closing or shutting down <a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/util/concurrent/ForkJoinPool.html" title="class in java.util.concurrent" class="external-link"><code>ForkJoinPools</code></a>
+<li>Loading classes into <a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/security/ProtectionDomain.html" title="class in java.security" class="external-link"><code>ProtectionDomains</code></a>
 </ul>
 
 <p>* Loading native code or calling restricted FFM operations is allowed when:
@@ -188,7 +188,7 @@ handler.</div>
 that the corresponding constructor or method is allowed by the other rules. These rules
 are applied automatically when the <a href="#java_base()"><code>java_base</code></a> rules are applied.
 
-<p>Access is checked when <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/reflect/Constructor.html" title="class in java.lang.reflect" class="external-link"><code>Constructor</code></a> and <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/reflect/Method.html" title="class in java.lang.reflect" class="external-link"><code>Method</code></a> instances are acquired,
+<p>Access is checked when <a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/reflect/Constructor.html" title="class in java.lang.reflect" class="external-link"><code>Constructor</code></a> and <a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/reflect/Method.html" title="class in java.lang.reflect" class="external-link"><code>Method</code></a> instances are acquired,
 and not when they're invoked. Custom deny rules perform a check at that time, possibly
 resulting in an exception being thrown. For methods which return an array, a filtering
 step is applied which removes elements which cannot be accessed.
@@ -197,39 +197,39 @@ step is applied which removes elements which cannot be accessed.
 
 <p>
 <ul>
-<li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Class.html#getConstructor(java.lang.Class...)" class="external-link"><code>getConstructor</code></a> - can throw a <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/NoSuchMethodException.html" title="class in java.lang" class="external-link"><code>NoSuchMethodException</code></a>
-<li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Class.html#getConstructors()" class="external-link"><code>getConstructors</code></a> - can filter the results
-<li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Class.html#getDeclaredConstructor(java.lang.Class...)" class="external-link"><code>getDeclaredConstructor</code></a> - can throw a <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/NoSuchMethodException.html" title="class in java.lang" class="external-link"><code>NoSuchMethodException</code></a>
-<li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Class.html#getDeclaredConstructors()" class="external-link"><code>getDeclaredConstructors</code></a> - can filter the results
-<li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Class.html#getDeclaredMethod(java.lang.String,java.lang.Class...)" class="external-link"><code>getDeclaredMethod</code></a> - can throw a <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/NoSuchMethodException.html" title="class in java.lang" class="external-link"><code>NoSuchMethodException</code></a>
-<li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Class.html#getDeclaredMethods()" class="external-link"><code>getDeclaredMethods</code></a> - can filter the results
-<li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Class.html#getEnclosingConstructor()" class="external-link"><code>getEnclosingConstructor</code></a> - can throw a <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/NoSuchMethodError.html" title="class in java.lang" class="external-link"><code>NoSuchMethodError</code></a>
-<li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Class.html#getEnclosingMethod()" class="external-link"><code>getEnclosingMethod</code></a> - can throw a <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/NoSuchMethodError.html" title="class in java.lang" class="external-link"><code>NoSuchMethodError</code></a>
-<li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Class.html#getMethod(java.lang.String,java.lang.Class...)" class="external-link"><code>getMethod</code></a> - can throw a <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/NoSuchMethodException.html" title="class in java.lang" class="external-link"><code>NoSuchMethodException</code></a>
-<li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Class.html#getMethods()" class="external-link"><code>getMethods</code></a> - can filter the results
-<li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Class.html#getRecordComponents()" class="external-link"><code>getRecordComponents</code></a> - can filter the results
+<li><a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/Class.html#getConstructor(java.lang.Class...)" class="external-link"><code>getConstructor</code></a> - can throw a <a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/NoSuchMethodException.html" title="class in java.lang" class="external-link"><code>NoSuchMethodException</code></a>
+<li><a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/Class.html#getConstructors()" class="external-link"><code>getConstructors</code></a> - can filter the results
+<li><a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/Class.html#getDeclaredConstructor(java.lang.Class...)" class="external-link"><code>getDeclaredConstructor</code></a> - can throw a <a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/NoSuchMethodException.html" title="class in java.lang" class="external-link"><code>NoSuchMethodException</code></a>
+<li><a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/Class.html#getDeclaredConstructors()" class="external-link"><code>getDeclaredConstructors</code></a> - can filter the results
+<li><a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/Class.html#getDeclaredMethod(java.lang.String,java.lang.Class...)" class="external-link"><code>getDeclaredMethod</code></a> - can throw a <a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/NoSuchMethodException.html" title="class in java.lang" class="external-link"><code>NoSuchMethodException</code></a>
+<li><a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/Class.html#getDeclaredMethods()" class="external-link"><code>getDeclaredMethods</code></a> - can filter the results
+<li><a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/Class.html#getEnclosingConstructor()" class="external-link"><code>getEnclosingConstructor</code></a> - can throw a <a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/NoSuchMethodError.html" title="class in java.lang" class="external-link"><code>NoSuchMethodError</code></a>
+<li><a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/Class.html#getEnclosingMethod()" class="external-link"><code>getEnclosingMethod</code></a> - can throw a <a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/NoSuchMethodError.html" title="class in java.lang" class="external-link"><code>NoSuchMethodError</code></a>
+<li><a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/Class.html#getMethod(java.lang.String,java.lang.Class...)" class="external-link"><code>getMethod</code></a> - can throw a <a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/NoSuchMethodException.html" title="class in java.lang" class="external-link"><code>NoSuchMethodException</code></a>
+<li><a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/Class.html#getMethods()" class="external-link"><code>getMethods</code></a> - can filter the results
+<li><a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/Class.html#getRecordComponents()" class="external-link"><code>getRecordComponents</code></a> - can filter the results
 </ul>
 
-<p>Methods which return <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/invoke/MethodHandle.html" title="class in java.lang.invoke" class="external-link"><code>MethodHandle</code></a> instances are checked using the same
+<p>Methods which return <a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/invoke/MethodHandle.html" title="class in java.lang.invoke" class="external-link"><code>MethodHandle</code></a> instances are checked using the same
 strategy as for reflection. Custom deny actions are defined for the following <code>
-Lookup</code> methods, which can throw a <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/NoSuchMethodException.html" title="class in java.lang" class="external-link"><code>NoSuchMethodException</code></a>:
+Lookup</code> methods, which can throw a <a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/NoSuchMethodException.html" title="class in java.lang" class="external-link"><code>NoSuchMethodException</code></a>:
 
 <p>
 <ul>
-<li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/invoke/MethodHandles.Lookup.html#bind(java.lang.Object,java.lang.String,java.lang.invoke.MethodType)" class="external-link"><code>bind</code></a>
-<li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/invoke/MethodHandles.Lookup.html#findConstructor(java.lang.Class,java.lang.invoke.MethodType)" class="external-link"><code>findConstructor</code></a>
-<li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/invoke/MethodHandles.Lookup.html#findSpecial(java.lang.Class,java.lang.String,java.lang.invoke.MethodType,java.lang.Class)" class="external-link"><code>findSpecial</code></a>
-<li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/invoke/MethodHandles.Lookup.html#findStatic(java.lang.Class,java.lang.String,java.lang.invoke.MethodType)" class="external-link"><code>findStatic</code></a>
-<li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/invoke/MethodHandles.Lookup.html#findVirtual(java.lang.Class,java.lang.String,java.lang.invoke.MethodType)" class="external-link"><code>findVirtual</code></a>
+<li><a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/invoke/MethodHandles.Lookup.html#bind(java.lang.Object,java.lang.String,java.lang.invoke.MethodType)" class="external-link"><code>bind</code></a>
+<li><a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/invoke/MethodHandles.Lookup.html#findConstructor(java.lang.Class,java.lang.invoke.MethodType)" class="external-link"><code>findConstructor</code></a>
+<li><a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/invoke/MethodHandles.Lookup.html#findSpecial(java.lang.Class,java.lang.String,java.lang.invoke.MethodType,java.lang.Class)" class="external-link"><code>findSpecial</code></a>
+<li><a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/invoke/MethodHandles.Lookup.html#findStatic(java.lang.Class,java.lang.String,java.lang.invoke.MethodType)" class="external-link"><code>findStatic</code></a>
+<li><a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/invoke/MethodHandles.Lookup.html#findVirtual(java.lang.Class,java.lang.String,java.lang.invoke.MethodType)" class="external-link"><code>findVirtual</code></a>
 </ul>
 
-<p>Methods defined by <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/reflect/AccessibleObject.html" title="class in java.lang.reflect" class="external-link"><code>AccessibleObject</code></a> which enable access to class members are
-denied. Calling <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/reflect/AccessibleObject.html#setAccessible(java.lang.reflect.AccessibleObject%5B%5D,boolean)" class="external-link"><code>setAccessible</code></a> causes an <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/reflect/InaccessibleObjectException.html" title="class in java.lang.reflect" class="external-link"><code>InaccessibleObjectException</code></a> to be thrown, except when the caller module is the same as
-the target module. Calling <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/reflect/AccessibleObject.html#trySetAccessible()" class="external-link"><code>trySetAccessible</code></a>
+<p>Methods defined by <a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/reflect/AccessibleObject.html" title="class in java.lang.reflect" class="external-link"><code>AccessibleObject</code></a> which enable access to class members are
+denied. Calling <a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/reflect/AccessibleObject.html#setAccessible(java.lang.reflect.AccessibleObject%5B%5D,boolean)" class="external-link"><code>setAccessible</code></a> causes an <a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/reflect/InaccessibleObjectException.html" title="class in java.lang.reflect" class="external-link"><code>InaccessibleObjectException</code></a> to be thrown, except when the caller module is the same as
+the target module. Calling <a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/reflect/AccessibleObject.html#trySetAccessible()" class="external-link"><code>trySetAccessible</code></a>
 does nothing, and instead the caller gets a result of <code>false</code>.
 
-<p>Calling <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/reflect/Proxy.html#newProxyInstance(java.lang.ClassLoader,java.lang.Class%5B%5D,java.lang.reflect.InvocationHandler)" class="external-link"><code>Proxy.newProxyInstance</code></a> throws a <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/SecurityException.html" title="class in java.lang" class="external-link"><code>SecurityException</code></a> if any of the given interfaces have any denied operations. Without
-this check, an <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/reflect/InvocationHandler.html" title="interface in java.lang.reflect" class="external-link"><code>InvocationHandler</code></a> could get access to a denied <code>Method</code>,
+<p>Calling <a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/reflect/Proxy.html#newProxyInstance(java.lang.ClassLoader,java.lang.Class%5B%5D,java.lang.reflect.InvocationHandler)" class="external-link"><code>Proxy.newProxyInstance</code></a> throws a <a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/SecurityException.html" title="class in java.lang" class="external-link"><code>SecurityException</code></a> if any of the given interfaces have any denied operations. Without
+this check, an <a href="https://docs.oracle.com/en/java/javase/26/docs/api/java.base/java/lang/reflect/InvocationHandler.html" title="interface in java.lang.reflect" class="external-link"><code>InvocationHandler</code></a> could get access to a denied <code>Method</code>,
 bypassing the other reflection checks, and thus allowing method calls on other
 instances.</div>
 </div>
