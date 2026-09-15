@@ -6,12 +6,12 @@
   <artifactId>boxtin-tests</artifactId>
   <packaging>jar</packaging>
   <name>Boxtin-tests</name>
-  <version>1.0.1</version>
+  <version>1.0.2</version>
 
   <parent>
     <groupId>org.cojen</groupId>
     <artifactId>boxtin-parent</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
   </parent>
 
   <properties>
@@ -28,7 +28,7 @@
     <dependency>
       <groupId>org.cojen</groupId>
       <artifactId>boxtin</artifactId>
-      <version>[1.0.1]</version>
+      <version>[1.0.2]</version>
       <scope>test</scope>
     </dependency>
     <dependency>
