@@ -462,11 +462,24 @@ final class JavaBaseApplier implements RulesApplier {
             .denyMethod("setFollowRedirects")
             .denyMethod("setRequestMethod")
 
+            .forClass("InetAddress")
+            .denyAll()
+
+            .forClass("Inet4Address")
+            .denyAll()
+
+            .forClass("Inet6Address")
+            .denyAll()
+
+            .forClass("InetSocketAddress")
+            .denyAll()
+
             .forClass("MulticastSocket")
             .denyAllConstructors()
 
             .forClass("ProxySelector")
             .denyAllConstructors()
+            .denyMethod(DenyAction.value(null), "of")
             .denyMethod(DenyAction.value(null), "getDefault")
             .denyMethod("setDefault")
 
