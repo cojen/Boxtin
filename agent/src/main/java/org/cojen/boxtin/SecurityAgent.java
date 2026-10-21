@@ -215,7 +215,7 @@ public final class SecurityAgent {
 
         try {
             // Transform the defineHiddenClass methods in order for them to apply transforms to
-            // hidden classes. See #doTransform.
+            // hidden classes. See Redefiner.transform.
             inst.retransformClasses(MethodHandles.Lookup.class);
         } catch (UnmodifiableClassException e) {
             logException(e);
