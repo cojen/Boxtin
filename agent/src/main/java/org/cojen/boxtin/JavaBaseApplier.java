@@ -477,6 +477,9 @@ final class JavaBaseApplier implements RulesApplier {
             .forClass("MulticastSocket")
             .denyAllConstructors()
 
+            .forClass("NetworkInterface")
+            .denyAll()
+
             .forClass("ProxySelector")
             .denyAllConstructors()
             .denyMethod(DenyAction.value(null), "of")
