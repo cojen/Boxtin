@@ -1172,7 +1172,7 @@ final class ClassFileProcessor {
     private byte encodeValue(CodeAttr caller, Object value, ConstantPool.C_UTF8 desc)
         throws IOException
     {
-        byte op = tryEncodeValue(caller, value, desc.charAt(desc.length() - 1));
+        byte op = tryEncodeValue(caller, value, desc);
 
         if (op == 0) {
             op = tryEncodeObjectValue(caller, value, desc);
@@ -1191,13 +1191,19 @@ final class ClassFileProcessor {
      *
      * @return zero if failed, or else a return opcode
      */
-    private byte tryEncodeValue(CodeAttr caller, Object value, char type) throws IOException {
+    private byte tryEncodeValue(CodeAttr caller, Object value, ConstantPool.C_UTF8 desc)
+        throws IOException
+    {
+        if (desc.charAt(desc.length() - 2) == '[') {
+            return 0;
+        }
+
         BufferEncoder encoder = caller.codeEncoder;
 
         byte op;
         int push;
 
-        switch (type) {
+        switch (desc.charAt(desc.length() - 1)) {
         default -> {
             return 0;
         }
