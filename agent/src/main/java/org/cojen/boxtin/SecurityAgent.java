@@ -440,7 +440,7 @@ public final class SecurityAgent {
                             mh2 = lookup.findVirtual(altClass, "transformHiddenClass2", mt2);
                         } else {
                             mh1 = lookup.findStatic(altClass, "isAllowed3", mt1);
-                            mh2 = lookup.findStatic(altClass, "transformHiddenClass2", mt2);
+                            mh2 = lookup.findStatic(altClass, "transformHiddenClass3", mt2);
                         }
                     } catch (ClassNotFoundException e) {
                         agent = null;
