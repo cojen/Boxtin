@@ -105,7 +105,7 @@ final class ReflectionApplier implements RulesApplier {
             throw new RuntimeException(e);
         }
 
-        b.forModule("java.base", null, "28") // version < 28
+        b.forModule("java.base", null, JavaBaseApplier.MAX_VERSION)
 
             .forPackage("java.lang")
 

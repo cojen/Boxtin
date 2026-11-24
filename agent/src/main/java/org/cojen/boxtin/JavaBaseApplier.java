@@ -33,6 +33,9 @@ import static org.cojen.boxtin.CustomActions.findMethod;
  * @see RulesApplier#java_base
  */
 final class JavaBaseApplier implements RulesApplier {
+    // Max version is exclusive. The actual max version is one lower.
+    static final String MAX_VERSION = "29";
+
     @Override
     public void applyRulesTo(RulesBuilder b) {
         MethodHandleInfo iv1, iv2, lv1, lv2;
@@ -86,7 +89,7 @@ final class JavaBaseApplier implements RulesApplier {
             throw new RuntimeException(e);
         }
 
-        b.forModule("java.base", null, "28") // version < 28
+        b.forModule("java.base", null, MAX_VERSION)
 
             .forPackage("java.io")
             .allowAll()
