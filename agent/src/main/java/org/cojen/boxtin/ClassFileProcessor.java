@@ -237,6 +237,7 @@ final class ClassFileProcessor {
                     C_MemberRef superMethod = cp.addMethodRef(superClass, nat);
 
                     int accessFlags = entry.getValue().accessFlags() | 0x1000; // | synthetic
+                    accessFlags &= ~(Modifier.ABSTRACT | Modifier.NATIVE | Modifier.SYNCHRONIZED);
 
                     try {
                         addProxyMethod(INVOKESTATIC, superMethod, action, accessFlags, name);
