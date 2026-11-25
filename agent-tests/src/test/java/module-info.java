@@ -7,4 +7,6 @@ module org.cojen.boxtin.tests {
     requires junit;
 
     requires org.cojen.maker;
+
+    requires java.logging;
 }

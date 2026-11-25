@@ -21,8 +21,16 @@ import java.lang.invoke.MethodHandles;
 
 import java.lang.reflect.InvocationTargetException;
 
+import java.util.HashSet;
+
+import java.util.logging.Handler;
+import java.util.logging.Logger;
+import java.util.logging.LogRecord;
+
 import org.cojen.maker.ClassMaker;
 import org.cojen.maker.MethodMaker;
+
+import org.cojen.boxtin.SecurityAgent;
 
 import org.junit.*;
 import static org.junit.Assert.*;
@@ -78,6 +86,62 @@ public class HiddenClassTest {
             mh.invokeExact();
             fail();
         } catch (SecurityException e) {
+        }
+    }
+
+    @Test
+    public void broken() throws Throwable {
+        Logger logger = Logger.getLogger(SecurityAgent.class.getName());
+        logger.setUseParentHandlers(false);
+        var handler = new LogHandler();
+        logger.addHandler(handler);
+
+        System.getLogger(SecurityAgent.class.getName()).log(System.Logger.Level.ERROR, "xxx");
+
+        ClassMaker cm = ClassMaker.beginExternal("org.cojen.boxtin.tests.X").public_();
+        MethodMaker mm = cm.addMethod(null, "test").public_().static_();
+        mm.new_(Exception.class).throw_();
+        byte[] bytes = cm.finishBytes();
+
+        for (int i=0; i<bytes.length; i++) {
+            if (bytes[i] == (byte) 187) { // NEW
+                bytes[i] = (byte) 250; // undefined op
+            }
+        }
+
+        var lookup = MethodHandles.lookup().defineHiddenClass(bytes, false);
+
+        assertTrue(handler.mMessages.contains
+                   ("Failed to transform class: org.cojen.boxtin.tests.HiddenClassTest"));
+
+        logger.removeHandler(handler);
+        logger.setUseParentHandlers(true);
+
+        Class<?> clazz = lookup.lookupClass();
+
+        try {
+            clazz.getMethod("test").invoke(null);
+            fail();
+        } catch (NoSuchMethodException e) {
+        }
+
+        assertEquals(0, clazz.getDeclaredMethods().length);
+    }
+
+    private static final class LogHandler extends Handler {
+        private final HashSet<String> mMessages = new HashSet<>();
+
+        @Override
+        public void publish(LogRecord record) {
+            mMessages.add(record.getMessage());
+        }
+
+        @Override
+        public void flush() {
+        }
+
+        @Override
+        public void close() {
         }
     }
 }

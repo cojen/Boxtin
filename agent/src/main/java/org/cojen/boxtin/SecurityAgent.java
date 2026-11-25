@@ -579,7 +579,9 @@ public final class SecurityAgent {
         // another thread at just the right time. https://github.com/cojen/Boxtin/issues/17
         classBuffer = classBuffer.clone();
 
-        byte[] bytes = transform(lookup.lookupClass().getModule(), null, classBuffer);
+        String name = lookup.lookupClass().getName();
+
+        byte[] bytes = transform(lookup.lookupClass().getModule(), name, classBuffer);
         return bytes == null ? classBuffer : bytes;
     }
 

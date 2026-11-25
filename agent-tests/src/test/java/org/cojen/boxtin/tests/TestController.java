@@ -31,8 +31,13 @@ public final class TestController implements Controller {
 
     public TestController() {
         var b = new RulesBuilder().applyRules(RulesApplier.java_base());
+
         b.forModule("org.cojen.maker").forPackage("org.cojen.maker").allowAll();
         b.forModule("junit").forPackage("org.junit").allowAll();
+
+        // Allow HiddenClassTest to intercept transformation failures.
+        b.forModule("java.logging").allowAll();
+
         mRules = b.build();
     }
 
