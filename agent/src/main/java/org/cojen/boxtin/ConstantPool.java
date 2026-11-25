@@ -439,7 +439,7 @@ final class ConstantPool {
     }
 
     /**
-     * @param 10 if clazz is a class, or 11 if clazz is an interface
+     * @param tag 10 if clazz is a class, or 11 if clazz is an interface
      */
     C_MemberRef addMethodRef(int tag, C_Class clazz, C_NameAndType nat) {
         return addMemberRef(tag, clazz, nat);
@@ -545,7 +545,7 @@ final class ConstantPool {
      * Adds a constant method reference, with an invented name. The `extend` method must have
      * already been called.
      *
-     * @param 10 if clazz is a class, or 11 if clazz is an interface
+     * @param tag 10 if clazz is a class, or 11 if clazz is an interface
      */
     C_MemberRef addUniqueMethod(int tag, C_Class clazz, C_UTF8 typeDesc) {
         return addUniqueMember(clazz, typeDesc, tag);
