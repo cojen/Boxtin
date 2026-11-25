@@ -84,6 +84,7 @@ final class ClassFileProcessor {
     }
 
     private final ConstantPool mConstantPool;
+    private final int mAccessFlags;
     private final int mThisClassIndex;
     private final int mSuperClassIndex;
     private final int[] mInterfaceIndexes;
@@ -111,7 +112,7 @@ final class ClassFileProcessor {
     private ClassFileProcessor(BufferDecoder decoder) throws IOException {
         mConstantPool = ConstantPool.decode(decoder);
 
-        int accessFlags = decoder.readUnsignedShort();
+        mAccessFlags = decoder.readUnsignedShort();
         mThisClassIndex = decoder.readUnsignedShort();
 
         mSuperClassIndex = decoder.readUnsignedShort();
@@ -1719,11 +1720,15 @@ final class ClassFileProcessor {
         C_Class thisClass = cp.findConstantClass(mThisClassIndex);
         C_MemberRef proxyMethodRef;
 
+        // Select CONSTANT_Methodref or CONSTANT_InterfaceMethodref. A proxy method defined in
+        // an interface must always referenced as such, even when the method is static.
+        int tag = !Modifier.isInterface(mAccessFlags) ? 10 : 11;
+
         if (proxyMethodName == null) {
-            proxyMethodRef = cp.addUniqueMethod(thisClass, proxyDesc);
+            proxyMethodRef = cp.addUniqueMethod(tag, thisClass, proxyDesc);
         } else {
             proxyMethodRef = cp.addMethodRef
-                (thisClass, cp.addNameAndType(proxyMethodName, proxyDesc));
+                (tag, thisClass, cp.addNameAndType(proxyMethodName, proxyDesc));
         }
 
         var proxyMethod = new ProxyMethod(proxyMethodRef, accessFlags);

@@ -438,6 +438,13 @@ final class ConstantPool {
         return addMemberRef(10, clazz, nat);
     }
 
+    /**
+     * @param 10 if clazz is a class, or 11 if clazz is an interface
+     */
+    C_MemberRef addMethodRef(int tag, C_Class clazz, C_NameAndType nat) {
+        return addMemberRef(tag, clazz, nat);
+    }
+
     private C_MemberRef addMemberRef(int tag, String className, String name, String desc) {
         return addMemberRef(tag, addClass(className), addNameAndType(name, desc));
     }
@@ -537,10 +544,11 @@ final class ConstantPool {
     /**
      * Adds a constant method reference, with an invented name. The `extend` method must have
      * already been called.
+     *
+     * @param 10 if clazz is a class, or 11 if clazz is an interface
      */
-    C_MemberRef addUniqueMethod(C_Class clazz, C_UTF8 typeDesc) {
-        // CONSTANT_Methodref tag is 10.
-        return addUniqueMember(clazz, typeDesc, 10);
+    C_MemberRef addUniqueMethod(int tag, C_Class clazz, C_UTF8 typeDesc) {
+        return addUniqueMember(clazz, typeDesc, tag);
     }
 
     private C_MemberRef addUniqueMember(C_Class clazz, C_UTF8 typeDesc, int tag) {
