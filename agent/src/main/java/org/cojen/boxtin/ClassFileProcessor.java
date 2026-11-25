@@ -25,8 +25,10 @@ import java.lang.invoke.MethodType;
 
 import java.lang.reflect.Modifier;
 
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -216,9 +218,16 @@ final class ClassFileProcessor {
 
                 ClassInfo superInfo = ClassInfo.find(superClass.mValue.str(), packageToModule);
 
+                var seen = new HashSet<Map.Entry<String, String>>();
+
                 superInfo.forAllStaticMethods(packageToModule, entry -> {
                     String name = entry.getKey();
                     String desc = entry.getValue().fullDescriptor();
+
+                    if (!seen.add(new AbstractMap.SimpleEntry<>(name, desc))) {
+                        // Skip duplicates.
+                        return true;
+                    }
 
                     C_NameAndType nat = cp.addNameAndType(name, desc);
 
