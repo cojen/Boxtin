@@ -1,7 +1,7 @@
 Changelog
 =========
 
-v1.0.3
+v1.0.3 (2026-11-26)
 ------
 * Fixed a failure to transform a hidden class from halting the JVM.
 * Fixed the "value" deny action for methods which return an array of primitives, which caused a
